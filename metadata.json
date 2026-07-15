@@ -1,0 +1,6 @@
+{
+  "name": "FSIA VIP Editorial Gallery",
+  "description": "A breathtaking, ethereal 3D WebGL editorial gallery experience for the FSIA Influencer platform by Forever Star India, featuring curated physical zones, a fluid refracting crystal guide, and interactive fashion installations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
