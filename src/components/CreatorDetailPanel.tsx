@@ -51,17 +51,17 @@ export default function CreatorDetailPanel({
       </div>
 
       {/* Content Scroller */}
-      <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-5 md:p-8 space-y-6 md:space-y-8 custom-scrollbar">
         {/* Name and Origin */}
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-xs font-sans text-[#888] tracking-widest uppercase">
             <MapPin className="w-3.5 h-3.5 text-champagne" />
             {creator.city}, India
           </div>
-          <h2 className="font-serif-display text-4xl font-bold tracking-tight text-[#111] leading-none">
+          <h2 className="font-serif-display text-3xl md:text-4xl font-bold tracking-tight text-[#111] leading-none">
             {creator.name}
           </h2>
-          <p className="font-serif-text italic text-lg text-champagne">
+          <p className="font-serif-text italic text-base md:text-lg text-champagne">
             {creator.role}
           </p>
         </div>
@@ -161,7 +161,7 @@ export default function CreatorDetailPanel({
       </div>
 
       {/* Booking Drawer Action Trigger */}
-      <div className="p-6 border-t border-black/5 bg-[#FAF9F6]">
+      <div className="p-4 md:p-6 border-t border-black/5 bg-[#FAF9F6]">
         <button
           onClick={onOpenCollaboration}
           className="w-full bg-[#111] hover:bg-[#222] text-white font-sans text-xs tracking-[0.25em] font-medium py-4 px-6 rounded-lg uppercase flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md active:scale-[0.98]"

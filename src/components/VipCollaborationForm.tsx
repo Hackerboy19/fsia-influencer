@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Send, ShieldCheck, Calendar, DollarSign, Award, ArrowRight, CheckCircle2 } from "lucide-react";
+import { X, Send, ShieldCheck, Calendar, DollarSign, Award, ArrowRight, CheckCircle2, Phone, Briefcase, Landmark } from "lucide-react";
 import { Creator, gallerySections } from "../data";
 
 interface VipCollaborationFormProps {
@@ -19,7 +19,16 @@ export default function VipCollaborationForm({
   );
   const [brandName, setBrandName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
-  const [budget, setBudget] = useState(25000); // Luxury budget default
+  const [contactPhone, setContactPhone] = useState("");
+  const [isWhatsappPreferred, setIsWhatsappPreferred] = useState(true);
+  const [clientCity, setClientCity] = useState("Mumbai");
+  const [gstin, setGstin] = useState("");
+  
+  // Dual Currency Mode (defaulting to INR for Indian Clients)
+  const [currency, setCurrency] = useState<"INR" | "USD">("INR");
+  const [budgetInr, setBudgetInr] = useState(500000); // 5 Lakhs default
+  const [budgetUsd, setBudgetUsd] = useState(10000); // $10k default
+  
   const [duration, setDuration] = useState("3 Months");
   const [scope, setScope] = useState("Editorial Cover & Digital Campaign");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,9 +37,15 @@ export default function VipCollaborationForm({
   // Extract flat list of creators
   const allCreators = gallerySections.flatMap((s) => s.creators);
 
+  // Indian Cities
+  const indianCities = [
+    "Mumbai", "New Delhi / NCR", "Bangalore", "Kolkata", "Chennai", 
+    "Hyderabad", "Kochi", "Jaipur", "Ahmedabad", "Pune", "Goa"
+  ];
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!brandName || !contactEmail) return;
+    if (!brandName || !contactEmail || !contactPhone) return;
 
     setIsSubmitting(true);
 
@@ -38,16 +53,22 @@ export default function VipCollaborationForm({
     setTimeout(() => {
       setIsSubmitting(false);
       const bookingId = "FSIA-VIP-" + Math.floor(100000 + Math.random() * 900000);
+      
+      const formattedBudget = currency === "INR" 
+        ? "₹" + (budgetInr / 100000).toFixed(1) + " Lakhs"
+        : budgetUsd.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+
       setSubmittedCredential({
         bookingId,
-        timestamp: new Date().toLocaleDateString("en-US", {
+        timestamp: new Date().toLocaleDateString("en-IN", {
           year: "numeric",
           month: "long",
           day: "numeric",
         }),
         brandName,
         creatorName: selectedCreatorName,
-        budget: budget.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }),
+        budget: formattedBudget,
+        clientCity,
         verificationHash: "0x" + Math.random().toString(16).substring(2, 10).toUpperCase() + "..." + Math.random().toString(16).substring(2, 6).toUpperCase(),
       });
     }, 1800);
@@ -56,14 +77,17 @@ export default function VipCollaborationForm({
   const handleReset = () => {
     setBrandName("");
     setContactEmail("");
-    setBudget(25000);
+    setContactPhone("");
+    setGstin("");
+    setBudgetInr(500000);
+    setBudgetUsd(10000);
     setSubmittedCredential(null);
   };
 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end overflow-hidden bg-black/20 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex justify-end overflow-hidden bg-black/30 backdrop-blur-sm">
           {/* Backdrop Click */}
           <div className="absolute inset-0" onClick={onClose} />
 
@@ -73,16 +97,16 @@ export default function VipCollaborationForm({
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 180 }}
-            className="relative w-full max-w-xl h-full bg-[#FAF9F6] shadow-2xl flex flex-col border-l border-black/5"
+            className="relative w-full md:max-w-xl h-full bg-[#FAF9F6] shadow-2xl flex flex-col border-l border-black/5"
             id="vip-collaboration-form-container"
           >
             {/* Header */}
-            <div className="p-8 border-b border-black/5 flex items-center justify-between bg-[#F4F3F0]">
+            <div className="p-5 md:p-8 border-b border-black/5 flex items-center justify-between bg-[#F4F3F0]">
               <div>
-                <span className="font-sans text-xs tracking-[0.25em] text-[#8E8D8A] uppercase font-semibold">
-                  FSIA Gateway
+                <span className="font-sans text-[10px] md:text-xs tracking-[0.25em] text-[#8E8D8A] uppercase font-bold">
+                  FSIA Gateway (India Desk)
                 </span>
-                <h3 className="font-serif-display text-2xl text-[#111] tracking-tight mt-1">
+                <h3 className="font-serif-display text-xl md:text-2xl text-[#111] tracking-tight mt-1">
                   VIP Collaboration Charter
                 </h3>
               </div>
@@ -96,29 +120,29 @@ export default function VipCollaborationForm({
             </div>
 
             {/* Scrollable Form Content */}
-            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-5 md:p-8 space-y-6 md:space-y-8 custom-scrollbar">
               {!submittedCredential ? (
-                <form onSubmit={handleSubmit} className="space-y-8">
+                <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
                   {/* Elite Intro */}
-                  <div className="p-5 bg-white/50 border border-black/5 rounded-xl text-xs text-[#555] font-serif-text space-y-2 leading-relaxed">
-                    <div className="flex items-center gap-2 text-champagne font-semibold mb-1 uppercase tracking-widest text-[10px] font-sans">
+                  <div className="p-4 md:p-5 bg-white/60 border border-black/5 rounded-xl text-[11px] md:text-xs text-[#555] font-serif-text space-y-2 leading-relaxed">
+                    <div className="flex items-center gap-2 text-champagne font-bold mb-1 uppercase tracking-widest text-[9px] font-sans">
                       <ShieldCheck className="w-4 h-4" />
-                      Verified Escrow Protocol
+                      SECURE ESCROW PROTOCOL & VIP TRIAGE
                     </div>
-                    By submitting this charter, your inquiry will enter the FSIA VIP triage. Once verified, a boutique consultant will establish direct secure contact with the creator's legal representatives within 4 business hours.
+                    By submitting this charter to the Forever Star India VIP Desk, your brand requirements enter the elite curation pipeline. Direct legal representatives are coordinates within 4 business hours.
                   </div>
 
                   {/* Creator Selection */}
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
-                      Select VIP Creator / Roster
+                    <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                      Select VIP Creator / Joint Roster
                     </label>
                     <select
                       value={selectedCreatorName}
                       onChange={(e) => setSelectedCreatorName(e.target.value)}
                       className="w-full px-4 py-3 bg-white border border-black/10 rounded-lg text-sm text-[#222] font-serif-text focus:outline-none focus:border-champagne focus:ring-1 focus:ring-champagne transition-all"
                     >
-                      <option value="All VIP Roster">Full Roster — Joint Showcase Inquiry</option>
+                      <option value="All VIP Roster">Joint Showroom Showcase (All VIPs)</option>
                       {allCreators.map((creator) => (
                         <option key={creator.name} value={creator.name}>
                           {creator.name} ({creator.role.split(",")[0]})
@@ -127,74 +151,198 @@ export default function VipCollaborationForm({
                     </select>
                   </div>
 
-                  {/* Brand Credentials */}
+                  {/* Corporate/Brand Credentials */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="block text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
-                        Brand / House Name
+                      <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                        Brand House / Agency Name
                       </label>
                       <input
                         type="text"
                         required
-                        placeholder="e.g., Chanel, Harper's Bazaar"
+                        placeholder="e.g., Sabyasachi, Vogue India"
                         value={brandName}
                         onChange={(e) => setBrandName(e.target.value)}
                         className="w-full px-4 py-3 bg-white border border-black/10 rounded-lg text-sm text-[#222] placeholder:text-[#BBB] focus:outline-none focus:border-champagne focus:ring-1 focus:ring-champagne transition-all"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="block text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
-                        Secure Contact Email
+                      <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                        Operating City (HQ)
+                      </label>
+                      <select
+                        value={clientCity}
+                        onChange={(e) => setClientCity(e.target.value)}
+                        className="w-full px-4 py-3 bg-white border border-black/10 rounded-lg text-sm text-[#222] font-serif-text focus:outline-none focus:border-champagne transition-all"
+                      >
+                        {indianCities.map((city) => (
+                          <option key={city} value={city}>{city}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Dual Contacts tailored to Indian standards (WhatsApp integration) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                        Secure Corporate Email
                       </label>
                       <input
                         type="email"
                         required
-                        placeholder="comms@luxuryhouse.com"
+                        placeholder="vip.comms@brand.in"
                         value={contactEmail}
                         onChange={(e) => setContactEmail(e.target.value)}
                         className="w-full px-4 py-3 bg-white border border-black/10 rounded-lg text-sm text-[#222] placeholder:text-[#BBB] focus:outline-none focus:border-champagne focus:ring-1 focus:ring-champagne transition-all"
                       />
                     </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                          Contact Number (+91 Preferred)
+                        </label>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="tel"
+                          required
+                          placeholder="+91 XXXXX XXXXX"
+                          value={contactPhone}
+                          onChange={(e) => setContactPhone(e.target.value)}
+                          className="w-full pl-10 pr-4 py-3 bg-white border border-black/10 rounded-lg text-sm text-[#222] placeholder:text-[#BBB] focus:outline-none focus:border-champagne focus:ring-1 focus:ring-champagne transition-all"
+                        />
+                        <Phone className="w-4 h-4 text-[#8E8D8A] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      </div>
+                      <label className="flex items-center gap-2 mt-1.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isWhatsappPreferred}
+                          onChange={(e) => setIsWhatsappPreferred(e.target.checked)}
+                          className="rounded text-champagne accent-[#E1C699] focus:ring-champagne w-3.5 h-3.5"
+                        />
+                        <span className="text-[10px] font-sans text-[#555]">
+                          Connect securely on WhatsApp for instant confirmation
+                        </span>
+                      </label>
+                    </div>
                   </div>
 
-                  {/* Luxury Budget Slider */}
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
-                      <span>Allocation Cap (USD)</span>
-                      <span className="text-sm font-serif-display text-champagne font-bold tracking-tight">
-                        {budget === 1000000 ? "$1,000,000+" : budget.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })}
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min="10000"
-                      max="1000000"
-                      step="5000"
-                      value={budget}
-                      onChange={(e) => setBudget(Number(e.target.value))}
-                      className="w-full accent-[#E1C699] h-1.5 bg-[#E5E5E2] rounded-lg cursor-pointer"
-                    />
-                    <div className="flex justify-between text-[9px] text-[#888] font-sans">
-                      <span>$10,000</span>
-                      <span>$100,000</span>
-                      <span>$500,000</span>
-                      <span>$1,000,000+</span>
+                  {/* Corporate Taxation/Verification (GSTIN / PAN) */}
+                  <div className="space-y-2">
+                    <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                      GSTIN / Corporate PAN (Optional - for Proforma Invoice)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="e.g., 27AAAAA1111A1Z1 / Corporate ID"
+                        value={gstin}
+                        onChange={(e) => setGstin(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 bg-white border border-black/10 rounded-lg text-sm text-[#222] placeholder:text-[#BBB] uppercase focus:outline-none focus:border-champagne transition-all"
+                      />
+                      <Landmark className="w-4 h-4 text-[#8E8D8A] absolute left-3.5 top-1/2 -translate-y-1/2" />
                     </div>
                   </div>
 
-                  {/* Duration and Scope Options */}
+                  {/* Dual Currency Luxury Allocation Selector */}
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center border-b border-black/5 pb-2">
+                      <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                        Estimated Budget Allocation
+                      </label>
+                      <div className="flex rounded-md overflow-hidden border border-black/10 text-[9px] font-bold font-sans">
+                        <button
+                          type="button"
+                          onClick={() => setCurrency("INR")}
+                          className={`px-2.5 py-1 transition-all ${
+                            currency === "INR"
+                              ? "bg-champagne text-white"
+                              : "bg-white text-[#666] hover:bg-black/5"
+                          }`}
+                        >
+                          INR (₹)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCurrency("USD")}
+                          className={`px-2.5 py-1 transition-all ${
+                            currency === "USD"
+                              ? "bg-champagne text-white"
+                              : "bg-white text-[#666] hover:bg-black/5"
+                          }`}
+                        >
+                          USD ($)
+                        </button>
+                      </div>
+                    </div>
+
+                    {currency === "INR" ? (
+                      /* INR Range */
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] font-sans text-[#888]">Allocated Cap (Indian Rupees)</span>
+                          <span className="text-sm font-serif-display text-[#111] font-bold">
+                            {budgetInr === 10000000 ? "₹1 Crore+" : `₹${(budgetInr / 100000).toFixed(1)} Lakhs`}
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="100000"
+                          max="10000000"
+                          step="100000"
+                          value={budgetInr}
+                          onChange={(e) => setBudgetInr(Number(e.target.value))}
+                          className="w-full accent-[#E1C699] h-1.5 bg-[#E5E5E2] rounded-lg cursor-pointer"
+                        />
+                        <div className="flex justify-between text-[9px] text-[#888] font-sans">
+                          <span>₹1 Lakh</span>
+                          <span>₹15 Lakhs</span>
+                          <span>₹50 Lakhs</span>
+                          <span>₹1 Crore+</span>
+                        </div>
+                      </div>
+                    ) : (
+                      /* USD Range */
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] font-sans text-[#888]">Allocated Cap (US Dollars)</span>
+                          <span className="text-sm font-serif-display text-[#111] font-bold">
+                            {budgetUsd === 1000000 ? "$1,000,000+" : budgetUsd.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })}
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="5000"
+                          max="1000000"
+                          step="5000"
+                          value={budgetUsd}
+                          onChange={(e) => setBudgetUsd(Number(e.target.value))}
+                          className="w-full accent-[#E1C699] h-1.5 bg-[#E5E5E2] rounded-lg cursor-pointer"
+                        />
+                        <div className="flex justify-between text-[9px] text-[#888] font-sans">
+                          <span>$5,000</span>
+                          <span>$100,000</span>
+                          <span>$500,000</span>
+                          <span>$1M+</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Campaign Scope & Horizon */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="block text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                      <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
                         Campaign Horizon
                       </label>
                       <div className="flex flex-wrap gap-2">
-                        {["Single Show", "3 Months", "6 Months", "Annual"].map((dOption) => (
+                        {["Single Event", "3 Months", "6 Months", "Annual Contract"].map((dOption) => (
                           <button
                             key={dOption}
                             type="button"
                             onClick={() => setDuration(dOption)}
-                            className={`px-3 py-2 rounded-lg text-xs font-sans transition-all cursor-pointer ${
+                            className={`px-3 py-1.5 rounded-lg text-xs font-sans transition-all cursor-pointer ${
                               duration === dOption
                                 ? "bg-champagne/15 border border-champagne text-[#222] font-semibold"
                                 : "bg-white border border-black/5 text-[#666] hover:bg-[#F3F3F1]"
@@ -206,7 +354,7 @@ export default function VipCollaborationForm({
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="block text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                      <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
                         Engagement Scope
                       </label>
                       <select
@@ -214,10 +362,10 @@ export default function VipCollaborationForm({
                         onChange={(e) => setScope(e.target.value)}
                         className="w-full px-3 py-2 bg-white border border-black/10 rounded-lg text-xs text-[#222] font-serif-text focus:outline-none focus:border-champagne"
                       >
-                        <option value="Editorial Cover & Digital Campaign">Editorial Cover & Digital</option>
-                        <option value="Runway Show / Pageant Appearance">Runway & Live Event</option>
-                        <option value="Global Brand Ambassadorship">Global Ambassador Representation</option>
-                        <option value="Charity & Advocacy Alignment">Social Advocacy Partner</option>
+                        <option value="Editorial Cover & Digital Campaign">Editorial Cover & Indian Digital</option>
+                        <option value="Runway Show / Pageant Appearance">Runway & Bollywood Gala Appearance</option>
+                        <option value="Global Brand Ambassadorship">Pan-India Brand Ambassadorship</option>
+                        <option value="Charity & Advocacy Alignment">Social Impact Partnership</option>
                       </select>
                     </div>
                   </div>
@@ -232,25 +380,25 @@ export default function VipCollaborationForm({
                     {isSubmitting ? (
                       <>
                         <div className="w-4 h-4 border-2 border-t-transparent border-[#FAF9F6] rounded-full animate-spin" />
-                        SECURE ROUTING...
+                        DISPATCHING SECURE CHARTER...
                       </>
                     ) : (
                       <>
-                        VERIFY & DEPLOY CHARTER
+                        VERIFY & TRANSMIT CHARTER
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
                   </button>
                 </form>
               ) : (
-                /* Success Credential Receipt */
+                /* Success Credential Receipt with Indian-centric variables */
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   className="space-y-8"
                   id="collaboration-success-credential"
                 >
-                  <div className="p-8 border border-champagne/30 bg-white/80 rounded-2xl shadow-xl relative overflow-hidden text-center space-y-6">
+                  <div className="p-6 md:p-8 border border-champagne/30 bg-white/80 rounded-2xl shadow-xl relative overflow-hidden text-center space-y-6">
                     {/* Decorative gold seal backing */}
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 border border-champagne/5 rounded-full pointer-events-none" />
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border border-champagne/5 rounded-full pointer-events-none" />
@@ -260,17 +408,17 @@ export default function VipCollaborationForm({
                     </div>
 
                     <div className="space-y-1">
-                      <span className="font-sans text-[10px] tracking-[0.3em] text-[#8E8D8A] uppercase font-bold">
-                        FSIA Prestige Credential
+                      <span className="font-sans text-[9px] tracking-[0.3em] text-[#8E8D8A] uppercase font-bold">
+                        FSIA India VIP Credential
                       </span>
-                      <h4 className="font-serif-display text-2xl text-[#111] font-bold">
-                        Charter Transmitted
+                      <h4 className="font-serif-display text-xl md:text-2xl text-[#111] font-bold">
+                        Charter Dispatched
                       </h4>
                     </div>
 
                     <div className="border-t border-b border-black/5 py-4 space-y-2 text-left">
                       <div className="flex justify-between text-xs">
-                        <span className="text-[#888] font-sans">CREDENTIAL ID:</span>
+                        <span className="text-[#888] font-sans">REGISTRATION ID:</span>
                         <span className="font-mono text-[#222] font-bold">{submittedCredential.bookingId}</span>
                       </div>
                       <div className="flex justify-between text-xs">
@@ -282,21 +430,21 @@ export default function VipCollaborationForm({
                         <span className="font-serif-text text-[#222] font-semibold">{submittedCredential.creatorName}</span>
                       </div>
                       <div className="flex justify-between text-xs">
-                        <span className="text-[#888] font-sans">BUDGET PLEDGE:</span>
-                        <span className="font-serif-text text-[#222] font-semibold">{submittedCredential.budget}</span>
+                        <span className="text-[#888] font-sans">BUDGET ALLOCATION:</span>
+                        <span className="font-serif-text text-[#222] font-bold text-champagne">{submittedCredential.budget}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-[#888] font-sans">CITY HUB:</span>
+                        <span className="font-serif-text text-[#222] font-semibold">{submittedCredential.clientCity}</span>
                       </div>
                       <div className="flex justify-between text-xs">
                         <span className="text-[#888] font-sans">SECURITY HASH:</span>
-                        <span className="font-mono text-[#8E8D8A]">{submittedCredential.verificationHash}</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-[#888] font-sans">DATE SEALED:</span>
-                        <span className="font-sans text-[#222] font-semibold">{submittedCredential.timestamp}</span>
+                        <span className="font-mono text-[#8E8D8A] text-[10px]">{submittedCredential.verificationHash}</span>
                       </div>
                     </div>
 
-                    <p className="text-xs text-[#666] font-serif-text leading-relaxed px-4">
-                      Your charter has been cryptographically signed. The FSIA board of directors is executing triage checks. You will receive an encrypted direct link to the secure portal at <strong className="text-[#222]">{contactEmail}</strong>.
+                    <p className="text-xs text-[#666] font-serif-text leading-relaxed px-2">
+                      Your VIP charter request is successfully sealed. Direct coordinates have been initiated. Expect secure WhatsApp & Email dispatch to <strong className="text-[#222]">{contactEmail}</strong>.
                     </p>
                   </div>
 
@@ -305,13 +453,13 @@ export default function VipCollaborationForm({
                       onClick={handleReset}
                       className="w-full bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-xs tracking-[0.25em] py-3.5 px-6 rounded-lg uppercase cursor-pointer text-center font-medium"
                     >
-                      SUBMIT NEW INQUIRY
+                      SUBMIT NEW CHARTER
                     </button>
                     <button
                       onClick={onClose}
                       className="w-full bg-transparent hover:bg-black/5 text-[#333] border border-black/10 font-sans text-xs tracking-[0.25em] py-3.5 px-6 rounded-lg uppercase cursor-pointer text-center font-semibold"
                     >
-                      RETURN TO RUNWAY
+                      RETURN TO CATWALK
                     </button>
                   </div>
                 </motion.div>
@@ -323,3 +471,4 @@ export default function VipCollaborationForm({
     </AnimatePresence>
   );
 }
+
