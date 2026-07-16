@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { gallerySections, Creator } from "../data";
 
 interface ThreeGalleryProps {
+  sections?: any[];
   activeSectionIndex: number;
   selectedCreator: Creator | null;
   onSelectCreator: (creator: Creator | null) => void;
@@ -10,6 +11,7 @@ interface ThreeGalleryProps {
 }
 
 export default function ThreeGallery({
+  sections = gallerySections,
   activeSectionIndex,
   selectedCreator,
   onSelectCreator,
@@ -196,7 +198,7 @@ export default function ThreeGallery({
       return labelTexture;
     };
 
-    gallerySections.forEach((section, sIdx) => {
+    sections.forEach((section, sIdx) => {
       section.creators.forEach((creator, cIdx) => {
         const creatorGroup = new THREE.Group();
 
@@ -505,7 +507,7 @@ export default function ThreeGallery({
         // RUNWAY NAVIGATION MODE
         // Keep Runway positions sync'd with external section clicks
         const activeIdx = activeSectionIndexRef.current;
-        const targetSectionZ = gallerySections[activeIdx].zOffset + 3.8;
+        const targetSectionZ = (sections[activeIdx] || sections[0] || { zOffset: 0 }).zOffset + 3.8;
 
         // If active section changes externally (HUD clicks), snap/lerp runway position
         if (Math.abs(targetRunwayZ - runwayZ) < 0.1) {
@@ -523,7 +525,7 @@ export default function ThreeGallery({
         camera.position.z = THREE.MathUtils.lerp(camera.position.z, runwayZ, 0.07);
 
         // Majestic guide crystal slides dynamically to the active region
-        const guideZ = gallerySections[activeIdx].zOffset;
+        const guideZ = (sections[activeIdx] || sections[0] || { zOffset: 0 }).zOffset;
         crystal.position.z = THREE.MathUtils.lerp(crystal.position.z, guideZ, 0.06);
 
         // Dynamic lookAt slightly down the hallway path
@@ -534,7 +536,7 @@ export default function ThreeGallery({
         // Determine nearest section index
         let closestIdx = 0;
         let minDiff = Infinity;
-        gallerySections.forEach((sec, idx) => {
+        sections.forEach((sec, idx) => {
           const diff = Math.abs(currentZ - (sec.zOffset + 3.8));
           if (diff < minDiff) {
             minDiff = diff;
@@ -595,7 +597,7 @@ export default function ThreeGallery({
       particleMat.dispose();
       renderer.dispose();
     };
-  }, [onSelectCreator, onSectionChange]);
+  }, [onSelectCreator, onSectionChange, sections]);
 
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-hidden select-none bg-alabaster">

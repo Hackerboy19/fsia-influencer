@@ -15,6 +15,8 @@ export default function CreatorDetailPanel({
   onClose,
   onOpenCollaboration,
 }: CreatorDetailPanelProps) {
+  const [lightboxImg, setLightboxImg] = React.useState<string | null>(null);
+
   if (!creator) return null;
 
   // Filter out core standard stats for custom metric rendering
@@ -143,9 +145,10 @@ export default function CreatorDetailPanel({
           </h4>
           <div className="grid grid-cols-3 gap-2">
             {creator.portfolio.map((imgUrl, idx) => (
-              <div
+              <button
                 key={idx}
-                className="relative aspect-square overflow-hidden rounded-lg bg-[#EEE] border border-black/5 group"
+                onClick={() => setLightboxImg(imgUrl)}
+                className="relative aspect-[3/4] overflow-hidden rounded-xl bg-[#F4F3F0] border border-black/5 group cursor-pointer text-left focus:outline-none"
               >
                 <img
                   src={imgUrl}
@@ -153,8 +156,12 @@ export default function CreatorDetailPanel({
                   className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                   referrerPolicy="no-referrer"
                 />
-                <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
+                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                  <span className="text-[8px] tracking-widest uppercase text-white font-sans font-bold bg-black/60 px-2 py-1 rounded">
+                    View
+                  </span>
+                </div>
+              </button>
             ))}
           </div>
         </div>
@@ -171,6 +178,30 @@ export default function CreatorDetailPanel({
           <ChevronRight className="w-4 h-4 text-champagne" />
         </button>
       </div>
+
+      {/* Fullscreen Lightbox Portal Overlay */}
+      {lightboxImg && (
+        <div 
+          onClick={() => setLightboxImg(null)}
+          className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] flex flex-col items-center justify-center p-4 cursor-zoom-out pointer-events-auto"
+        >
+          <button 
+            onClick={() => setLightboxImg(null)}
+            className="absolute top-6 right-6 text-white hover:text-champagne transition-colors p-2 bg-white/10 rounded-full cursor-pointer"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <img 
+            src={lightboxImg} 
+            alt="Couture Detail" 
+            className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl border border-white/5"
+            referrerPolicy="no-referrer"
+          />
+          <p className="mt-4 text-xs font-serif-text italic text-[#E1C699] tracking-widest uppercase">
+            Forever Star India Runway Detail • Click Anywhere to Close
+          </p>
+        </div>
+      )}
     </motion.div>
   );
 }

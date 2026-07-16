@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Search, MapPin, Sparkles, SlidersHorizontal, CheckCircle2, Star, Eye, Send, Share2 } from "lucide-react";
 import { Creator, gallerySections } from "../data";
@@ -12,9 +12,33 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator }: D
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedCity, setSelectedCity] = useState("All");
+  const [dynamicCreators, setDynamicCreators] = useState<Creator[]>([]);
 
   // Flat list of core creators from our high-fashion gallery
   const coreCreators = gallerySections.flatMap((s) => s.creators);
+
+  useEffect(() => {
+    fetch("/api/creators")
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error();
+      })
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const flat = data.flatMap((s: any) => s.creators || []);
+          if (flat.length > 0) {
+            setDynamicCreators(flat);
+            return;
+          }
+        }
+        setDynamicCreators(coreCreators);
+      })
+      .catch(() => {
+        setDynamicCreators(coreCreators);
+      });
+  }, []);
+
+  const activeCreators = dynamicCreators.length > 0 ? dynamicCreators : coreCreators;
 
   // Additional mock diverse Indian influencers to enrich the search list and give it premium depth
   const extraCreators: Creator[] = [
@@ -110,7 +134,7 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator }: D
     }
   ];
 
-  const allDirectoryCreators = [...coreCreators, ...extraCreators];
+  const allDirectoryCreators = [...activeCreators, ...extraCreators];
 
   const categories = ["All", "Pageantry", "Couture", "Travel", "Ayurvedic Beauty", "Fitness", "Culinary", "Tech"];
   const cities = ["All", "Mumbai", "New Delhi", "Bangalore", "Kochi", "Jaipur", "Chennai"];
@@ -242,35 +266,40 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator }: D
                 className="bg-white/70 border border-black/5 rounded-2xl overflow-hidden hover:shadow-lg transition-all flex flex-col group relative"
               >
                 {/* Image Section */}
-                <div className="relative aspect-square overflow-hidden bg-alabaster">
+                <div 
+                  onClick={() => onSelectCreator(creator)}
+                  className="relative aspect-square overflow-hidden bg-alabaster cursor-pointer"
+                >
                   <img
                     src={creator.image}
                     alt={creator.name}
                     referrerPolicy="no-referrer"
                     className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700"
                   />
-                  <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-md px-3 py-1 rounded-full border border-black/5 flex items-center gap-1.5 text-[9px] font-sans font-bold tracking-wider text-champagne uppercase">
+                  <div className="absolute top-3 left-3 bg-white/80 backdrop-blur-md px-3 py-1 rounded-full border border-black/5 flex items-center gap-1.5 text-[9px] font-sans font-bold tracking-wider text-champagne uppercase z-10">
                     <Sparkles className="w-3 h-3 text-champagne" />
                     {catTag}
                   </div>
                   {creator.stats.verified && (
-                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-black/5 flex items-center gap-1 text-[9px] font-sans font-bold text-emerald-600">
+                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-black/5 flex items-center gap-1 text-[9px] font-sans font-bold text-emerald-600 z-10">
                       <CheckCircle2 className="w-3.5 h-3.5 fill-emerald-100 text-emerald-600" />
                       VERIFIED STAR
                     </div>
                   )}
 
-                  {/* Aesthetic quote swell */}
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-end p-6 text-white text-center">
+                  {/* Aesthetic quote swell (Desktop hover) */}
+                  <div className="absolute inset-0 bg-black/60 opacity-0 lg:group-hover:opacity-100 transition-all duration-500 flex flex-col justify-end p-6 text-white text-center">
                     <p className="font-serif-text italic text-xs leading-relaxed mb-4">
                       "{creator.quote}"
                     </p>
-                    <button
-                      onClick={() => onSelectCreator(creator)}
-                      className="mx-auto bg-[#FAF9F6] text-[#111] hover:bg-champagne hover:text-white font-sans text-[10px] tracking-widest font-bold px-4 py-2 rounded-lg uppercase transition-all flex items-center gap-1"
-                    >
+                    <div className="mx-auto bg-[#FAF9F6] text-[#111] font-sans text-[10px] tracking-widest font-bold px-4 py-2 rounded-lg uppercase flex items-center gap-1">
                       <Eye className="w-3.5 h-3.5" /> VIEW PROFILE
-                    </button>
+                    </div>
+                  </div>
+
+                  {/* Mobile-only subtle tap helper badge in corner */}
+                  <div className="absolute bottom-3 right-3 lg:hidden bg-black/50 backdrop-blur-xs text-white/95 px-2.5 py-1 rounded-md text-[8px] font-sans font-bold tracking-widest uppercase flex items-center gap-1 z-10">
+                    <Eye className="w-3 h-3 text-champagne" /> VIEW INFO
                   </div>
                 </div>
 

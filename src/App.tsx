@@ -12,7 +12,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  Users,
+  Briefcase,
+  HelpCircle,
+  Lock
 } from "lucide-react";
 import { gallerySections, Creator } from "./data";
 import ThreeGallery from "./components/ThreeGallery";
@@ -22,6 +26,7 @@ import DirectoryTab from "./components/DirectoryTab";
 import CampaignsTab from "./components/CampaignsTab";
 import MembershipTab from "./components/MembershipTab";
 import FaqTab from "./components/FaqTab";
+import AdminTab from "./components/AdminTab";
 
 export default function App() {
   // Navigation & Showcase States
@@ -29,7 +34,50 @@ export default function App() {
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"catwalk" | "directory" | "campaigns" | "membership" | "faq">("catwalk");
+  const [activeTab, setActiveTab] = useState<"catwalk" | "directory" | "campaigns" | "membership" | "faq" | "admin">("catwalk");
+
+  // Dynamic full-stack database roster state
+  const [sections, setSections] = useState<any[]>(gallerySections);
+
+  // Enterprise Dynamic Configuration Settings State
+  const [settings, setSettings] = useState<any>({
+    websiteTitle: "FSIA — Forever Star India Awards",
+    heroTitle: "FSIA VIP GALLERY",
+    heroSubtitle: "Immerse in a sun-drenched architectural pavilion of verified pageant victors, social champions, and elite digital authorities.",
+    ctaText: "ACCEPT VIP INVITATION",
+    footerText: "© 2026 FOREVER STAR INDIA. ALL RIGHTS SECURED.",
+    logoUrl: "",
+    primaryColor: "#E1C699",
+    secondaryColor: "#111111"
+  });
+
+  useEffect(() => {
+    // 1. Fetch creators list
+    fetch("/api/creators")
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error();
+      })
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setSections(data);
+        }
+      })
+      .catch(() => console.log("Using static local runway fallback."));
+
+    // 2. Fetch enterprise dynamic configurations
+    fetch("/api/settings")
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error();
+      })
+      .then((data) => {
+        if (data && data.websiteTitle) {
+          setSettings(data);
+        }
+      })
+      .catch(() => console.log("Using local fallback settings configuration."));
+  }, [activeTab]);
 
   // Audio Control (Procedural Runway Lounge Synth)
   const [audioEnabled, setAudioEnabled] = useState(false);
@@ -127,29 +175,72 @@ export default function App() {
     };
   }, []);
 
+  // Light, high-frequency 'crystal chime' feedback sound for premium interaction feedback
+  const playCrystalChime = () => {
+    if (!audioEnabled || !synthRef.current) return;
+    try {
+      const { ctx } = synthRef.current;
+      if (!ctx || ctx.state === "closed") return;
+
+      const now = ctx.currentTime;
+      // High-frequency chime harmonic frequencies
+      const frequencies = [1800, 2600, 3400];
+
+      frequencies.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, now);
+
+        const gainNode = ctx.createGain();
+        gainNode.gain.setValueAtTime(0.0, now);
+
+        // Pristine, fast crystal bell-like envelope
+        const peakGain = idx === 0 ? 0.025 : idx === 1 ? 0.015 : 0.01;
+        gainNode.gain.linearRampToValueAtTime(peakGain, now + 0.006);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.35 + idx * 0.08);
+
+        osc.connect(gainNode);
+        // Connect directly to the destination to bypass the 260Hz lowpass filter!
+        gainNode.connect(ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.8);
+      });
+    } catch (e) {
+      console.warn("Crystal chime playback error:", e);
+    }
+  };
+
   const handleEnterExperience = () => {
     setHasEntered(true);
     // Automatically trigger ambient audio to immerse the visitor
     startAmbientSynth();
   };
 
-  const activeSection = gallerySections[activeSectionIndex];
+  const activeSection = sections[activeSectionIndex] || sections[0];
 
   // Glide through runway sections
   const handlePrevSection = () => {
     if (activeSectionIndex > 0) {
       setActiveSectionIndex(activeSectionIndex - 1);
+      playCrystalChime();
     }
   };
 
   const handleNextSection = () => {
-    if (activeSectionIndex < gallerySections.length - 1) {
+    if (activeSectionIndex < sections.length - 1) {
       setActiveSectionIndex(activeSectionIndex + 1);
+      playCrystalChime();
     }
   };
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-alabaster font-sans text-[#111] select-none">
+    <div 
+      className="relative w-screen h-screen overflow-hidden bg-alabaster font-sans text-[#111] select-none"
+      style={{
+        ["--color-champagne" as any]: settings.primaryColor || "#E1C699"
+      }}
+    >
       <AnimatePresence mode="wait">
         {!hasEntered ? (
           /* SECTION 1: THE ULTRA-PRESTIGE INVITATION GALA GATE */
@@ -162,14 +253,18 @@ export default function App() {
             id="gala-welcome-gate"
           >
             {/* Decorative fine-art background grids */}
-            <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[radial-gradient(#E1C699_1.5px,transparent_1.5px)] [background-size:24px_24px]" />
-            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] border border-[#E1C699]/15 rounded-full pointer-events-none" />
+            <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[radial-gradient(var(--color-champagne)_1.5px,transparent_1.5px)] [background-size:24px_24px]" />
+            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] border border-champagne/15 rounded-full pointer-events-none" />
 
             {/* Top Branding Header */}
             <div className="flex justify-between items-center z-10">
-              <span className="font-sans text-xs tracking-[0.35em] text-[#8E8D8A] uppercase font-bold">
-                FOREVER STAR INDIA
-              </span>
+              {settings.logoUrl ? (
+                <img src={settings.logoUrl} alt="Logo" className="h-6 object-contain" />
+              ) : (
+                <span className="font-sans text-xs tracking-[0.35em] text-[#8E8D8A] uppercase font-bold">
+                  {settings.websiteTitle}
+                </span>
+              )}
               <span className="px-3.5 py-1 rounded-full border border-champagne/30 text-[9px] font-sans text-champagne uppercase font-bold tracking-[0.2em]">
                 VIP Tier Access
               </span>
@@ -191,9 +286,9 @@ export default function App() {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="font-serif-display text-4xl md:text-6xl lg:text-7xl font-light tracking-tight text-[#111] leading-[1.05]"
+                  className="font-serif-display text-4xl md:text-6xl lg:text-7xl font-light tracking-tight text-[#111] leading-[1.05] uppercase"
                 >
-                  FSIA VIP GALLERY
+                  {settings.heroTitle}
                 </motion.h1>
                 <motion.p
                   initial={{ opacity: 0, y: 15 }}
@@ -201,7 +296,7 @@ export default function App() {
                   transition={{ delay: 0.6 }}
                   className="font-serif-text italic text-base md:text-xl text-[#666] max-w-2xl mx-auto leading-relaxed"
                 >
-                  Immerse in a sun-drenched architectural pavilion of verified pageant victors, social champions, and elite digital authorities.
+                  {settings.heroSubtitle}
                 </motion.p>
               </div>
 
@@ -224,7 +319,7 @@ export default function App() {
                   className="inline-flex items-center gap-3 bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[11px] tracking-[0.25em] font-medium py-4 px-8 rounded-lg uppercase cursor-pointer transition-all shadow-md hover:shadow-xl active:scale-95"
                   id="enter-exposition-btn"
                 >
-                  ACCEPT VIP INVITATION
+                  {settings.ctaText}
                   <ChevronRight className="w-4 h-4 text-champagne" />
                 </button>
               </motion.div>
@@ -232,7 +327,7 @@ export default function App() {
 
             {/* Footer */}
             <div className="flex flex-col md:flex-row justify-between items-center text-[10px] text-[#8E8D8A] font-sans tracking-widest gap-2 z-10">
-              <span>© 2026 FOREVER STAR INDIA. ALL RIGHTS SECURED.</span>
+              <span className="uppercase">{settings.footerText}</span>
               <span className="flex items-center gap-1">
                 DESIGN BY VIP EDITORIAL TEAM <ExternalLink className="w-3 h-3 text-[#E1C699] ml-1" />
               </span>
@@ -276,6 +371,7 @@ export default function App() {
             {/* The 3D Canvas Container */}
             <div className="absolute inset-0 w-full h-full z-0">
               <ThreeGallery
+                sections={sections}
                 activeSectionIndex={activeSectionIndex}
                 selectedCreator={selectedCreator}
                 onSelectCreator={setSelectedCreator}
@@ -298,37 +394,74 @@ export default function App() {
             {/* --- HEADS UP DISPLAY HUD: OVERLAID React CONTROLS --- */}
 
             {/* 1. TOP EDITORIAL BANNER */}
-            <header className="absolute top-0 inset-x-0 p-4 md:p-6 lg:p-8 flex flex-col lg:flex-row justify-between items-center gap-4 z-20 pointer-events-none select-none border-b border-black/[0.03] bg-white/10 backdrop-blur-xs">
-              <div className="pointer-events-auto flex items-center gap-3 bg-white/60 backdrop-blur-md px-4 py-2 md:px-5 md:py-3.5 rounded-xl border border-black/5 shadow-sm">
-                <div className="space-y-0.5">
-                  <h1 className="font-serif-display text-base md:text-lg font-bold tracking-tight text-[#111]">
-                    FSIA INFLUENCER
-                  </h1>
-                  <p className="font-sans text-[8px] md:text-[9px] tracking-[0.25em] text-[#888] uppercase font-bold">
-                    Forever Star India VIP Desk
-                  </p>
+            <header className="absolute top-0 inset-x-0 p-3 md:p-5 lg:p-6 lg:p-8 flex flex-col lg:flex-row justify-between items-center gap-3 md:gap-4 z-20 pointer-events-none select-none border-b border-black/[0.03] bg-white/20 backdrop-blur-xs">
+              {/* Top Row on Mobile: Logo & Actions */}
+              <div className="flex items-center justify-between w-full lg:w-auto gap-4 pointer-events-auto">
+                {/* Logo */}
+                <div className="flex items-center gap-2.5 bg-white/70 backdrop-blur-md px-3 py-1.5 md:px-5 md:py-3 rounded-xl border border-black/5 shadow-sm">
+                  <div className="space-y-0.5">
+                    <h1 className="font-serif-display text-xs md:text-base lg:text-lg font-bold tracking-tight text-[#111] leading-none">
+                      FSIA INFLUENCER
+                    </h1>
+                    <p className="font-sans text-[7px] md:text-[9px] tracking-[0.2em] text-[#888] uppercase font-bold leading-none">
+                      Forever Star India VIP Desk
+                    </p>
+                  </div>
+                </div>
+
+                {/* Buttons: Sound & VIP Register (shown next to logo on mobile/tablet, right-aligned on desktop) */}
+                <div className="flex items-center gap-2 lg:hidden">
+                  {/* Custom Synthesizer Toggle */}
+                  <button
+                    onClick={toggleAudio}
+                    className={`px-2.5 py-2 rounded-lg backdrop-blur-md border border-black/5 flex items-center gap-1.5 text-[8px] font-sans font-bold tracking-wider uppercase transition-all shadow-xs cursor-pointer ${
+                      audioEnabled
+                        ? "bg-champagne/15 border border-champagne text-[#111]"
+                        : "bg-white/70 hover:bg-white text-[#666]"
+                    }`}
+                    id="toggle-synth-audio-btn-mobile"
+                  >
+                    {audioEnabled ? (
+                      <Volume2 className="w-3.5 h-3.5 text-champagne" />
+                    ) : (
+                      <VolumeX className="w-3.5 h-3.5 text-[#888]" />
+                    )}
+                    <span className="hidden xs:inline">{audioEnabled ? "ACTIVE" : "MUTED"}</span>
+                  </button>
+
+                  {/* VIP Collaboration Gateway Trigger */}
+                  <button
+                    onClick={() => setIsCollaborationOpen(true)}
+                    className="bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[8px] tracking-[0.1em] font-bold px-2.5 py-2 rounded-lg shadow-xs cursor-pointer flex items-center gap-1 uppercase active:scale-95"
+                    id="open-collaboration-form-btn-mobile"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-champagne" />
+                    VIP REGISTER
+                  </button>
                 </div>
               </div>
 
-              {/* Dynamic Navigation Tabs */}
-              <div className="pointer-events-auto flex items-center overflow-x-auto scrollbar-none gap-1 bg-white/70 backdrop-blur-md px-2 py-1.5 rounded-xl border border-black/5 shadow-sm max-w-full">
-                {(["catwalk", "directory", "campaigns", "membership", "faq"] as const).map((tab) => {
+              {/* Center Navigation Tabs (scrollable on mobile, centered on desktop) */}
+              <div className="pointer-events-auto hidden lg:flex items-center overflow-x-auto scrollbar-none gap-1 bg-white/70 backdrop-blur-md px-1.5 py-1 rounded-xl border border-black/5 shadow-xs w-full lg:w-auto max-w-full justify-start lg:justify-center">
+                {(["catwalk", "directory", "campaigns", "membership", "faq", "admin"] as const).map((tab) => {
                   const isSelected = activeTab === tab;
                   const label = 
                     tab === "catwalk" ? "Catwalk 3D" :
                     tab === "directory" ? "Directory" :
                     tab === "campaigns" ? "Campaigns" :
-                    tab === "membership" ? "VIP Membership" : "FAQs";
+                    tab === "membership" ? "VIP Membership" :
+                    tab === "faq" ? "FAQs" : "Admin Workspace";
                   return (
                     <button
                       key={tab}
                       onClick={() => {
                         setActiveTab(tab);
                         setSelectedCreator(null);
+                        playCrystalChime();
                       }}
-                      className={`px-3.5 py-1.5 rounded-lg text-[9px] md:text-[10px] font-sans font-bold tracking-widest uppercase transition-all cursor-pointer whitespace-nowrap ${
+                      className={`px-3 py-1.5 rounded-lg text-[8px] md:text-[10px] font-sans font-bold tracking-widest uppercase transition-all cursor-pointer whitespace-nowrap ${
                         isSelected
-                          ? "bg-[#111] text-[#FAF9F6] shadow-sm"
+                          ? "bg-[#111] text-[#FAF9F6] shadow-xs"
                           : "hover:bg-black/5 text-[#666]"
                       }`}
                     >
@@ -338,8 +471,8 @@ export default function App() {
                 })}
               </div>
 
-              {/* Dynamic Sound & Gateway Options */}
-              <div className="pointer-events-auto flex items-center justify-center lg:justify-end gap-2.5 w-full lg:w-auto">
+              {/* Actions on Desktop Only */}
+              <div className="hidden lg:flex pointer-events-auto items-center justify-end gap-2.5 lg:w-auto">
                 {/* Custom Synthesizer Toggle */}
                 <button
                   onClick={toggleAudio}
@@ -382,7 +515,7 @@ export default function App() {
                   <span className="block text-[9px] font-sans tracking-[0.3em] text-[#8E8D8A] uppercase font-bold border-b border-black/5 pb-2">
                     RUNWAY STATIONS
                   </span>
-                  {gallerySections.map((sec, idx) => {
+                  {sections.map((sec, idx) => {
                     const isActive = idx === activeSectionIndex;
                     return (
                       <button
@@ -390,6 +523,7 @@ export default function App() {
                         onClick={() => {
                           setActiveSectionIndex(idx);
                           setSelectedCreator(null); // release closeup view
+                          playCrystalChime();
                         }}
                         className="group flex items-center gap-4 text-left cursor-pointer focus:outline-none"
                       >
@@ -479,7 +613,7 @@ export default function App() {
 
             {/* 4. BOTTOM INTERACTIVE NAV & PROGRESS BAR */}
             {activeTab === "catwalk" && (
-              <footer className="absolute bottom-0 inset-x-0 p-4 md:p-8 flex flex-col items-center gap-3 z-10 pointer-events-none">
+              <footer className="absolute bottom-20 lg:bottom-0 inset-x-0 p-4 md:p-8 flex flex-col items-center gap-3 z-10 pointer-events-none">
                 {/* Dynamic scroll indicator banner if no card selected */}
                 {!selectedCreator && (
                   <div className="bg-white/45 backdrop-blur-md border border-black/5 shadow-sm px-4 py-2 md:px-5 md:py-2.5 rounded-full flex items-center gap-2 text-[9px] md:text-[10px] font-sans text-[#666] tracking-widest uppercase animate-bounce pointer-events-auto">
@@ -502,7 +636,7 @@ export default function App() {
                     </button>
                     <div className="text-center sm:text-left min-w-[140px] md:min-w-[200px]">
                       <span className="block text-[8px] font-mono text-[#888] uppercase tracking-widest">
-                        ACTIVE SECTION — {activeSectionIndex + 1} / 3
+                        ACTIVE SECTION — {activeSectionIndex + 1} / {sections.length}
                       </span>
                       <span className="block font-serif-display text-xs md:text-sm font-bold text-[#111] truncate max-w-[180px] md:max-w-none">
                         {activeSection.title}
@@ -510,7 +644,7 @@ export default function App() {
                     </div>
                     <button
                       onClick={handleNextSection}
-                      disabled={activeSectionIndex === gallerySections.length - 1}
+                      disabled={activeSectionIndex === sections.length - 1}
                       className="w-10 h-10 rounded-full bg-white/60 hover:bg-white border border-black/5 flex items-center justify-center text-[#222] disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer flex-shrink-0"
                       id="next-section-btn"
                     >
@@ -528,7 +662,7 @@ export default function App() {
                       <div
                         className="absolute top-0 left-0 h-full bg-champagne transition-all duration-700 ease-out"
                         style={{
-                          width: `${((activeSectionIndex + 1) / gallerySections.length) * 100}%`,
+                          width: `${((activeSectionIndex + 1) / sections.length) * 100}%`,
                         }}
                       />
                     </div>
@@ -546,7 +680,7 @@ export default function App() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -30 }}
                   transition={{ duration: 0.5, ease: "easeOut" }}
-                  className="absolute inset-0 top-36 lg:top-28 bottom-0 overflow-y-auto px-4 md:px-8 pb-16 z-15 pointer-events-auto bg-[#FAF9F6] scrollbar-thin scrollbar-thumb-black/10"
+                  className="absolute inset-0 top-[110px] md:top-[125px] lg:top-28 bottom-0 overflow-y-auto px-4 md:px-8 pb-28 z-15 pointer-events-auto bg-[#FAF9F6] scrollbar-thin scrollbar-thumb-black/10"
                 >
                   {activeTab === "directory" && (
                     <DirectoryTab
@@ -561,6 +695,7 @@ export default function App() {
                   {activeTab === "campaigns" && <CampaignsTab />}
                   {activeTab === "membership" && <MembershipTab />}
                   {activeTab === "faq" && <FaqTab />}
+                  {activeTab === "admin" && <AdminTab />}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -583,6 +718,64 @@ export default function App() {
               onClose={() => setIsCollaborationOpen(false)}
               preselectedCreator={selectedCreator}
             />
+
+            {/* --- MAJESTIC FLOATING MOBILE BOTTOM NAVIGATION BAR --- */}
+            <div className="fixed bottom-4 inset-x-4 h-16 bg-[#111]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex items-center justify-around px-3 z-50 lg:hidden pointer-events-auto">
+              {[
+                { id: "catwalk", label: "Catwalk 3D", icon: Compass },
+                { id: "directory", label: "Directory", icon: Users },
+                { id: "campaigns", label: "Campaigns", icon: Briefcase },
+                { id: "membership", label: "VIP Club", icon: Sparkles },
+                { id: "admin", label: "Admin Hub", icon: Lock },
+              ].map((item) => {
+                const isSelected = activeTab === item.id || (item.id === "membership" && activeTab === "faq");
+                const Icon = item.icon;
+                
+                // Audio chime feedback wrapper
+                const playCrystalChime = () => {
+                  try {
+                    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = "sine";
+                    osc.frequency.setValueAtTime(880, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.01, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.35);
+                  } catch (e) {}
+                };
+
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveTab(item.id as any);
+                      setSelectedCreator(null);
+                      playCrystalChime();
+                    }}
+                    className="flex flex-col items-center justify-center flex-1 h-full relative cursor-pointer group"
+                  >
+                    <div className={`p-1 rounded-xl transition-all duration-300 ${isSelected ? "text-champagne scale-110" : "text-[#8e8d8a] hover:text-white"}`}>
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <span className={`text-[8px] font-sans font-bold tracking-widest uppercase transition-colors duration-300 ${isSelected ? "text-champagne font-extrabold" : "text-[#8e8d8a]"}`}>
+                      {item.label}
+                    </span>
+                    {isSelected && (
+                      <motion.div
+                        layoutId="activeMobileTabDot"
+                        className="absolute bottom-1 w-1 h-1 rounded-full bg-champagne"
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

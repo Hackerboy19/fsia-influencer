@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Calendar, Briefcase, Landmark, ShieldCheck, ArrowRight, CheckCircle2, Sparkles, Send, Users, TrendingUp } from "lucide-react";
 
@@ -28,6 +28,7 @@ export default function CampaignsTab() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState(false);
+  const [activeCampaigns, setActiveCampaigns] = useState<Campaign[]>([]);
 
   const campaigns: Campaign[] = [
     {
@@ -100,6 +101,24 @@ export default function CampaignsTab() {
     }
   ];
 
+  useEffect(() => {
+    fetch("/api/campaigns")
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error();
+      })
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setActiveCampaigns(data);
+        } else {
+          setActiveCampaigns(campaigns);
+        }
+      })
+      .catch(() => {
+        setActiveCampaigns(campaigns);
+      });
+  }, []);
+
   const handleApplyClick = (campaign: Campaign) => {
     setSelectedCampaign(campaign);
     setSuccessMessage(false);
@@ -150,7 +169,7 @@ export default function CampaignsTab() {
 
       {/* Campaigns list */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {campaigns.map((campaign) => {
+        {activeCampaigns.map((campaign) => {
           const isApplied = appliedCampaigns.includes(campaign.id);
           return (
             <motion.div

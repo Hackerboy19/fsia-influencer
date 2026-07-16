@@ -49,15 +49,51 @@ export default function VipCollaborationForm({
 
     setIsSubmitting(true);
 
-    // Simulate elite verification processing
-    setTimeout(() => {
-      setIsSubmitting(false);
-      const bookingId = "FSIA-VIP-" + Math.floor(100000 + Math.random() * 900000);
-      
-      const formattedBudget = currency === "INR" 
-        ? "₹" + (budgetInr / 100000).toFixed(1) + " Lakhs"
-        : budgetUsd.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+    const bookingId = "FSIA-VIP-" + Math.floor(100000 + Math.random() * 900000);
+    const formattedBudget = currency === "INR" 
+      ? "₹" + (budgetInr / 100000).toFixed(1) + " Lakhs"
+      : budgetUsd.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
+    const payload = {
+      bookingId,
+      brandName,
+      contactEmail,
+      contactPhone,
+      creatorName: selectedCreatorName,
+      budget: formattedBudget,
+      clientCity,
+      scope,
+      duration
+    };
+
+    fetch("/api/registrations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+    .then((res) => {
+      if (!res.ok) throw new Error("Server registration error");
+      return res.json();
+    })
+    .then((savedData) => {
+      setIsSubmitting(false);
+      setSubmittedCredential({
+        bookingId: savedData.bookingId || bookingId,
+        timestamp: new Date().toLocaleDateString("en-IN", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
+        brandName,
+        creatorName: selectedCreatorName,
+        budget: formattedBudget,
+        clientCity,
+        verificationHash: "0x" + Math.random().toString(16).substring(2, 10).toUpperCase() + "..." + Math.random().toString(16).substring(2, 6).toUpperCase(),
+      });
+    })
+    .catch((err) => {
+      console.warn("Falling back to client-side emulation:", err);
+      setIsSubmitting(false);
       setSubmittedCredential({
         bookingId,
         timestamp: new Date().toLocaleDateString("en-IN", {
@@ -71,7 +107,7 @@ export default function VipCollaborationForm({
         clientCity,
         verificationHash: "0x" + Math.random().toString(16).substring(2, 10).toUpperCase() + "..." + Math.random().toString(16).substring(2, 6).toUpperCase(),
       });
-    }, 1800);
+    });
   };
 
   const handleReset = () => {
