@@ -16,7 +16,8 @@ import {
   Users,
   Briefcase,
   HelpCircle,
-  Lock
+  Lock,
+  UserPlus
 } from "lucide-react";
 import { gallerySections, Creator } from "./data";
 import ThreeGallery from "./components/ThreeGallery";
@@ -25,6 +26,7 @@ import VipCollaborationForm from "./components/VipCollaborationForm";
 import DirectoryTab from "./components/DirectoryTab";
 import CampaignsTab from "./components/CampaignsTab";
 import MembershipTab from "./components/MembershipTab";
+import ModelRegistrationTab from "./components/ModelRegistrationTab";
 import FaqTab from "./components/FaqTab";
 import AdminTab from "./components/AdminTab";
 
@@ -34,7 +36,7 @@ export default function App() {
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"catwalk" | "directory" | "campaigns" | "membership" | "faq" | "admin">("catwalk");
+  const [activeTab, setActiveTab] = useState<"catwalk" | "directory" | "campaigns" | "membership" | "faq" | "admin" | "apply">("catwalk");
 
   // Dynamic full-stack database roster state
   const [sections, setSections] = useState<any[]>(gallerySections);
@@ -236,9 +238,10 @@ export default function App() {
 
   return (
     <div 
-      className="relative w-screen h-screen overflow-hidden bg-alabaster font-sans text-[#111] select-none"
+      className="relative w-screen h-screen overflow-hidden bg-alabaster font-sans text-[#111] select-none snap-y snap-mandatory"
       style={{
-        ["--color-champagne" as any]: settings.primaryColor || "#E1C699"
+        ["--color-champagne" as any]: settings.primaryColor || "#E1C699",
+        scrollSnapType: "y mandatory"
       }}
     >
       <AnimatePresence mode="wait">
@@ -391,66 +394,81 @@ export default function App() {
               </div>
             </div>
 
-            {/* --- HEADS UP DISPLAY HUD: OVERLAID React CONTROLS --- */}
-
             {/* 1. TOP EDITORIAL BANNER */}
-            <header className="absolute top-0 inset-x-0 p-3 md:p-5 lg:p-6 lg:p-8 flex flex-col lg:flex-row justify-between items-center gap-3 md:gap-4 z-20 pointer-events-none select-none border-b border-black/[0.03] bg-white/20 backdrop-blur-xs">
+            <header className="absolute top-0 inset-x-0 p-2 sm:p-4 md:p-5 lg:p-8 flex flex-col lg:flex-row justify-between items-center gap-2 sm:gap-3 md:gap-4 z-20 pointer-events-none select-none border-b border-black/[0.03] bg-white/20 backdrop-blur-xs">
               {/* Top Row on Mobile: Logo & Actions */}
-              <div className="flex items-center justify-between w-full lg:w-auto gap-4 pointer-events-auto">
+              <div className="flex items-center justify-between w-full lg:w-auto gap-2 sm:gap-4 pointer-events-auto">
                 {/* Logo */}
-                <div className="flex items-center gap-2.5 bg-white/70 backdrop-blur-md px-3 py-1.5 md:px-5 md:py-3 rounded-xl border border-black/5 shadow-sm">
+                <div 
+                  onDoubleClick={() => {
+                    setActiveTab("admin");
+                    setSelectedCreator(null);
+                    playCrystalChime();
+                  }}
+                  title="Double click for Administrative workspace"
+                  className="flex items-center gap-1.5 sm:gap-2.5 bg-white/70 backdrop-blur-md px-2.5 py-1.5 sm:px-5 sm:py-3 rounded-xl border border-black/5 shadow-sm cursor-pointer hover:border-black/10 transition-all select-none"
+                >
                   <div className="space-y-0.5">
-                    <h1 className="font-serif-display text-xs md:text-base lg:text-lg font-bold tracking-tight text-[#111] leading-none">
+                    <h1 className="font-serif-display text-[10px] sm:text-xs md:text-base lg:text-lg font-bold tracking-tight text-[#111] leading-none">
                       FSIA INFLUENCER
                     </h1>
-                    <p className="font-sans text-[7px] md:text-[9px] tracking-[0.2em] text-[#888] uppercase font-bold leading-none">
+                    <p className="font-sans text-[6px] sm:text-[7px] md:text-[9px] tracking-[0.2em] text-[#888] uppercase font-bold leading-none max-[350px]:hidden">
                       Forever Star India VIP Desk
                     </p>
                   </div>
                 </div>
 
                 {/* Buttons: Sound & VIP Register (shown next to logo on mobile/tablet, right-aligned on desktop) */}
-                <div className="flex items-center gap-2 lg:hidden">
+                <div className="flex items-center gap-1.5 sm:gap-2 lg:hidden">
                   {/* Custom Synthesizer Toggle */}
                   <button
                     onClick={toggleAudio}
-                    className={`px-2.5 py-2 rounded-lg backdrop-blur-md border border-black/5 flex items-center gap-1.5 text-[8px] font-sans font-bold tracking-wider uppercase transition-all shadow-xs cursor-pointer ${
-                      audioEnabled
-                        ? "bg-champagne/15 border border-champagne text-[#111]"
-                        : "bg-white/70 hover:bg-white text-[#666]"
-                    }`}
+                    className="px-2 py-1.5 sm:px-2.5 sm:py-2 rounded-lg backdrop-blur-md border border-black/5 flex items-center justify-center text-[#666] bg-white/70 hover:bg-white cursor-pointer"
                     id="toggle-synth-audio-btn-mobile"
+                    title="Ambient Sound"
                   >
                     {audioEnabled ? (
                       <Volume2 className="w-3.5 h-3.5 text-champagne" />
                     ) : (
                       <VolumeX className="w-3.5 h-3.5 text-[#888]" />
                     )}
-                    <span className="hidden xs:inline">{audioEnabled ? "ACTIVE" : "MUTED"}</span>
+                  </button>
+
+                  {/* Subtle Admin Entrance Mobile */}
+                  <button
+                    onClick={() => {
+                      setActiveTab("admin");
+                      setSelectedCreator(null);
+                      playCrystalChime();
+                    }}
+                    className="px-2 py-1.5 sm:px-2.5 sm:py-2 rounded-lg backdrop-blur-md border border-black/5 flex items-center justify-center text-[#8e8d8a] bg-white/70 hover:text-black hover:bg-white cursor-pointer"
+                    title="Administrative Workspace"
+                  >
+                    <Lock className="w-3.5 h-3.5" />
                   </button>
 
                   {/* VIP Collaboration Gateway Trigger */}
                   <button
                     onClick={() => setIsCollaborationOpen(true)}
-                    className="bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[8px] tracking-[0.1em] font-bold px-2.5 py-2 rounded-lg shadow-xs cursor-pointer flex items-center gap-1 uppercase active:scale-95"
+                    className="bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[8px] sm:text-[9px] tracking-[0.1em] font-bold px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg shadow-xs cursor-pointer flex items-center gap-1 uppercase active:scale-95"
                     id="open-collaboration-form-btn-mobile"
                   >
                     <FileText className="w-3.5 h-3.5 text-champagne" />
-                    VIP REGISTER
+                    <span className="hidden min-[400px]:inline">VIP REGISTER</span>
                   </button>
                 </div>
               </div>
 
               {/* Center Navigation Tabs (scrollable on mobile, centered on desktop) */}
-              <div className="pointer-events-auto hidden lg:flex items-center overflow-x-auto scrollbar-none gap-1 bg-white/70 backdrop-blur-md px-1.5 py-1 rounded-xl border border-black/5 shadow-xs w-full lg:w-auto max-w-full justify-start lg:justify-center">
-                {(["catwalk", "directory", "campaigns", "membership", "faq", "admin"] as const).map((tab) => {
+              <div className="pointer-events-auto flex items-center overflow-x-auto scrollbar-none gap-1 bg-white/70 backdrop-blur-md px-1.5 py-1 rounded-xl border border-black/5 shadow-xs w-full lg:w-auto max-w-full justify-start lg:justify-center">
+                {(["catwalk", "directory", "campaigns", "membership", "apply", "faq"] as const).map((tab) => {
                   const isSelected = activeTab === tab;
                   const label = 
                     tab === "catwalk" ? "Catwalk 3D" :
                     tab === "directory" ? "Directory" :
                     tab === "campaigns" ? "Campaigns" :
                     tab === "membership" ? "VIP Membership" :
-                    tab === "faq" ? "FAQs" : "Admin Workspace";
+                    tab === "apply" ? "Creator Join" : "FAQs";
                   return (
                     <button
                       key={tab}
@@ -496,6 +514,21 @@ export default function App() {
                   )}
                 </button>
 
+                {/* Subtle Admin Entrance Desktop */}
+                <button
+                  onClick={() => {
+                    setActiveTab("admin");
+                    setSelectedCreator(null);
+                    playCrystalChime();
+                  }}
+                  className={`hud-interactive px-3 py-2.5 md:px-4 md:py-3 rounded-xl backdrop-blur-md border border-black/5 flex items-center justify-center text-[#8e8d8a] hover:text-black hover:bg-white/60 transition-all shadow-sm cursor-pointer ${
+                    activeTab === "admin" ? "bg-white text-black border-black/25" : "bg-white/60"
+                  }`}
+                  title="Administrative Portal Entrance"
+                >
+                  <Lock className="w-4 h-4" />
+                </button>
+
                 {/* VIP Collaboration Gateway Trigger */}
                 <button
                   onClick={() => setIsCollaborationOpen(true)}
@@ -510,8 +543,8 @@ export default function App() {
 
             {/* 2. LEFT PANEL: EDITORIAL INDEX SELECTOR */}
             {activeTab === "catwalk" && (
-              <nav className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 hidden lg:flex flex-col gap-6 z-10 pointer-events-none">
-                <div className="hud-interactive bg-white/45 backdrop-blur-md p-6 rounded-2xl border border-black/5 shadow-sm flex flex-col gap-5 pointer-events-auto">
+              <nav className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 hidden lg:flex flex-col gap-6 z-10 pointer-events-none max-h-[80vh] overflow-y-auto scrollbar-none">
+                <div className="hud-interactive bg-white/45 backdrop-blur-md p-6 rounded-2xl border border-black/5 shadow-sm flex flex-col gap-5 pointer-events-auto pb-8">
                   <span className="block text-[9px] font-sans tracking-[0.3em] text-[#8E8D8A] uppercase font-bold border-b border-black/5 pb-2">
                     RUNWAY STATIONS
                   </span>
@@ -565,6 +598,40 @@ export default function App() {
                   })}
                 </div>
               </nav>
+            )}
+
+            {/* Horizontal Runway Category Selector for Mobile/Tablet */}
+            {activeTab === "catwalk" && (
+              <div className="absolute top-[112px] sm:top-[120px] left-0 right-0 lg:hidden z-20 pointer-events-none flex justify-start px-4">
+                <div className="pointer-events-auto bg-white/70 backdrop-blur-md pl-3 pr-8 py-1.5 rounded-xl border border-black/5 shadow-xs flex gap-2 overflow-x-auto scrollbar-none max-w-full items-center">
+                  {sections.map((sec, idx) => {
+                    const isActive = idx === activeSectionIndex;
+                    return (
+                      <button
+                        key={sec.id}
+                        onClick={() => {
+                          setActiveSectionIndex(idx);
+                          setSelectedCreator(null);
+                          playCrystalChime();
+                        }}
+                        className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[9px] font-sans font-bold tracking-wider uppercase transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                          isActive
+                            ? "bg-[#111] text-[#FAF9F6] shadow-2xs"
+                            : "bg-white/40 hover:bg-white/80 text-[#666]"
+                        }`}
+                      >
+                        <span 
+                          className="w-1.5 h-1.5 rounded-full flex-shrink-0" 
+                          style={{ backgroundColor: sec.primaryColor || "#E1C699" }} 
+                        />
+                        {sec.title}
+                      </button>
+                    );
+                  })}
+                  {/* Elegant safe-area horizontal scroll spacing for the Verified VIP Influencers category */}
+                  <div className="w-8 flex-shrink-0 h-1" aria-hidden="true" />
+                </div>
+              </div>
             )}
 
             {/* 3. RIGHT PANEL: VIP DIRECTORY STATUS TICKER */}
@@ -680,7 +747,7 @@ export default function App() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -30 }}
                   transition={{ duration: 0.5, ease: "easeOut" }}
-                  className="absolute inset-0 top-[110px] md:top-[125px] lg:top-28 bottom-0 overflow-y-auto px-4 md:px-8 pb-28 z-15 pointer-events-auto bg-[#FAF9F6] scrollbar-thin scrollbar-thumb-black/10"
+                  className="absolute inset-0 top-[115px] sm:top-[125px] lg:top-28 bottom-0 overflow-y-auto px-4 md:px-8 pb-36 sm:pb-28 z-15 pointer-events-auto bg-[#FAF9F6] scrollbar-thin scrollbar-thumb-black/10"
                 >
                   {activeTab === "directory" && (
                     <DirectoryTab
@@ -694,6 +761,7 @@ export default function App() {
                   )}
                   {activeTab === "campaigns" && <CampaignsTab />}
                   {activeTab === "membership" && <MembershipTab />}
+                  {activeTab === "apply" && <ModelRegistrationTab />}
                   {activeTab === "faq" && <FaqTab />}
                   {activeTab === "admin" && <AdminTab />}
                 </motion.div>
@@ -719,16 +787,36 @@ export default function App() {
               preselectedCreator={selectedCreator}
             />
 
+            {/* Back to Catwalk Floating Action Button (FAB) on Mobile when not on catwalk */}
+            <AnimatePresence>
+              {activeTab !== "catwalk" && (
+                <motion.button
+                  key="back-to-catwalk-fab"
+                  initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.8, y: 20 }}
+                  onClick={() => {
+                    setActiveTab("catwalk");
+                    setSelectedCreator(null);
+                  }}
+                  className="fixed bottom-24 right-6 bg-[#111] hover:bg-[#222] text-champagne border border-[#E1C699]/35 px-4 py-3 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.35)] z-50 flex items-center gap-2 font-sans text-[10px] font-bold tracking-widest uppercase lg:hidden pointer-events-auto active:scale-95"
+                >
+                  <Compass className="w-4 h-4 text-champagne animate-spin-slow" />
+                  Back to Catwalk
+                </motion.button>
+              )}
+            </AnimatePresence>
+
             {/* --- MAJESTIC FLOATING MOBILE BOTTOM NAVIGATION BAR --- */}
             <div className="fixed bottom-4 inset-x-4 h-16 bg-[#111]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex items-center justify-around px-3 z-50 lg:hidden pointer-events-auto">
               {[
                 { id: "catwalk", label: "Catwalk 3D", icon: Compass },
                 { id: "directory", label: "Directory", icon: Users },
                 { id: "campaigns", label: "Campaigns", icon: Briefcase },
+                { id: "apply", label: "Creator Join", icon: UserPlus },
                 { id: "membership", label: "VIP Club", icon: Sparkles },
-                { id: "admin", label: "Admin Hub", icon: Lock },
               ].map((item) => {
-                const isSelected = activeTab === item.id || (item.id === "membership" && activeTab === "faq");
+                const isSelected = activeTab === item.id;
                 const Icon = item.icon;
                 
                 // Audio chime feedback wrapper

@@ -93,6 +93,36 @@ export interface PromptLog {
   status: "success" | "error";
 }
 
+export interface InfluencerApplication {
+  id: string;
+  name: string;
+  category: string; // The category ID (e.g., 'miss-india')
+  role: string;
+  city: string;
+  image: string; // profile picture URL
+  bio: string;
+  reach: string; // reach (e.g. "500K")
+  engagement: string; // engagement rate (e.g. "4.5%")
+  portfolio: string[]; // list of photo URLs
+  quote: string;
+  email: string;
+  phone: string;
+  status: "pending" | "approved" | "declined";
+  timestamp: string;
+}
+
+export interface MembershipPlan {
+  id: string;
+  name: string;
+  badge: string;
+  price: string;
+  period: string;
+  accent: string;
+  icon: string;
+  perks: string[];
+  popular?: boolean;
+}
+
 export interface DatabaseSchema {
   creators: GallerySection[];
   campaigns: Campaign[];
@@ -101,6 +131,8 @@ export interface DatabaseSchema {
   admin_logs: AdminLog[];
   system_settings: SystemSettings;
   prompt_logs: PromptLog[];
+  influencer_applications: InfluencerApplication[];
+  membership_plans?: MembershipPlan[];
 }
 
 const DB_PATH = path.join(process.cwd(), "server", "db.json");
@@ -350,6 +382,75 @@ const INITIAL_USERS: AdminUser[] = [
   }
 ];
 
+const INITIAL_PLANS: MembershipPlan[] = [
+  {
+    id: "elite-star",
+    name: "Elite Star",
+    badge: "Standard Entry",
+    price: "₹0",
+    period: "Forever Free",
+    accent: "#8E8D8A",
+    icon: "Star",
+    perks: [
+      "Registry inclusion in the standard FSIA database",
+      "Basic creator profile page accessible to search queries",
+      "Apply to general public brand campaigns",
+      "Standard digital copy of your FSIA credentials"
+    ]
+  },
+  {
+    id: "silver-star",
+    name: "Silver Star",
+    badge: "Verified Status",
+    price: "₹4,999",
+    period: "per month (+18% GST)",
+    accent: "#C5C3C0",
+    icon: "Shield",
+    perks: [
+      "Verified Silver Star verification badge on your profile",
+      "Higher ranking in brand matching search inquiries",
+      "Up to 3 automated direct matchmaking recommendations per month",
+      "Invitations to state-level regional model meetups",
+      "Priority support from the FSIA helpdesk"
+    ]
+  },
+  {
+    id: "gold-star",
+    name: "Gold Star",
+    badge: "Professional Spotlight",
+    price: "₹9,999",
+    period: "per month (+18% GST)",
+    accent: "#E1C699",
+    icon: "Award",
+    popular: true,
+    perks: [
+      "Verified Gold Star profile badge and priority listing",
+      "1 Professional couture portfolio shoot per year at local hub",
+      "10 Guaranteed brand match pitches submitted by FSIA team",
+      "Spotlight feature in the weekly FSIA Brand Newsletter",
+      "Dedicated access to our partner digital agency network",
+      "15% Discount on runway pageant entry vouchers"
+    ]
+  },
+  {
+    id: "royal-star",
+    name: "Royal Star Club",
+    badge: "The Ultimate Royal Crest",
+    price: "₹24,999",
+    period: "per month (+18% GST)",
+    accent: "#111111",
+    icon: "Sparkles",
+    perks: [
+      "Bespoke Obsidian 'Royal Star Club' crest of excellence",
+      "Dedicated personal talent manager & collaboration counsel",
+      "1 Professional PR press release across Times of India / HT",
+      "VIP front-row seating passes to national pageants & runway shows",
+      "Direct legal escrow protection on all brand assignments",
+      "Unlimited direct pitch access to global luxury houses"
+    ]
+  }
+];
+
 const INITIAL_LOGS: AdminLog[] = [
   {
     id: "log-1",
@@ -390,7 +491,9 @@ export function getDb(): DatabaseSchema {
       admin_users: INITIAL_USERS,
       admin_logs: INITIAL_LOGS,
       system_settings: defaultSettings,
-      prompt_logs: []
+      prompt_logs: [],
+      influencer_applications: [],
+      membership_plans: INITIAL_PLANS
     };
     fs.writeFileSync(DB_PATH, JSON.stringify(defaultData, null, 2), "utf8");
     return defaultData;
@@ -405,6 +508,12 @@ export function getDb(): DatabaseSchema {
     if (!parsed.prompt_logs) {
       parsed.prompt_logs = [];
     }
+    if (!parsed.influencer_applications) {
+      parsed.influencer_applications = [];
+    }
+    if (!parsed.membership_plans) {
+      parsed.membership_plans = INITIAL_PLANS;
+    }
     if (!parsed.admin_users) {
       parsed.admin_users = INITIAL_USERS;
     }
@@ -414,8 +523,8 @@ export function getDb(): DatabaseSchema {
         username: "pm37855@gmail.com",
         passwordHash: crypto.createHash("sha256").update("Xbox@1122").digest("hex")
       });
-      fs.writeFileSync(DB_PATH, JSON.stringify(parsed, null, 2), "utf8");
     }
+    fs.writeFileSync(DB_PATH, JSON.stringify(parsed, null, 2), "utf8");
     return parsed;
   } catch (error) {
     console.error("Error reading JSON Database. Re-seeding defaults.", error);
@@ -426,7 +535,9 @@ export function getDb(): DatabaseSchema {
       admin_users: INITIAL_USERS,
       admin_logs: INITIAL_LOGS,
       system_settings: defaultSettings,
-      prompt_logs: []
+      prompt_logs: [],
+      influencer_applications: [],
+      membership_plans: INITIAL_PLANS
     };
     fs.writeFileSync(DB_PATH, JSON.stringify(defaultData, null, 2), "utf8");
     return defaultData;

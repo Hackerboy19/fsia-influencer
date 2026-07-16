@@ -3,8 +3,9 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   Lock, User, LogIn, LayoutDashboard, Sparkles, Users, Briefcase, FileText, 
   Trash2, Plus, Edit2, Check, RefreshCw, X, AlertTriangle, Shield, CheckCircle2,
-  TrendingUp, Phone, Mail, MapPin, Eye, FileSpreadsheet, Activity
+  TrendingUp, Phone, Mail, MapPin, Eye, FileSpreadsheet, Activity, UserPlus, Layout
 } from "lucide-react";
+import AdminContentManager from "./AdminContentManager";
 
 interface Creator {
   name: string;
@@ -60,6 +61,24 @@ interface Registration {
   verificationHash: string;
 }
 
+interface InfluencerApplication {
+  id: string;
+  name: string;
+  category: string;
+  role: string;
+  city: string;
+  image: string;
+  bio: string;
+  reach: string;
+  engagement: string;
+  portfolio: string[];
+  quote: string;
+  email: string;
+  phone: string;
+  status: "pending" | "approved" | "declined";
+  timestamp: string;
+}
+
 interface AdminStats {
   creatorsCount: number;
   categoriesCount: number;
@@ -85,6 +104,7 @@ export default function AdminTab() {
   const [sections, setSections] = useState<GallerySection[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [influencerApplications, setInfluencerApplications] = useState<InfluencerApplication[]>([]);
 
   // Enterprise Dynamic Settings Configuration State
   const [settings, setSettings] = useState({
@@ -142,6 +162,76 @@ export default function AdminTab() {
 
   const [crudError, setCrudError] = useState("");
   const [crudSuccess, setCrudSuccess] = useState("");
+
+  const [newCategoryTitle, setNewCategoryTitle] = useState("");
+  const [newCategorySubtitle, setNewCategorySubtitle] = useState("");
+  const [newCategoryColor, setNewCategoryColor] = useState("#E1C699");
+  const [categorySuccess, setCategorySuccess] = useState("");
+  const [categoryError, setCategoryError] = useState("");
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+
+  const handleAddCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCategoryTitle.trim()) return;
+    setIsCreatingCategory(true);
+    setCategorySuccess("");
+    setCategoryError("");
+
+    try {
+      const res = await fetch("/api/sections", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: newCategoryTitle,
+          subtitle: newCategorySubtitle,
+          primaryColor: newCategoryColor
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setCategorySuccess("Custom catwalk category successfully established!");
+        setNewCategoryTitle("");
+        setNewCategorySubtitle("");
+        setNewCategoryColor("#E1C699");
+        fetchAdminData(token);
+      } else {
+        setCategoryError(data.error || "Failed to create category.");
+      }
+    } catch (err) {
+      setCategoryError("Failed to reach administrative gateway.");
+    } finally {
+      setIsCreatingCategory(false);
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    if (!window.confirm("Are you absolutely sure you want to delete this category? Deleting it will also archive all its associated 3D models.")) {
+      return;
+    }
+    setCategorySuccess("");
+    setCategoryError("");
+
+    try {
+      const res = await fetch(`/api/sections/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setCategorySuccess("Category successfully deleted from 3D catwalk.");
+        fetchAdminData(token);
+      } else {
+        setCategoryError(data.error || "Failed to delete category.");
+      }
+    } catch (err) {
+      setCategoryError("Failed to reach administrative gateway.");
+    }
+  };
 
   // Check login on load
   useEffect(() => {
@@ -221,6 +311,13 @@ export default function AdminTab() {
         setRegistrations(regsData);
       }
 
+      // 4A. Fetch influencer applications
+      const infAppsRes = await fetch("/api/influencer-applications", { headers });
+      if (infAppsRes.ok) {
+        const infAppsData = await infAppsRes.json();
+        setInfluencerApplications(infAppsData);
+      }
+
       // 5. Fetch system settings
       const settingsRes = await fetch("/api/settings");
       if (settingsRes.ok) {
@@ -236,6 +333,44 @@ export default function AdminTab() {
       }
     } catch (err) {
       console.error("Error loading administration data:", err);
+    }
+  };
+
+  const approveInfluencerApplication = async (id: string) => {
+    try {
+      const res = await fetch(`/api/influencer-applications/${id}/approve`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        fetchAdminData(token);
+      } else {
+        const err = await res.json();
+        alert(err.error || "Approval failed.");
+      }
+    } catch (e) {
+      alert("Failed to communicate with administration service.");
+    }
+  };
+
+  const declineInfluencerApplication = async (id: string) => {
+    try {
+      const res = await fetch(`/api/influencer-applications/${id}/decline`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        fetchAdminData(token);
+      } else {
+        const err = await res.json();
+        alert(err.error || "Decline failed.");
+      }
+    } catch (e) {
+      alert("Failed to communicate with administration service.");
     }
   };
 
@@ -649,15 +784,17 @@ export default function AdminTab() {
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex overflow-x-auto scrollbar-none gap-2 border-b border-black/5 pb-1">
+          <div className="flex flex-wrap md:flex-nowrap items-center gap-1.5 md:gap-2 border-b border-[#E1C699]/30 pb-1 w-full max-w-full overflow-x-auto scrollbar-thin">
             {[
               { id: "dashboard", label: "Overview", icon: LayoutDashboard },
+              { id: "content_manager", label: "Content Studio", icon: Layout },
               { id: "content", label: "App Content & Style", icon: FileSpreadsheet },
               { id: "ai_config", label: "AI Config", icon: Sparkles },
               { id: "prompt_logs", label: "Prompt Logs", icon: Activity },
               { id: "creators", label: "Runway Models", icon: Users },
               { id: "campaigns", label: "Brand Contracts", icon: Briefcase },
-              { id: "registrations", label: "VIP Applications", icon: FileText }
+              { id: "registrations", label: "VIP Applications", icon: FileText },
+              { id: "influencer_applications", label: "Model Applicants", icon: UserPlus }
             ].map((tab) => {
               const Icon = tab.icon;
               const active = adminActiveSubTab === tab.id;
@@ -665,13 +802,13 @@ export default function AdminTab() {
                 <button
                   key={tab.id}
                   onClick={() => setAdminActiveSubTab(tab.id)}
-                  className={`px-4 py-2.5 rounded-t-xl text-[10px] md:text-xs font-sans font-bold tracking-widest uppercase transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                  className={`px-2.5 md:px-4 py-2 md:py-2.5 rounded-t-xl text-[9px] md:text-xs font-sans font-bold tracking-widest uppercase transition-all flex items-center gap-1.5 md:gap-2 whitespace-nowrap cursor-pointer ${
                     active 
                       ? "bg-white border-t-2 border-champagne text-[#111] shadow-xs" 
                       : "text-[#666] hover:text-black hover:bg-black/[0.02]"
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${active ? "text-champagne" : "text-[#888]"}`} />
+                  <Icon className={`w-3.5 h-3.5 md:w-4 md:h-4 ${active ? "text-champagne" : "text-[#888]"}`} />
                   {tab.label}
                 </button>
               );
@@ -758,6 +895,16 @@ export default function AdminTab() {
                     ))}
                   </div>
                 </div>
+              </motion.div>
+            )}
+
+            {/* NEW ENTERPRISE CONTENT STUDIO PANEL */}
+            {adminActiveSubTab === "content_manager" && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <AdminContentManager token={token} onRefresh={() => fetchAdminData(token)} />
               </motion.div>
             )}
 
@@ -899,6 +1046,109 @@ export default function AdminTab() {
                     </button>
                   </div>
                 </form>
+
+                {/* DYNAMIC CATWALK CATEGORY MANAGER CARD */}
+                <div className="border-t border-black/5 pt-6 mt-6 space-y-6">
+                  <div className="border-b border-black/5 pb-3">
+                    <h3 className="font-serif-display text-lg font-bold text-[#111]">Manage 3D Catwalk Categories</h3>
+                    <p className="text-xs text-[#666] font-serif-text">Create, customize, and remove high-fashion catwalk categories. These sections will automatically render dynamically in real-time on the 3D Catwalk tab.</p>
+                  </div>
+
+                  {categorySuccess && <div className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs rounded-lg font-semibold">{categorySuccess}</div>}
+                  {categoryError && <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-xs rounded-lg font-semibold">{categoryError}</div>}
+
+                  {/* Add Category Form */}
+                  <form onSubmit={handleAddCategory} className="bg-white/50 p-5 rounded-xl border border-black/5 space-y-4">
+                    <h4 className="text-xs font-sans font-bold text-[#111] uppercase tracking-wider">Create Custom Category</h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-sans font-bold text-[#666] uppercase">Category Title</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Forever Teen India 2026"
+                          value={newCategoryTitle}
+                          onChange={(e) => setNewCategoryTitle(e.target.value)}
+                          className="w-full px-3 py-2 bg-white border border-black/10 rounded-lg text-xs"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-sans font-bold text-[#666] uppercase">Category Subtitle</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Celebrating Youthful Glamour and Poise"
+                          value={newCategorySubtitle}
+                          onChange={(e) => setNewCategorySubtitle(e.target.value)}
+                          className="w-full px-3 py-2 bg-white border border-black/10 rounded-lg text-xs"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-end sm:items-center justify-between gap-4 pt-2">
+                      <div className="space-y-1 w-full sm:w-auto">
+                        <label className="text-[9px] font-sans font-bold text-[#666] uppercase block">Primary Accent Theme Color</label>
+                        <div className="flex gap-2 items-center">
+                          <input
+                            type="color"
+                            value={newCategoryColor}
+                            onChange={(e) => setNewCategoryColor(e.target.value)}
+                            className="w-10 h-8 p-0 border border-black/10 rounded-md cursor-pointer bg-transparent"
+                          />
+                          <input
+                            type="text"
+                            value={newCategoryColor}
+                            onChange={(e) => setNewCategoryColor(e.target.value)}
+                            className="w-24 px-2 py-1 bg-white border border-black/10 rounded-md text-xs font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isCreatingCategory || !newCategoryTitle}
+                        className="bg-[#111] hover:bg-[#222] text-white font-sans text-xs tracking-widest font-bold px-5 py-2 rounded-lg uppercase flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        <Plus className="w-4 h-4 text-champagne" />
+                        ESTABLISH CATEGORY
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* Categories List */}
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-sans font-bold text-[#111] uppercase tracking-wider">Active Runway Categories ({sections.length})</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {sections.map((sec) => (
+                        <div key={sec.id} className="bg-white border border-black/5 p-4 rounded-xl flex items-center justify-between gap-4 shadow-2xs hover:border-[#111]/15 transition-all">
+                          <div className="space-y-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-serif-display text-sm font-bold text-[#111] truncate">{sec.title}</span>
+                              <span 
+                                className="w-2.5 h-2.5 rounded-full border border-black/5 shadow-2xs"
+                                style={{ backgroundColor: sec.primaryColor }}
+                                title={`Theme Color: ${sec.primaryColor}`}
+                              />
+                            </div>
+                            <p className="text-[10px] text-[#888] truncate">{sec.subtitle || "No Subtitle"}</p>
+                            <div className="flex items-center gap-2 pt-1 font-mono text-[9px] text-[#666]">
+                              <span className="bg-[#FAF9F6] px-1.5 py-0.5 rounded border border-black/5 uppercase">ID: {sec.id}</span>
+                              <span className="bg-[#FAF9F6] px-1.5 py-0.5 rounded border border-black/5">{sec.creators?.length || 0} Models</span>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => handleDeleteCategory(sec.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-red-100 flex-shrink-0"
+                            title="Delete Category"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </motion.div>
             )}
 
@@ -1290,6 +1540,167 @@ export default function AdminTab() {
                     {registrations.length === 0 && (
                       <div className="p-12 text-center text-xs text-[#888] font-serif-text italic">
                         No client escrow collaboration proposals received yet.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* E. INFLUENCER / MODEL APPLICATIONS PANEL */}
+            {adminActiveSubTab === "influencer_applications" && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="space-y-6"
+              >
+                {/* Metrics bar */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-white/60 p-4 rounded-xl border border-black/5 shadow-xs">
+                    <span className="text-[9px] text-[#888] uppercase tracking-wider font-sans font-bold block">Total Applications</span>
+                    <strong className="text-xl font-bold text-[#111]">{influencerApplications.length}</strong>
+                  </div>
+                  <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100/50 shadow-xs">
+                    <span className="text-[9px] text-amber-700 uppercase tracking-wider font-sans font-bold block">Pending Audit</span>
+                    <strong className="text-xl font-bold text-amber-700">
+                      {influencerApplications.filter(a => a.status === "pending").length}
+                    </strong>
+                  </div>
+                  <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100/50 shadow-xs">
+                    <span className="text-[9px] text-emerald-700 uppercase tracking-wider font-sans font-bold block">Approved & Rostered</span>
+                    <strong className="text-xl font-bold text-emerald-700">
+                      {influencerApplications.filter(a => a.status === "approved").length}
+                    </strong>
+                  </div>
+                  <div className="bg-red-50/50 p-4 rounded-xl border border-red-100/50 shadow-xs">
+                    <span className="text-[9px] text-red-700 uppercase tracking-wider font-sans font-bold block">Declined</span>
+                    <strong className="text-xl font-bold text-red-700">
+                      {influencerApplications.filter(a => a.status === "declined").length}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="bg-white/60 rounded-2xl border border-black/5 overflow-hidden">
+                  <div className="px-5 py-4 bg-[#F4F3F0] border-b border-black/5 flex items-center justify-between flex-wrap gap-3">
+                    <div>
+                      <h4 className="font-serif-display text-sm font-bold text-[#111]">Runway Model Applicants</h4>
+                      <p className="text-[9px] text-[#888] uppercase tracking-wider font-mono">Approve submitted registrations to directly deploy them into the 3D catwalk and directory roster</p>
+                    </div>
+                  </div>
+
+                  <div className="divide-y divide-black/5">
+                    {influencerApplications.map((app) => (
+                      <div key={app.id} className="p-5 space-y-4 hover:bg-white/20 transition-all text-left">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-xl overflow-hidden border border-black/5 shrink-0 bg-gray-100">
+                              <img src={app.image} alt={app.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                            </div>
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h5 className="font-serif-display text-base font-bold text-black">{app.name}</h5>
+                                <span className={`text-[8px] font-sans font-bold px-2 py-0.5 rounded border uppercase ${
+                                  app.status === "approved" 
+                                    ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
+                                    : app.status === "declined"
+                                      ? "bg-red-50 text-red-600 border-red-100"
+                                      : "bg-amber-50 text-amber-600 border-amber-100"
+                                }`}>
+                                  {app.status === "approved" ? "APPROVED & ROSTERED" : app.status === "declined" ? "DECLINED" : "PENDING AUDIT"}
+                                </span>
+                              </div>
+                              <p className="text-xs text-[#666] font-sans">
+                                {app.role} • <span className="font-semibold text-champagne">{app.category}</span> • <span className="italic">{app.city}</span>
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-4">
+                            <div className="text-left md:text-right">
+                              <span className="text-[8px] font-sans font-bold text-[#888] uppercase block">AUDITED METRICS</span>
+                              <div className="text-xs font-mono font-bold text-black">
+                                {app.reach} Followers / {app.engagement} ER
+                              </div>
+                            </div>
+
+                            {app.status === "pending" && (
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  onClick={() => approveInfluencerApplication(app.id)}
+                                  className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-sans text-[10px] font-bold uppercase rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+                                  title="Approve and publish to 3D Runway"
+                                >
+                                  <Check className="w-3.5 h-3.5" /> APPROVE
+                                </button>
+                                <button
+                                  onClick={() => declineInfluencerApplication(app.id)}
+                                  className="px-3 py-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 font-sans text-[10px] font-bold uppercase rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+                                  title="Decline request"
+                                >
+                                  <X className="w-3.5 h-3.5" /> DECLINE
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Additional applicant metadata & pitch */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#FAF9F6] p-4 rounded-xl border border-black/[0.02]">
+                          <div className="space-y-2">
+                            <div>
+                              <span className="text-[8px] font-sans font-bold tracking-wider text-[#888] uppercase block">BIOGRAPHY & PITCH</span>
+                              <p className="text-xs text-[#555] font-serif-text leading-relaxed mt-0.5">{app.bio}</p>
+                            </div>
+                            {app.quote && (
+                              <div className="border-l-2 border-champagne pl-2.5 py-0.5 italic text-xs text-[#666] font-serif-text">
+                                "{app.quote}"
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="space-y-3 font-serif-text text-xs">
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <span className="text-[8px] font-sans font-bold tracking-wider text-[#888] uppercase block">EMAIL CONTACT</span>
+                                <a href={`mailto:${app.email}`} className="text-black hover:underline flex items-center gap-1 font-sans font-semibold mt-0.5">
+                                  <Mail className="w-3.5 h-3.5 text-[#888]" /> {app.email}
+                                </a>
+                              </div>
+                              <div>
+                                <span className="text-[8px] font-sans font-bold tracking-wider text-[#888] uppercase block">PHONE CONTACT</span>
+                                <a href={`tel:${app.phone}`} className="text-black hover:underline flex items-center gap-1 font-sans font-semibold mt-0.5">
+                                  <Phone className="w-3.5 h-3.5 text-[#888]" /> {app.phone}
+                                </a>
+                              </div>
+                            </div>
+
+                            {app.portfolio && app.portfolio.length > 0 && (
+                              <div>
+                                <span className="text-[8px] font-sans font-bold tracking-wider text-[#888] uppercase block mb-1">SUBMITTED PORTFOLIO</span>
+                                <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                                  {app.portfolio.map((img, i) => (
+                                    <a key={i} href={img} target="_blank" rel="noopener noreferrer" className="relative w-12 h-16 rounded overflow-hidden border border-black/5 bg-gray-50 flex-shrink-0 group">
+                                      <img src={img} alt={`Portfolio ${i+1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform" referrerPolicy="no-referrer" />
+                                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <Eye className="w-3.5 h-3.5 text-white" />
+                                      </div>
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="text-[9px] font-mono text-[#888] text-right">
+                          RECEIVED VIA PUBLIC PORTAL: {app.timestamp}
+                        </div>
+                      </div>
+                    ))}
+
+                    {influencerApplications.length === 0 && (
+                      <div className="p-12 text-center text-xs text-[#888] font-serif-text italic">
+                        No public model registration requests submitted yet.
                       </div>
                     )}
                   </div>

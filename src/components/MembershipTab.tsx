@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Shield, Sparkles, Star, Award, CheckCircle2, DollarSign, ArrowRight, HelpCircle } from "lucide-react";
 
 interface Plan {
+  id?: string;
   name: string;
   badge: string;
   price: string;
@@ -13,7 +14,85 @@ interface Plan {
   popular?: boolean;
 }
 
+const ICON_MAP: Record<string, any> = {
+  Star,
+  Shield,
+  Award,
+  Sparkles
+};
+
+const FALLBACK_PLANS: Plan[] = [
+  {
+    id: "elite-star",
+    name: "Elite Star",
+    badge: "Standard Entry",
+    price: "₹0",
+    period: "Forever Free",
+    accent: "#8E8D8A",
+    icon: Star,
+    perks: [
+      "Registry inclusion in the standard FSIA database",
+      "Basic creator profile page accessible to search queries",
+      "Apply to general public brand campaigns",
+      "Standard digital copy of your FSIA credentials"
+    ]
+  },
+  {
+    id: "silver-star",
+    name: "Silver Star",
+    badge: "Verified Status",
+    price: "₹4,999",
+    period: "per month (+18% GST)",
+    accent: "#C5C3C0", // Brushed Platinum
+    icon: Shield,
+    popular: false,
+    perks: [
+      "Verified Silver Star verification badge on your profile",
+      "Higher ranking in brand matching search inquiries",
+      "Up to 3 automated direct matchmaking recommendations per month",
+      "Invitations to state-level regional model meetups",
+      "Priority support from the FSIA helpdesk"
+    ]
+  },
+  {
+    id: "gold-star",
+    name: "Gold Star",
+    badge: "Professional Spotlight",
+    price: "₹9,999",
+    period: "per month (+18% GST)",
+    accent: "#E1C699", // Champagne Gold
+    icon: Award,
+    popular: true,
+    perks: [
+      "Verified Gold Star profile badge and priority listing",
+      "1 Professional couture portfolio shoot per year at local hub",
+      "10 Guaranteed brand match pitches submitted by FSIA team",
+      "Spotlight feature in the weekly FSIA Brand Newsletter",
+      "Dedicated access to our partner digital agency network",
+      "15% Discount on runway pageant entry vouchers"
+    ]
+  },
+  {
+    id: "royal-star",
+    name: "Royal Star Club",
+    badge: "The Ultimate Royal Crest",
+    price: "₹24,999",
+    period: "per month (+18% GST)",
+    accent: "#111111", // Deep obsidian
+    icon: Sparkles,
+    perks: [
+      "Bespoke Obsidian 'Royal Star Club' crest of excellence",
+      "Dedicated personal talent manager & collaboration counsel",
+      "1 Professional PR press release across Times of India / HT",
+      "VIP front-row seating passes to national pageants & runway shows",
+      "Direct legal escrow protection on all brand assignments",
+      "Unlimited direct pitch access to global luxury houses"
+    ]
+  }
+];
+
 export default function MembershipTab() {
+  const [plans, setPlans] = useState<Plan[]>(FALLBACK_PLANS);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState<"form" | "success">("form");
@@ -25,71 +104,26 @@ export default function MembershipTab() {
     gstin: ""
   });
 
-  const plans: Plan[] = [
-    {
-      name: "Elite Star",
-      badge: "Standard Entry",
-      price: "₹0",
-      period: "Forever Free",
-      accent: "#8E8D8A",
-      icon: Star,
-      perks: [
-        "Registry inclusion in the standard FSIA database",
-        "Basic creator profile page accessible to search queries",
-        "Apply to general public brand campaigns",
-        "Standard digital copy of your FSIA credentials"
-      ]
-    },
-    {
-      name: "Silver Star",
-      badge: "Verified Status",
-      price: "₹4,999",
-      period: "per month (+18% GST)",
-      accent: "#C5C3C0", // Brushed Platinum
-      icon: Shield,
-      popular: false,
-      perks: [
-        "Verified Silver Star verification badge on your profile",
-        "Higher ranking in brand matching search inquiries",
-        "Up to 3 automated direct matchmaking recommendations per month",
-        "Invitations to state-level regional model meetups",
-        "Priority support from the FSIA helpdesk"
-      ]
-    },
-    {
-      name: "Gold Star",
-      badge: "Professional Spotlight",
-      price: "₹9,999",
-      period: "per month (+18% GST)",
-      accent: "#E1C699", // Champagne Gold
-      icon: Award,
-      popular: true,
-      perks: [
-        "Verified Gold Star profile badge and priority listing",
-        "1 Professional couture portfolio shoot per year at local hub",
-        "10 Guaranteed brand match pitches submitted by FSIA team",
-        "Spotlight feature in the weekly FSIA Brand Newsletter",
-        "Dedicated access to our partner digital agency network",
-        "15% Discount on runway pageant entry vouchers"
-      ]
-    },
-    {
-      name: "Royal Star Club",
-      badge: "The Ultimate Royal Crest",
-      price: "₹24,999",
-      period: "per month (+18% GST)",
-      accent: "#111111", // Deep obsidian
-      icon: Sparkles,
-      perks: [
-        "Bespoke Obsidian 'Royal Star Club' crest of excellence",
-        "Dedicated personal talent manager & collaboration counsel",
-        "1 Professional PR press release across Times of India / HT",
-        "VIP front-row seating passes to national pageants & runway shows",
-        "Direct legal escrow protection on all brand assignments",
-        "Unlimited direct pitch access to global luxury houses"
-      ]
+  useEffect(() => {
+    async function fetchPlans() {
+      try {
+        const res = await fetch("/api/membership-plans");
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.length > 0) {
+            const mapped = data.map((p: any) => ({
+              ...p,
+              icon: ICON_MAP[p.icon] || Star
+            }));
+            setPlans(mapped);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch membership plans, falling back:", err);
+      }
     }
-  ];
+    fetchPlans();
+  }, []);
 
   const handleCheckoutSubmit = (e: React.FormEvent) => {
     e.preventDefault();

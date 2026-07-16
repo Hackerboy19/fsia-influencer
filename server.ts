@@ -178,6 +178,175 @@ app.delete("/api/creators/:sectionId/:name", authenticateAdmin, (req, res) => {
 });
 
 // ----------------------------------------------------
+// 2B. SECTIONS / CATEGORIES CRUD ENGINE
+// ----------------------------------------------------
+app.post("/api/sections", authenticateAdmin, (req, res) => {
+  try {
+    const { title, subtitle, primaryColor } = req.body;
+    if (!title) {
+      return res.status(400).json({ error: "Category title is required." });
+    }
+    const db = getDb();
+    const id = title.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9\-]/g, "") || "cat-" + Date.now();
+    
+    // Check if category already exists
+    if (db.creators.some((s) => s.id === id)) {
+      return res.status(400).json({ error: "A category with this title already exists." });
+    }
+
+    // Determine zOffset
+    const minOffset = db.creators.reduce((min, c) => Math.min(min, c.zOffset), 0);
+    const zOffset = minOffset - 8;
+
+    const newSection: GallerySection = {
+      id,
+      title,
+      subtitle: subtitle || "Custom Runway Station",
+      primaryColor: primaryColor || "#E1C699",
+      creators: [],
+      zOffset
+    };
+
+    db.creators.push(newSection);
+    saveDb(db);
+    logAction(`Created custom catwalk category: ${title}`);
+    res.status(201).json({ success: true, section: newSection, creators: db.creators });
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to add custom category: " + error.message });
+  }
+});
+
+app.delete("/api/sections/:id", authenticateAdmin, (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = getDb();
+
+    const idx = db.creators.findIndex((s) => s.id === id);
+    if (idx === -1) {
+      return res.status(404).json({ error: "Category not found." });
+    }
+
+    const deletedTitle = db.creators[idx].title;
+    db.creators.splice(idx, 1);
+    
+    // Re-adjust zOffsets
+    db.creators.forEach((sec, index) => {
+      sec.zOffset = index * -8;
+    });
+
+    saveDb(db);
+    logAction(`Deleted catwalk category: ${deletedTitle}`);
+    res.json({ success: true, message: "Category successfully deleted.", creators: db.creators });
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to delete category: " + error.message });
+  }
+});
+
+app.put("/api/sections/:id", authenticateAdmin, (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, subtitle, primaryColor } = req.body;
+    if (!title) {
+      return res.status(400).json({ error: "Category title is required." });
+    }
+    const db = getDb();
+    const idx = db.creators.findIndex((s) => s.id === id);
+    if (idx === -1) {
+      return res.status(404).json({ error: "Category not found." });
+    }
+    db.creators[idx] = {
+      ...db.creators[idx],
+      title,
+      subtitle: subtitle || "Custom Runway Station",
+      primaryColor: primaryColor || "#E1C699"
+    };
+    saveDb(db);
+    logAction(`Updated catwalk category: ${title}`);
+    res.json({ success: true, section: db.creators[idx], creators: db.creators });
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to update category: " + error.message });
+  }
+});
+
+// ----------------------------------------------------
+// 2C. MEMBERSHIP PLANS / PERKS CRUD ENGINE
+// ----------------------------------------------------
+app.get("/api/membership-plans", (req, res) => {
+  try {
+    const db = getDb();
+    res.json(db.membership_plans || []);
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to fetch membership plans: " + error.message });
+  }
+});
+
+app.post("/api/membership-plans", authenticateAdmin, (req, res) => {
+  try {
+    const plan = req.body;
+    if (!plan || !plan.name || !plan.price) {
+      return res.status(400).json({ error: "Invalid membership plan data." });
+    }
+    const db = getDb();
+    if (!db.membership_plans) {
+      db.membership_plans = [];
+    }
+    const id = plan.id || plan.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9\-]/g, "") || "plan-" + Date.now();
+    const newPlan = {
+      ...plan,
+      id,
+      perks: plan.perks || []
+    };
+    db.membership_plans.push(newPlan);
+    saveDb(db);
+    logAction(`Created Membership Plan: ${newPlan.name}`);
+    res.status(201).json({ success: true, plan: newPlan });
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to add membership plan: " + error.message });
+  }
+});
+
+app.put("/api/membership-plans/:id", authenticateAdmin, (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedData = req.body;
+    const db = getDb();
+    if (!db.membership_plans) {
+      return res.status(404).json({ error: "No membership plans found." });
+    }
+    const idx = db.membership_plans.findIndex((p) => p.id === id);
+    if (idx === -1) {
+      return res.status(404).json({ error: "Membership plan not found." });
+    }
+    db.membership_plans[idx] = { ...db.membership_plans[idx], ...updatedData };
+    saveDb(db);
+    logAction(`Modified Membership Plan: ${db.membership_plans[idx].name}`);
+    res.json({ success: true, plan: db.membership_plans[idx] });
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to modify membership plan: " + error.message });
+  }
+});
+
+app.delete("/api/membership-plans/:id", authenticateAdmin, (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = getDb();
+    if (!db.membership_plans) {
+      return res.status(404).json({ error: "No membership plans found." });
+    }
+    const initialLength = db.membership_plans.length;
+    db.membership_plans = db.membership_plans.filter((p) => p.id !== id);
+    if (db.membership_plans.length === initialLength) {
+      return res.status(404).json({ error: "Membership plan not found." });
+    }
+    saveDb(db);
+    logAction(`Deleted Membership Plan: ${id}`);
+    res.json({ success: true, message: "Membership plan successfully deleted." });
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to delete membership plan: " + error.message });
+  }
+});
+
+// ----------------------------------------------------
 // 3. CAMPAIGNS CRUD ENGINE
 // ----------------------------------------------------
 app.get("/api/campaigns", (req, res) => {
@@ -303,6 +472,144 @@ app.post("/api/registrations", (req, res) => {
     res.status(201).json({ success: true, registration: newRegistration });
   } catch (error: any) {
     res.status(500).json({ error: "Failed to secure VIP registration escrow: " + error.message });
+  }
+});
+
+// ----------------------------------------------------
+// 4A. INFLUENCER/MODEL REGISTRATION APPLICATIONS
+// ----------------------------------------------------
+app.get("/api/influencer-applications", authenticateAdmin, (req, res) => {
+  try {
+    const db = getDb();
+    res.json(db.influencer_applications || []);
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to load influencer applications: " + error.message });
+  }
+});
+
+app.post("/api/influencer-applications", (req, res) => {
+  try {
+    const { name, category, role, city, image, bio, reach, engagement, portfolio, quote, email, phone } = req.body;
+    if (!name || !email || !phone || !category) {
+      return res.status(400).json({ error: "Full Name, Email, Phone Contact, and Runway Category are required." });
+    }
+
+    const db = getDb();
+    const portfolioArray = Array.isArray(portfolio) 
+      ? portfolio 
+      : typeof portfolio === "string" 
+        ? portfolio.split(",").map(p => p.trim()).filter(Boolean)
+        : [];
+
+    const newApplication = {
+      id: "inf-app-" + Date.now(),
+      name,
+      category,
+      role: role || "Featured Star Model",
+      city: city || "Mumbai",
+      image: image || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format",
+      bio: bio || "Enthusiastic fashion icon looking to make an impact on the high-fashion runway.",
+      reach: reach || "100K",
+      engagement: engagement || "5.0%",
+      portfolio: portfolioArray,
+      quote: quote || "Elegance is standard.",
+      email,
+      phone,
+      status: "pending" as const,
+      timestamp: new Date().toLocaleDateString("en-IN", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    };
+
+    if (!db.influencer_applications) {
+      db.influencer_applications = [];
+    }
+    db.influencer_applications.unshift(newApplication);
+    saveDb(db);
+    logAction(`Received new Influencer Registration request from: ${name} (Runway: ${category})`, req.ip);
+
+    res.status(201).json({ success: true, application: newApplication });
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to submit influencer application: " + error.message });
+  }
+});
+
+app.post("/api/influencer-applications/:id/approve", authenticateAdmin, (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = getDb();
+    
+    if (!db.influencer_applications) {
+      db.influencer_applications = [];
+    }
+
+    const appIndex = db.influencer_applications.findIndex((a) => a.id === id);
+    if (appIndex === -1) {
+      return res.status(404).json({ error: "Influencer application not found." });
+    }
+
+    const application = db.influencer_applications[appIndex];
+    application.status = "approved";
+
+    // Inject model directly into the creators database category roster
+    const section = db.creators.find((s) => s.id === application.category);
+    if (section) {
+      // Check duplicate
+      const alreadyExists = section.creators.some((c) => c.name.toLowerCase() === application.name.toLowerCase());
+      if (!alreadyExists) {
+        const newCreator: Creator = {
+          name: application.name,
+          role: application.role || "Featured Star Model",
+          city: application.city || "Mumbai",
+          image: application.image || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format",
+          bio: application.bio || "FSIA certified elite runway influencer.",
+          stats: {
+            reach: application.reach || "100K",
+            engagement: application.engagement || "5.0%",
+            verified: true
+          },
+          quote: application.quote || "Elegance is standard.",
+          portfolio: application.portfolio && application.portfolio.length > 0 ? application.portfolio : [application.image]
+        };
+        section.creators.push(newCreator);
+        logAction(`Approved & added model registration: ${application.name} to Runway: ${section.title}`);
+      } else {
+        logAction(`Approved model registration: ${application.name} (already exists in runway section)`);
+      }
+    } else {
+      logAction(`Approved model registration: ${application.name} but target runway section ${application.category} was not found.`);
+    }
+
+    saveDb(db);
+    res.json({ success: true, application });
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to approve influencer application: " + error.message });
+  }
+});
+
+app.post("/api/influencer-applications/:id/decline", authenticateAdmin, (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = getDb();
+    
+    if (!db.influencer_applications) {
+      db.influencer_applications = [];
+    }
+
+    const appIndex = db.influencer_applications.findIndex((a) => a.id === id);
+    if (appIndex === -1) {
+      return res.status(404).json({ error: "Influencer application not found." });
+    }
+
+    db.influencer_applications[appIndex].status = "declined";
+    saveDb(db);
+    logAction(`Declined model registration application from: ${db.influencer_applications[appIndex].name}`);
+
+    res.json({ success: true, application: db.influencer_applications[appIndex] });
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to decline influencer application: " + error.message });
   }
 });
 
@@ -487,6 +794,7 @@ app.get("/api/admin/stats", authenticateAdmin, (req, res) => {
       categoriesCount: db.creators.length,
       campaignsCount: db.campaigns.length,
       applicationsCount: db.registrations.length,
+      influencerApplicationsCount: db.influencer_applications?.length || 0,
       estimatedRosterReach: (totalReach / 1000000).toFixed(1) + "M",
       totalPromptsCount: totalPrompts,
       apiSuccessRate: apiSuccessRate,

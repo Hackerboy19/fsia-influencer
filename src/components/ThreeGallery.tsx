@@ -358,22 +358,21 @@ export default function ThreeGallery({
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
-    // Soft mouse drag glide tracking
+    // Soft drag glide tracking (supporting mouse and touch)
     let isDragging = false;
     let prevMouseY = 0;
 
-    const handlePointerDown = (e: MouseEvent) => {
-      // Ignore click actions if user clicked on overlay HUD buttons
-      if ((e.target as HTMLElement).closest(".hud-interactive")) return;
+    const handleStart = (clientY: number, target: EventTarget | null) => {
+      if ((target as HTMLElement).closest(".hud-interactive")) return;
       isDragging = true;
-      prevMouseY = e.clientY;
+      prevMouseY = clientY;
     };
 
-    const handlePointerMove = (e: MouseEvent) => {
+    const handleMove = (clientX: number, clientY: number) => {
       // 1. Raycast hover tracking
       const rect = container.getBoundingClientRect();
-      mouse.x = ((e.clientX - rect.left) / container.clientWidth) * 2 - 1;
-      mouse.y = -((e.clientY - rect.top) / container.clientHeight) * 2 + 1;
+      mouse.x = ((clientX - rect.left) / container.clientWidth) * 2 - 1;
+      mouse.y = -((clientY - rect.top) / container.clientHeight) * 2 + 1;
 
       raycaster.setFromCamera(mouse, camera);
       const intersects = raycaster.intersectObjects(Array.from(meshToCreatorMap.keys()));
@@ -391,8 +390,8 @@ export default function ThreeGallery({
 
       // 2. Drag glide scroll down runway
       if (isDragging && !selectedCreatorRef.current) {
-        const deltaY = e.clientY - prevMouseY;
-        prevMouseY = e.clientY;
+        const deltaY = clientY - prevMouseY;
+        prevMouseY = clientY;
         // Map deltaY directly to Z runway depth (slower, smooth)
         targetRunwayZ += deltaY * 0.02;
         // Boundary constraints
@@ -400,8 +399,86 @@ export default function ThreeGallery({
       }
     };
 
-    const handlePointerUp = () => {
+    const handleEnd = () => {
       isDragging = false;
+    };
+
+    const onMouseDown = (e: MouseEvent) => {
+      handleStart(e.clientY, e.target);
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      handleMove(e.clientX, e.clientY);
+    };
+
+    const onMouseUp = () => {
+      handleEnd();
+    };
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let isHorizontalSwipe = false;
+    let hasSwipedThisTouch = false;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        isHorizontalSwipe = false;
+        hasSwipedThisTouch = false;
+        handleStart(e.touches[0].clientY, e.target);
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        const currentX = e.touches[0].clientX;
+        const currentY = e.touches[0].clientY;
+        const deltaX = currentX - touchStartX;
+        const deltaY = currentY - touchStartY;
+
+        // Determine if this is a horizontal swipe vs a vertical drag
+        if (!isHorizontalSwipe && !hasSwipedThisTouch && !selectedCreatorRef.current) {
+          if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+            if (Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+              isHorizontalSwipe = true;
+              isDragging = false; // Disable vertical runway drag for this touch interaction
+            }
+          }
+        }
+
+        // Trigger section change if swipe threshold crossed
+        if (isHorizontalSwipe && !hasSwipedThisTouch && !selectedCreatorRef.current) {
+          const threshold = 60; // 60px swipe triggers transition
+          if (Math.abs(deltaX) > threshold) {
+            hasSwipedThisTouch = true;
+            const currentIdx = activeSectionIndexRef.current;
+            if (deltaX < 0) {
+              // Swiped Left -> Next Station
+              if (currentIdx < sections.length - 1) {
+                onSectionChange(currentIdx + 1);
+              }
+            } else {
+              // Swiped Right -> Previous Station
+              if (currentIdx > 0) {
+                onSectionChange(currentIdx - 1);
+              }
+            }
+          }
+        }
+
+        // Handle standard vertical dragging if not horizontal swipe
+        if (isDragging && !isHorizontalSwipe) {
+          if (!selectedCreatorRef.current) {
+            e.preventDefault();
+          }
+          handleMove(currentX, currentY);
+        }
+      }
+    };
+
+    const onTouchEnd = () => {
+      handleEnd();
     };
 
     // Wheel Scroll glide down runway
@@ -433,9 +510,12 @@ export default function ThreeGallery({
       }
     };
 
-    container.addEventListener("mousedown", handlePointerDown);
-    window.addEventListener("mousemove", handlePointerMove);
-    window.addEventListener("mouseup", handlePointerUp);
+    container.addEventListener("mousedown", onMouseDown);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    container.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("touchend", onTouchEnd);
     container.addEventListener("wheel", handleWheel, { passive: true });
     container.addEventListener("click", handleClick);
 
@@ -574,9 +654,12 @@ export default function ThreeGallery({
       cancelAnimationFrame(animFrameId);
       resizeObserver.disconnect();
 
-      container.removeEventListener("mousedown", handlePointerDown);
-      window.removeEventListener("mousemove", handlePointerMove);
-      window.removeEventListener("mouseup", handlePointerUp);
+      container.removeEventListener("mousedown", onMouseDown);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      container.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
       container.removeEventListener("wheel", handleWheel);
       container.removeEventListener("click", handleClick);
 

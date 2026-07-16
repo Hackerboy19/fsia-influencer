@@ -227,7 +227,7 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator }: D
         </div>
 
         {/* Category Pill Navigation */}
-        <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none">
+        <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none pr-8">
           <span className="text-[10px] font-sans font-bold tracking-widest text-[#8E8D8A] uppercase pr-2 whitespace-nowrap flex items-center gap-1">
             <SlidersHorizontal className="w-3.5 h-3.5" /> NICHE:
           </span>
@@ -247,6 +247,8 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator }: D
               </button>
             );
           })}
+          {/* Safe-area horizontal scroll spacer */}
+          <div className="w-8 flex-shrink-0 h-1" aria-hidden="true" />
         </div>
       </div>
 
