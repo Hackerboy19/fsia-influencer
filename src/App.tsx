@@ -87,8 +87,18 @@ export default function App() {
 
   useEffect(() => {
     window.addEventListener("sections-updated", refreshSections);
+    
+    const handleTabChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        setActiveTab(customEvent.detail);
+      }
+    };
+    window.addEventListener("change-tab", handleTabChange);
+
     return () => {
       window.removeEventListener("sections-updated", refreshSections);
+      window.removeEventListener("change-tab", handleTabChange);
     };
   }, []);
 
