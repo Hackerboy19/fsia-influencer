@@ -180,7 +180,16 @@ app.delete("/api/creators/:sectionId/:name", authenticateAdmin, (req, res) => {
 // ----------------------------------------------------
 // 2B. SECTIONS / CATEGORIES CRUD ENGINE
 // ----------------------------------------------------
-app.post("/api/sections", authenticateAdmin, (req, res) => {
+app.get(["/api/sections", "/api/creators/categories"], (req, res) => {
+  try {
+    const db = getDb();
+    res.json(db.creators);
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to retrieve runway sections: " + error.message });
+  }
+});
+
+app.post(["/api/sections", "/api/creators/categories"], authenticateAdmin, (req, res) => {
   try {
     const { title, subtitle, primaryColor } = req.body;
     if (!title) {
@@ -216,7 +225,7 @@ app.post("/api/sections", authenticateAdmin, (req, res) => {
   }
 });
 
-app.delete("/api/sections/:id", authenticateAdmin, (req, res) => {
+app.delete(["/api/sections/:id", "/api/creators/categories/:id"], authenticateAdmin, (req, res) => {
   try {
     const { id } = req.params;
     const db = getDb();
@@ -242,7 +251,7 @@ app.delete("/api/sections/:id", authenticateAdmin, (req, res) => {
   }
 });
 
-app.put("/api/sections/:id", authenticateAdmin, (req, res) => {
+app.put(["/api/sections/:id", "/api/creators/categories/:id"], authenticateAdmin, (req, res) => {
   try {
     const { id } = req.params;
     const { title, subtitle, primaryColor } = req.body;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Search, MapPin, Sparkles, SlidersHorizontal, CheckCircle2, Star, Eye, Send, Share2 } from "lucide-react";
+import { Search, MapPin, Sparkles, SlidersHorizontal, CheckCircle2, Star, Eye, Send, Share2, Users } from "lucide-react";
 import { Creator, gallerySections } from "../data";
 
 interface DirectoryTabProps {
@@ -12,6 +12,7 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator }: D
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedCity, setSelectedCity] = useState("All");
+  const [selectedReachTier, setSelectedReachTier] = useState("All");
   const [dynamicCreators, setDynamicCreators] = useState<Creator[]>([]);
 
   // Flat list of core creators from our high-fashion gallery
@@ -136,30 +137,59 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator }: D
 
   const allDirectoryCreators = [...activeCreators, ...extraCreators];
 
-  const categories = ["All", "Pageantry", "Couture", "Travel", "Ayurvedic Beauty", "Fitness", "Culinary", "Tech"];
+  const niches = ["All", "Fashion", "Tech", "Lifestyle", "Beauty", "Travel", "Fitness", "Culinary", "Pageantry"];
   const cities = ["All", "Mumbai", "New Delhi", "Bangalore", "Kochi", "Jaipur", "Chennai"];
 
-  // Helper to categorize
+  // Helper to categorize role to niche
   const getCategoryTag = (role: string) => {
     const r = role.toLowerCase();
-    if (r.includes("winner") || r.includes("runner")) return "Pageantry";
-    if (r.includes("couture") || r.includes("tailoring") || r.includes("fashion")) return "Couture";
+    if (r.includes("winner") || r.includes("runner") || r.includes("pageant")) return "Pageantry";
+    if (r.includes("couture") || r.includes("tailoring") || r.includes("fashion") || r.includes("model") || r.includes("style")) return "Fashion";
     if (r.includes("travel") || r.includes("vlogger")) return "Travel";
-    if (r.includes("beauty") || r.includes("ayurvedic")) return "Ayurvedic Beauty";
-    if (r.includes("fitness") || r.includes("athlete")) return "Fitness";
-    if (r.includes("chef") || r.includes("culinary")) return "Culinary";
-    if (r.includes("tech") || r.includes("lifestyle architect")) return "Tech";
-    return "Couture";
+    if (r.includes("beauty") || r.includes("ayurvedic") || r.includes("skin") || r.includes("makeup")) return "Beauty";
+    if (r.includes("fitness") || r.includes("athlete") || r.includes("training") || r.includes("health")) return "Fitness";
+    if (r.includes("chef") || r.includes("culinary") || r.includes("gourmet") || r.includes("dining")) return "Culinary";
+    if (r.includes("tech") || r.includes("hardware") || r.includes("gadget") || r.includes("architect")) return "Tech";
+    return "Lifestyle";
+  };
+
+  // Helper to parse reach string (e.g., "1.9M" or "850K") to numerical value
+  const getReachNumber = (reachStr: string): number => {
+    const clean = reachStr.trim().toUpperCase();
+    if (clean.endsWith("M")) {
+      return parseFloat(clean.replace("M", "")) * 1000000;
+    }
+    if (clean.endsWith("K")) {
+      return parseFloat(clean.replace("K", "")) * 1000;
+    }
+    return parseFloat(clean) || 0;
   };
 
   const filteredCreators = allDirectoryCreators.filter((creator) => {
+    // 1. Search text filter
     const matchesSearch = creator.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           creator.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           creator.bio.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // 2. Niche category filter
     const creatorCat = getCategoryTag(creator.role);
     const matchesCategory = selectedCategory === "All" || creatorCat === selectedCategory;
+    
+    // 3. City filter
     const matchesCity = selectedCity === "All" || creator.city === selectedCity;
-    return matchesSearch && matchesCategory && matchesCity;
+
+    // 4. Follower Tier filter
+    const reachNum = getReachNumber(creator.stats.reach);
+    let matchesReach = true;
+    if (selectedReachTier === "macro") {
+      matchesReach = reachNum >= 500000 && reachNum < 1000000;
+    } else if (selectedReachTier === "mega") {
+      matchesReach = reachNum >= 1000000 && reachNum < 2000000;
+    } else if (selectedReachTier === "elite") {
+      matchesReach = reachNum >= 2000000;
+    }
+
+    return matchesSearch && matchesCategory && matchesCity && matchesReach;
   });
 
   return (
@@ -179,9 +209,9 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator }: D
 
       {/* Filter and Search Bar */}
       <div className="bg-white/55 backdrop-blur-md border border-black/5 p-4 rounded-2xl shadow-sm space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           {/* Search Input */}
-          <div className="md:col-span-2 relative">
+          <div className="sm:col-span-2 relative">
             <input
               type="text"
               placeholder="Search by name, role, city or bio keywords..."
@@ -197,69 +227,88 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator }: D
             <select
               value={selectedCity}
               onChange={(e) => setSelectedCity(e.target.value)}
-              className="w-full px-4 py-3 bg-white/70 border border-black/10 rounded-xl text-sm text-[#222] focus:outline-none focus:border-champagne appearance-none transition-all"
+              className="w-full pl-10 pr-4 py-3 bg-white/70 border border-black/10 rounded-xl text-sm text-[#222] focus:outline-none focus:border-champagne appearance-none transition-all cursor-pointer"
             >
               <option value="All">All Cities (India)</option>
-              {cities.filter(c => c !== "All").map((city) => (
-                <option key={city} value={city}>{city}</option>
+              {cities.filter(c => c !== "All").map((city, idx) => (
+                <option key={`${city}-${idx}`} value={city}>{city}</option>
               ))}
             </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-[#8E8D8A]">
+            <div className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-[#8E8D8A]">
               <MapPin className="w-4 h-4" />
             </div>
           </div>
 
-          {/* Preset Metric Info */}
-          <div className="bg-[#FAF9F6] border border-black/5 rounded-xl px-4 py-2 flex items-center justify-between text-[11px] font-sans text-[#666]">
-            <div>
-              <span className="block font-bold text-champagne">TOTAL ROSTER</span>
-              <span className="text-[13px] font-serif-display font-bold text-[#111]">
-                {allDirectoryCreators.length} VIPs
-              </span>
-            </div>
-            <div className="text-right">
-              <span className="block font-bold text-[#8E8D8A]">FILTERED MATCH</span>
-              <span className="text-[13px] font-serif-display font-bold text-[#111]">
-                {filteredCreators.length} Matches
-              </span>
+          {/* Follower Tier Selection */}
+          <div className="relative">
+            <select
+              value={selectedReachTier}
+              onChange={(e) => setSelectedReachTier(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-white/70 border border-black/10 rounded-xl text-sm text-[#222] focus:outline-none focus:border-champagne appearance-none transition-all cursor-pointer"
+            >
+              <option value="All">All Follower Tiers</option>
+              <option value="macro">Premium Macro (500K - 1M)</option>
+              <option value="mega">Mega Creators (1M - 2M)</option>
+              <option value="elite">Elite Superstars (2M+)</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-[#8E8D8A]">
+              <Users className="w-4 h-4" />
             </div>
           </div>
         </div>
 
-        {/* Category Pill Navigation */}
-        <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none pr-8">
-          <span className="text-[10px] font-sans font-bold tracking-widest text-[#8E8D8A] uppercase pr-2 whitespace-nowrap flex items-center gap-1">
-            <SlidersHorizontal className="w-3.5 h-3.5" /> NICHE:
-          </span>
-          {categories.map((cat) => {
-            const isSelected = selectedCategory === cat;
-            return (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-1.5 rounded-full text-xs font-sans tracking-wide transition-all whitespace-nowrap cursor-pointer ${
-                  isSelected
-                    ? "bg-champagne text-white font-semibold"
-                    : "bg-[#FAF9F6] hover:bg-[#F3F3F1] border border-black/5 text-[#555]"
-                }`}
-              >
-                {cat}
-              </button>
-            );
-          })}
-          {/* Safe-area horizontal scroll spacer */}
-          <div className="w-8 flex-shrink-0 h-1" aria-hidden="true" />
+        {/* Niche Category Pill Navigation & Stats Box */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2 border-t border-black/5">
+          <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none pr-8 flex-1">
+            <span className="text-[10px] font-sans font-bold tracking-widest text-[#8E8D8A] uppercase pr-2 whitespace-nowrap flex items-center gap-1">
+              <SlidersHorizontal className="w-3.5 h-3.5" /> NICHE:
+            </span>
+            {niches.map((cat, idx) => {
+              const isSelected = selectedCategory === cat;
+              return (
+                <button
+                  key={`${cat}-${idx}`}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-4 py-1.5 rounded-full text-xs font-sans tracking-wide transition-all whitespace-nowrap cursor-pointer ${
+                    isSelected
+                      ? "bg-champagne text-white font-semibold"
+                      : "bg-[#FAF9F6] hover:bg-[#F3F3F1] border border-black/5 text-[#555]"
+                  }`}
+                >
+                  {cat}
+                </button>
+              );
+            })}
+            {/* Safe-area horizontal scroll spacer */}
+            <div className="w-8 flex-shrink-0 h-1" aria-hidden="true" />
+          </div>
+
+          {/* Compact Stats Badges */}
+          <div className="flex items-center gap-3 shrink-0 text-[11px] font-sans text-[#666]">
+            <div className="bg-[#FAF9F6] border border-black/5 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+              <span className="font-bold text-champagne">TOTAL:</span>
+              <span className="font-serif-display font-bold text-[#111]">
+                {allDirectoryCreators.length} VIPs
+              </span>
+            </div>
+            <div className="bg-[#FAF9F6] border border-black/5 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+              <span className="font-bold text-[#8E8D8A]">MATCHES:</span>
+              <span className="font-serif-display font-bold text-[#111]">
+                {filteredCreators.length} Found
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Grid of Creators */}
       {filteredCreators.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCreators.map((creator) => {
+          {filteredCreators.map((creator, idx) => {
             const catTag = getCategoryTag(creator.role);
             return (
               <motion.div
-                key={creator.name}
+                key={`${creator.name}-${idx}`}
                 layout
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -357,6 +406,7 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator }: D
               setSearchTerm("");
               setSelectedCategory("All");
               setSelectedCity("All");
+              setSelectedReachTier("All");
             }}
             className="mt-4 px-6 py-2.5 border border-black/15 bg-white text-[#222] text-xs font-sans tracking-wider rounded-lg uppercase hover:bg-[#F3F3F1] cursor-pointer"
           >

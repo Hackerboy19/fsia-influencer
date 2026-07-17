@@ -29,6 +29,7 @@ import MembershipTab from "./components/MembershipTab";
 import ModelRegistrationTab from "./components/ModelRegistrationTab";
 import FaqTab from "./components/FaqTab";
 import AdminTab from "./components/AdminTab";
+import CursorParticleTrail from "./components/CursorParticleTrail";
 
 export default function App() {
   // Navigation & Showcase States
@@ -53,19 +54,22 @@ export default function App() {
     secondaryColor: "#111111"
   });
 
-  useEffect(() => {
-    // 1. Fetch creators list
+  const refreshSections = () => {
     fetch("/api/creators")
       .then((res) => {
         if (res.ok) return res.json();
         throw new Error();
       })
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setSections(data);
         }
       })
       .catch(() => console.log("Using static local runway fallback."));
+  };
+
+  useEffect(() => {
+    refreshSections();
 
     // 2. Fetch enterprise dynamic configurations
     fetch("/api/settings")
@@ -80,6 +84,13 @@ export default function App() {
       })
       .catch(() => console.log("Using local fallback settings configuration."));
   }, [activeTab]);
+
+  useEffect(() => {
+    window.addEventListener("sections-updated", refreshSections);
+    return () => {
+      window.removeEventListener("sections-updated", refreshSections);
+    };
+  }, []);
 
   // Audio Control (Procedural Runway Lounge Synth)
   const [audioEnabled, setAudioEnabled] = useState(false);
@@ -166,9 +177,15 @@ export default function App() {
     }
   };
 
-  // Auto clean audio on unmount
+  // Auto clean audio on unmount and register global custom events
   useEffect(() => {
+    const handleOpenVIP = () => {
+      setIsCollaborationOpen(true);
+    };
+    window.addEventListener("open-vip-collaboration", handleOpenVIP);
+
     return () => {
+      window.removeEventListener("open-vip-collaboration", handleOpenVIP);
       if (synthRef.current) {
         try {
           synthRef.current.ctx.close();
@@ -219,7 +236,7 @@ export default function App() {
     startAmbientSynth();
   };
 
-  const activeSection = sections[activeSectionIndex] || sections[0];
+  const activeSection = sections[activeSectionIndex] || sections[0] || { id: "none", title: "No Category", creators: [], primaryColor: "#E1C699" };
 
   // Glide through runway sections
   const handlePrevSection = () => {
@@ -258,6 +275,7 @@ export default function App() {
             {/* Decorative fine-art background grids */}
             <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[radial-gradient(var(--color-champagne)_1.5px,transparent_1.5px)] [background-size:24px_24px]" />
             <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] border border-champagne/15 rounded-full pointer-events-none" />
+            <CursorParticleTrail color={settings.primaryColor || "#E1C699"} />
 
             {/* Top Branding Header */}
             <div className="flex justify-between items-center z-10">
@@ -380,6 +398,7 @@ export default function App() {
                 onSelectCreator={setSelectedCreator}
                 onSectionChange={setActiveSectionIndex}
               />
+              <CursorParticleTrail active={activeTab === "catwalk"} color={settings.primaryColor || "#E1C699"} />
             </div>
 
             {/* Refracting Crystal Prism Info Widget (Editorial Aesthetic Theme) */}
@@ -552,7 +571,7 @@ export default function App() {
                     const isActive = idx === activeSectionIndex;
                     return (
                       <button
-                        key={sec.id}
+                        key={`${sec.id}-${idx}`}
                         onClick={() => {
                           setActiveSectionIndex(idx);
                           setSelectedCreator(null); // release closeup view
@@ -608,7 +627,7 @@ export default function App() {
                     const isActive = idx === activeSectionIndex;
                     return (
                       <button
-                        key={sec.id}
+                        key={`${sec.id}-${idx}`}
                         onClick={() => {
                           setActiveSectionIndex(idx);
                           setSelectedCreator(null);

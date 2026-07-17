@@ -197,6 +197,7 @@ export default function AdminTab() {
         setNewCategorySubtitle("");
         setNewCategoryColor("#E1C699");
         fetchAdminData(token);
+        window.dispatchEvent(new Event("sections-updated"));
       } else {
         setCategoryError(data.error || "Failed to create category.");
       }
@@ -225,6 +226,7 @@ export default function AdminTab() {
       if (res.ok && data.success) {
         setCategorySuccess("Category successfully deleted from 3D catwalk.");
         fetchAdminData(token);
+        window.dispatchEvent(new Event("sections-updated"));
       } else {
         setCategoryError(data.error || "Failed to delete category.");
       }
@@ -508,6 +510,7 @@ export default function AdminTab() {
       const data = await res.json();
       if (res.ok && data.success) {
         setCrudSuccess(isEdit ? "Creator profile successfully updated!" : "New runway star successfully cataloged!");
+        window.dispatchEvent(new Event("sections-updated"));
         setTimeout(() => {
           setIsCreatorModalOpen(false);
           fetchAdminData(token);
@@ -532,6 +535,7 @@ export default function AdminTab() {
       const data = await res.json();
       if (res.ok && data.success) {
         fetchAdminData(token);
+        window.dispatchEvent(new Event("sections-updated"));
       } else {
         alert(data.error || "Expulsion failure.");
       }
@@ -1333,8 +1337,8 @@ export default function AdminTab() {
 
                 {/* Creators Table grouped by runway sections */}
                 <div className="space-y-6">
-                  {sections.map((section) => (
-                    <div key={section.id} className="bg-white/60 rounded-2xl border border-black/5 overflow-hidden">
+                  {sections.map((section, sIdx) => (
+                    <div key={`${section.id}-${sIdx}`} className="bg-white/60 rounded-2xl border border-black/5 overflow-hidden">
                       <div className="px-5 py-3.5 bg-[#F4F3F0] border-b border-black/5 flex justify-between items-center">
                         <div>
                           <h4 className="font-serif-display text-sm font-bold text-[#111]">{section.title}</h4>
@@ -1346,8 +1350,8 @@ export default function AdminTab() {
                       </div>
 
                       <div className="divide-y divide-black/5">
-                        {section.creators.map((c) => (
-                          <div key={c.name} className="p-4 md:p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        {section.creators.map((c, cIdx) => (
+                          <div key={`${c.name}-${cIdx}`} className="p-4 md:p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <div className="flex items-center gap-4">
                               <img src={c.image} alt={c.name} className="w-12 h-12 rounded-xl object-cover border border-black/5" />
                               <div className="space-y-1">

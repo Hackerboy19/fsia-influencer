@@ -200,6 +200,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
         handleResetForms();
         fetchAllData();
         if (onRefresh) onRefresh();
+        window.dispatchEvent(new Event("sections-updated"));
       } else {
         triggerNotification("error", data.error || "Execution error encountered.");
       }
@@ -233,6 +234,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
         triggerNotification("success", "Catwalk Section successfully purged.");
         fetchAllData();
         if (onRefresh) onRefresh();
+        window.dispatchEvent(new Event("sections-updated"));
       } else {
         triggerNotification("error", data.error || "Deletion failed.");
       }
