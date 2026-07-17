@@ -69,7 +69,7 @@ const FALLBACK_PLANS: Plan[] = [
       "10 Guaranteed brand match pitches submitted by FSIA team",
       "Spotlight feature in the weekly FSIA Brand Newsletter",
       "Dedicated access to our partner digital agency network",
-      "15% Discount on runway pageant entry vouchers"
+      "15% Discount on runway Brand Campaign entry vouchers"
     ]
   },
   {
@@ -84,7 +84,7 @@ const FALLBACK_PLANS: Plan[] = [
       "Bespoke Obsidian 'Royal Star Club' crest of excellence",
       "Dedicated personal talent manager & collaboration counsel",
       "1 Professional PR press release across Times of India / HT",
-      "VIP front-row seating passes to national pageants & runway shows",
+      "VIP front-row seating passes to national Brand Campaigns & runway shows",
       "Direct legal escrow protection on all brand assignments",
       "Unlimited direct pitch access to global luxury houses"
     ]

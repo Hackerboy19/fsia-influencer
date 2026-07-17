@@ -6,6 +6,7 @@ import {
   TrendingUp, Phone, Mail, MapPin, Eye, FileSpreadsheet, Activity, UserPlus, Layout
 } from "lucide-react";
 import AdminContentManager from "./AdminContentManager";
+import { toast } from "react-hot-toast";
 
 interface Creator {
   name: string;
@@ -208,13 +209,10 @@ export default function AdminTab() {
     }
   };
 
-  const handleDeleteCategory = async (id: string) => {
-    if (!window.confirm("Are you absolutely sure you want to delete this category? Deleting it will also archive all its associated 3D models.")) {
-      return;
-    }
-    setCategorySuccess("");
-    setCategoryError("");
-
+  const handleDeleteCategory = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this item? This action cannot be undone.")) return;
+    setGallerySections(prev => prev.filter(s => s.id !== id));
     try {
       const res = await fetch(`/api/sections/${id}`, {
         method: "DELETE",
@@ -224,14 +222,15 @@ export default function AdminTab() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        setCategorySuccess("Category successfully deleted from 3D catwalk.");
-        fetchAdminData(token);
+        toast.success("Item successfully deleted.");
         window.dispatchEvent(new Event("sections-updated"));
       } else {
-        setCategoryError(data.error || "Failed to delete category.");
+        toast.error(data.error || "Failed to delete item. Please try again.");
+        fetchAdminData(token);
       }
     } catch (err) {
-      setCategoryError("Failed to reach administrative gateway.");
+      toast.error("Failed to delete item. Please try again.");
+      fetchAdminData(token);
     }
   };
 
@@ -523,9 +522,20 @@ export default function AdminTab() {
     }
   };
 
-  const deleteCreator = async (sectionId: string, name: string) => {
-    if (!window.confirm(`Are you sure you want to completely expunge "${name}" from the FSIA runway database?`)) return;
-
+  const deleteCreator = async (e: React.MouseEvent, sectionId: string, name: string) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this item? This action cannot be undone.")) return;
+    setGallerySections(prev => 
+      prev.map(section => {
+        if (section.id === sectionId) {
+          return {
+            ...section,
+            creators: section.creators ? section.creators.filter(c => c.name !== name) : []
+          };
+        }
+        return section;
+      })
+    );
     try {
       const res = await fetch(`/api/creators/${sectionId}/${encodeURIComponent(name)}`, {
         method: "DELETE",
@@ -534,13 +544,15 @@ export default function AdminTab() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        fetchAdminData(token);
+        toast.success("Item successfully deleted.");
         window.dispatchEvent(new Event("sections-updated"));
       } else {
-        alert(data.error || "Expulsion failure.");
+        toast.error(data.error || "Failed to delete item. Please try again.");
+        fetchAdminData(token);
       }
     } catch (err) {
-      alert("Database link failure.");
+      toast.error("Failed to delete item. Please try again.");
+      fetchAdminData(token);
     }
   };
 
@@ -640,9 +652,10 @@ export default function AdminTab() {
     }
   };
 
-  const deleteCampaign = async (id: string) => {
-    if (!window.confirm("Are you sure you want to completely archive this active brand contract campaign?")) return;
-
+  const deleteCampaign = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this item? This action cannot be undone.")) return;
+    setCampaigns(prev => prev.filter(c => c.id !== id));
     try {
       const res = await fetch(`/api/campaigns/${id}`, {
         method: "DELETE",
@@ -651,12 +664,14 @@ export default function AdminTab() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        fetchAdminData(token);
+        toast.success("Item successfully deleted.");
       } else {
-        alert(data.error || "Failed to delete.");
+        toast.error(data.error || "Failed to delete item. Please try again.");
+        fetchAdminData(token);
       }
     } catch (err) {
-      alert("Network failure.");
+      toast.error("Failed to delete item. Please try again.");
+      fetchAdminData(token);
     }
   };
 
@@ -771,6 +786,14 @@ export default function AdminTab() {
             </div>
 
             <div className="flex items-center gap-2.5">
+              <a
+                href="https://www.fsia.in"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="border border-stone-200 bg-stone-50 text-stone-900 text-xs px-4 py-2 rounded-md hover:bg-stone-100 transition-colors flex items-center justify-center gap-2"
+              >
+                ← Go to FSIA.in
+              </a>
               <button 
                 onClick={() => fetchAdminData(token)}
                 className="p-2.5 rounded-lg border border-black/5 bg-white hover:bg-black/5 text-[#444] transition-colors cursor-pointer"
@@ -792,13 +815,13 @@ export default function AdminTab() {
             {[
               { id: "dashboard", label: "Overview", icon: LayoutDashboard },
               { id: "content_manager", label: "Content Studio", icon: Layout },
-              { id: "content", label: "App Content & Style", icon: FileSpreadsheet },
+              { id: "content", label: "Campaign Copy", icon: FileSpreadsheet },
               { id: "ai_config", label: "AI Config", icon: Sparkles },
               { id: "prompt_logs", label: "Prompt Logs", icon: Activity },
-              { id: "creators", label: "Runway Models", icon: Users },
-              { id: "campaigns", label: "Brand Contracts", icon: Briefcase },
+              { id: "creators", label: "Creator Roster", icon: Users },
+              { id: "campaigns", label: "Brand Bookings", icon: Briefcase },
               { id: "registrations", label: "VIP Applications", icon: FileText },
-              { id: "influencer_applications", label: "Model Applicants", icon: UserPlus }
+              { id: "influencer_applications", label: "Creator Applicants", icon: UserPlus }
             ].map((tab) => {
               const Icon = tab.icon;
               const active = adminActiveSubTab === tab.id;
@@ -1142,8 +1165,8 @@ export default function AdminTab() {
                           </div>
 
                           <button
-                            onClick={() => handleDeleteCategory(sec.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-red-100 flex-shrink-0"
+                            onClick={(e) => handleDeleteCategory(e, sec.id)}
+                            className="p-2 text-red-600 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-red-100 flex-shrink-0"
                             title="Delete Category"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -1380,8 +1403,8 @@ export default function AdminTab() {
                                   <Edit2 className="w-3.5 h-3.5" />
                                 </button>
                                 <button
-                                  onClick={() => deleteCreator(section.id, c.name)}
-                                  className="p-2 rounded-lg border border-red-100 bg-red-50 hover:bg-red-100 text-red-600 cursor-pointer"
+                                  onClick={(e) => deleteCreator(e, section.id, c.name)}
+                                  className="p-2 rounded-lg border border-red-100 bg-red-50 hover:bg-red-100 text-red-600 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
                                   title="Expunge Model"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
@@ -1448,8 +1471,8 @@ export default function AdminTab() {
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={() => deleteCampaign(camp.id)}
-                            className="p-2 rounded-lg border border-red-100 bg-red-50 hover:bg-red-100 text-red-600 cursor-pointer"
+                            onClick={(e) => deleteCampaign(e, camp.id)}
+                            className="p-2 rounded-lg border border-red-100 bg-red-50 hover:bg-red-100 text-red-600 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>

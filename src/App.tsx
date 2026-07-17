@@ -47,7 +47,7 @@ export default function App() {
   const [settings, setSettings] = useState<any>({
     websiteTitle: "FSIA — Forever Star India Awards",
     heroTitle: "FSIA VIP GALLERY",
-    heroSubtitle: "Immerse in a sun-drenched architectural pavilion of verified pageant victors, social champions, and elite digital authorities.",
+    heroSubtitle: "Immerse in a sun-drenched architectural pavilion of verified Brand Campaign victors, social champions, and elite digital authorities.",
     ctaText: "ACCEPT VIP INVITATION",
     footerText: "© 2026 FOREVER STAR INDIA. ALL RIGHTS SECURED.",
     logoUrl: "",
@@ -444,7 +444,7 @@ export default function App() {
                       FSIA INFLUENCER
                     </h1>
                     <p className="font-sans text-[6px] sm:text-[7px] md:text-[9px] tracking-[0.2em] text-[#888] uppercase font-bold leading-none max-[350px]:hidden">
-                      Forever Star India VIP Desk
+                      By FOREVER STAR INDIA
                     </p>
                   </div>
                 </div>
@@ -478,6 +478,17 @@ export default function App() {
                     <Lock className="w-3.5 h-3.5" />
                   </button>
 
+                  {/* FSIA Portal Mobile */}
+                  <a
+                    href="https://www.fsia.in"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2 py-1.5 sm:px-2.5 sm:py-2 rounded-lg backdrop-blur-md border border-black/10 flex items-center justify-center text-[#111] bg-white hover:bg-stone-50 cursor-pointer"
+                    title="FSIA Portal"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+
                   {/* VIP Collaboration Gateway Trigger */}
                   <button
                     onClick={() => setIsCollaborationOpen(true)}
@@ -495,11 +506,11 @@ export default function App() {
                 {(["catwalk", "directory", "campaigns", "membership", "apply", "faq"] as const).map((tab) => {
                   const isSelected = activeTab === tab;
                   const label = 
-                    tab === "catwalk" ? "Catwalk 3D" :
-                    tab === "directory" ? "Directory" :
+                    tab === "catwalk" ? "Agency Services" :
+                    tab === "directory" ? "Talent Roster" :
                     tab === "campaigns" ? "Campaigns" :
                     tab === "membership" ? "VIP Membership" :
-                    tab === "apply" ? "Creator Join" : "FAQs";
+                    tab === "apply" ? "Get Verified" : "FAQs";
                   return (
                     <button
                       key={tab}
@@ -559,6 +570,16 @@ export default function App() {
                 >
                   <Lock className="w-4 h-4" />
                 </button>
+
+                {/* FSIA Portal Button */}
+                <a
+                  href="https://www.fsia.in"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hud-interactive px-3 py-2.5 md:px-4 md:py-3 rounded-xl backdrop-blur-md border border-black/10 flex items-center justify-center text-[#111] bg-white hover:bg-stone-50 transition-all shadow-sm cursor-pointer text-[9px] md:text-[10px] font-sans font-bold tracking-wider uppercase"
+                >
+                  FSIA Portal
+                </a>
 
                 {/* VIP Collaboration Gateway Trigger */}
                 <button
@@ -841,10 +862,10 @@ export default function App() {
             {/* --- MAJESTIC FLOATING MOBILE BOTTOM NAVIGATION BAR --- */}
             <div className="fixed bottom-4 inset-x-4 h-16 bg-[#111]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex items-center justify-around px-3 z-50 lg:hidden pointer-events-auto">
               {[
-                { id: "catwalk", label: "Catwalk 3D", icon: Compass },
-                { id: "directory", label: "Directory", icon: Users },
+                { id: "catwalk", label: "Agency Services", icon: Compass },
+                { id: "directory", label: "Talent Roster", icon: Users },
                 { id: "campaigns", label: "Campaigns", icon: Briefcase },
-                { id: "apply", label: "Creator Join", icon: UserPlus },
+                { id: "apply", label: "Get Verified", icon: UserPlus },
                 { id: "membership", label: "VIP Club", icon: Sparkles },
               ].map((item) => {
                 const isSelected = activeTab === item.id;

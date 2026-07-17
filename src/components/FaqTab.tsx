@@ -15,7 +15,7 @@ export default function FaqTab() {
   const faqs: FAQItem[] = [
     {
       question: "What is the Forever Star India Association (FSIA) Influencer Platform?",
-      answer: "FSIA is India's leading elite networking platform bridging verified pageant victors, national awards laureates, social impact champions, and top-tier digital authorities with premier luxury brand houses. We run structured physical catwalks, editorial magazines, and secure collaboration escrow models.",
+      answer: "FSIA is India's leading elite networking platform bridging verified Brand Campaign victors, national awards laureates, social impact champions, and top-tier digital authorities with premier luxury brand houses. We run structured physical catwalks, editorial magazines, and secure collaboration escrow models.",
       category: "General"
     },
     {
@@ -40,7 +40,7 @@ export default function FaqTab() {
     },
     {
       question: "What are the core requirements for walking the FSIA Physical Runway?",
-      answer: "Physical runways are integrated with national pageants like Forever Miss India, Mrs India, and Teen India. Creators selected for major brand campaigns or holding Gold/Royal memberships receive priority invitations to walk and showcase collaborative couture collections.",
+      answer: "Physical runways are integrated with national Brand Campaigns like Forever Miss India, Mrs India, and Teen India. Creators selected for major brand campaigns or holding Gold/Royal memberships receive priority invitations to walk and showcase collaborative couture collections.",
       category: "General"
     },
     {
@@ -163,7 +163,7 @@ export default function FaqTab() {
             Have custom business enquiries or corporate proposals?
           </h4>
           <p className="font-serif-text text-xs text-[#555] max-w-xl">
-            Our luxury brand liaison desk is ready to organize custom agreements, Joint Runway pageantry sponsorships, and legal brand integrations.
+            Our luxury brand liaison desk is ready to organize custom agreements, Joint Runway Brand Campaign sponsorships, and legal brand integrations.
           </p>
         </div>
         <a

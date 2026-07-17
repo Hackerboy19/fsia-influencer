@@ -399,7 +399,7 @@ export default function VipCollaborationForm({
                         className="w-full px-3 py-2 bg-white border border-black/10 rounded-lg text-xs text-[#222] font-serif-text focus:outline-none focus:border-champagne"
                       >
                         <option value="Editorial Cover & Digital Campaign">Editorial Cover & Indian Digital</option>
-                        <option value="Runway Show / Pageant Appearance">Runway & Bollywood Gala Appearance</option>
+                        <option value="Runway Show / Brand Campaign Appearance">Runway & Bollywood Gala Appearance</option>
                         <option value="Global Brand Ambassadorship">Pan-India Brand Ambassadorship</option>
                         <option value="Charity & Advocacy Alignment">Social Impact Partnership</option>
                       </select>

@@ -6,11 +6,13 @@ import { Creator, gallerySections } from "../data";
 interface DirectoryTabProps {
   onOpenCollaboration: (creatorName: string) => void;
   onSelectCreator: (creator: Creator) => void;
+  hideHero?: boolean;
+  hideFooter?: boolean;
 }
 
-export default function DirectoryTab({ onOpenCollaboration, onSelectCreator }: DirectoryTabProps) {
+export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hideHero, hideFooter }: DirectoryTabProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useState("All Talent");
   const [selectedCity, setSelectedCity] = useState("All");
   const [selectedReachTier, setSelectedReachTier] = useState("All");
   const [dynamicCreators, setDynamicCreators] = useState<Creator[]>([]);
@@ -148,11 +150,11 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator }: D
   const allDirectoryCreators = [...activeCreators, ...extraCreators];
 
   const categories = [
-    "All",
+    "All Talent",
     "Fashion & Couture",
-    "Beauty & Makeup",
-    "Lifestyle",
-    "Business & Tech"
+    "Beauty & Aesthetics",
+    "Lifestyle & Travel",
+    "Business & Enterprise"
   ];
   
   const cities = ["All", "Mumbai", "New Delhi", "Bangalore", "Kochi", "Jaipur", "Chennai"];
@@ -163,13 +165,13 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator }: D
     if (
       r.includes("winner") ||
       r.includes("runner") ||
-      r.includes("pageant") ||
+      r.includes("Brand Campaign") ||
       r.includes("couture") ||
       r.includes("tailoring") ||
       r.includes("fashion") ||
       r.includes("model") ||
       r.includes("style") ||
-      r.includes("pageantry")
+      r.includes("Brand Campaign")
     ) {
       return "Fashion & Couture";
     }
@@ -179,7 +181,7 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator }: D
       r.includes("skin") ||
       r.includes("makeup")
     ) {
-      return "Beauty & Makeup";
+      return "Beauty & Aesthetics";
     }
     if (
       r.includes("tech") ||
@@ -187,9 +189,9 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator }: D
       r.includes("gadget") ||
       r.includes("architect")
     ) {
-      return "Business & Tech";
+      return "Business & Enterprise";
     }
-    return "Lifestyle";
+    return "Lifestyle & Travel";
   };
 
   // Helper to parse reach string (e.g., "1.9M" or "850K") to numerical value
@@ -213,7 +215,7 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator }: D
 
     // 2. Overhaul Category filter
     const creatorCat = getOverhaulCategory(creator.role);
-    const matchesCategory = selectedCategory === "All" || creatorCat === selectedCategory;
+    const matchesCategory = selectedCategory === "All Talent" || creatorCat === selectedCategory;
 
     // 3. City filter
     const matchesCity = selectedCity === "All" || creator.city === selectedCity;
@@ -243,18 +245,20 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator }: D
       id="influencer-directory-tab"
     >
       {/* 1. MINIMAL HERO SECTION */}
-      <header className="max-w-4xl mx-auto text-center space-y-4">
-        <span className="font-sans text-xs tracking-[0.35em] text-[#C9A227] uppercase font-bold block">
-          FSIA ELITE TALENT AGENCY
-        </span>
-        <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-medium tracking-tight text-stone-900 leading-tight">
-          Discover India's Top Verified Influencers
-        </h2>
-        <div className="w-16 h-[1px] bg-[#C9A227] mx-auto my-3" />
-        <p className="font-serif italic text-stone-500 text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
-          Bridging luxury couture, organic cosmetics advocates, and digital innovators with India's most prestigious editorial campaigns.
-        </p>
-      </header>
+      {!hideHero && (
+        <header className="max-w-4xl mx-auto text-center space-y-4">
+          <span className="font-sans text-xs tracking-[0.35em] text-[#C9A227] uppercase font-bold block">
+            FSIA ELITE TALENT AGENCY
+          </span>
+          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-medium tracking-tight text-stone-900 leading-tight">
+            Discover India's Top Verified Influencers
+          </h2>
+          <div className="w-16 h-[1px] bg-[#C9A227] mx-auto my-3" />
+          <p className="font-serif italic text-stone-500 text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
+            Bridging luxury couture, organic cosmetics advocates, and digital innovators with India's most prestigious editorial campaigns.
+          </p>
+        </header>
+      )}
 
       {/* 2. THE FILTER TABS (Elegant and Sticky) */}
       <div className="sticky top-0 z-20 bg-[#FCFBFA]/90 backdrop-blur-md py-4 border-y border-stone-100 shadow-xs">
@@ -490,34 +494,36 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator }: D
       </div>
 
       {/* 4. THE "APPLY NOW" FOOTER (Elegant, luxury-focused CTA section) */}
-      <footer className="max-w-6xl mx-auto pt-8">
-        <div className="bg-stone-900 text-white rounded-2xl p-8 md:p-12 text-center relative overflow-hidden shadow-xl border border-stone-800">
-          {/* Subtle luxurious background light glow */}
-          <div className="absolute -top-40 -left-40 w-96 h-96 bg-[#C9A227]/5 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-[#E1C699]/5 rounded-full blur-3xl pointer-events-none" />
+      {!hideFooter && (
+        <footer className="max-w-6xl mx-auto pt-8">
+          <div className="bg-stone-900 text-white rounded-2xl p-8 md:p-12 text-center relative overflow-hidden shadow-xl border border-stone-800">
+            {/* Subtle luxurious background light glow */}
+            <div className="absolute -top-40 -left-40 w-96 h-96 bg-[#C9A227]/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-[#E1C699]/5 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="relative z-10 max-w-2xl mx-auto space-y-4">
-            <span className="text-[10px] tracking-[0.35em] text-[#C9A227] font-bold uppercase block">
-              BECOME AN FSIA VERIFIED STAR
-            </span>
-            <h3 className="font-serif text-2xl sm:text-3xl md:text-4xl text-stone-100 font-medium tracking-tight">
-              Ready to Elevate Your Digital Footprint?
-            </h3>
-            <p className="text-stone-400 text-xs md:text-sm font-light leading-relaxed max-w-lg mx-auto">
-              Join India's most prestigious elite creator directory to unlock exclusive brand charters, global fashion weeks, and high-paying premium campaigns.
-            </p>
-            <div className="pt-4">
-              <button
-                onClick={handleApplyClick}
-                className="inline-flex items-center justify-center px-8 py-3.5 bg-gradient-to-r from-[#C9A227] to-[#E1C699] hover:from-[#b08d1f] hover:to-[#d2b480] text-stone-950 text-xs font-bold tracking-widest rounded-full uppercase transition-all shadow-lg active:scale-95 cursor-pointer min-h-[44px]"
-              >
-                <span>Apply For Roster Entry</span>
-                <ArrowRight className="w-4 h-4 ml-2 shrink-0" />
-              </button>
+            <div className="relative z-10 max-w-2xl mx-auto space-y-4">
+              <span className="text-[10px] tracking-[0.35em] text-[#C9A227] font-bold uppercase block">
+                BECOME AN FSIA VERIFIED STAR
+              </span>
+              <h3 className="font-serif text-2xl sm:text-3xl md:text-4xl text-stone-100 font-medium tracking-tight">
+                Ready to Elevate Your Digital Footprint?
+              </h3>
+              <p className="text-stone-400 text-xs md:text-sm font-light leading-relaxed max-w-lg mx-auto">
+                Join India's most prestigious elite creator directory to unlock exclusive brand charters, global fashion weeks, and high-paying premium campaigns.
+              </p>
+              <div className="pt-4">
+                <button
+                  onClick={handleApplyClick}
+                  className="inline-flex items-center justify-center px-8 py-3.5 bg-gradient-to-r from-[#C9A227] to-[#E1C699] hover:from-[#b08d1f] hover:to-[#d2b480] text-stone-950 text-xs font-bold tracking-widest rounded-full uppercase transition-all shadow-lg active:scale-95 cursor-pointer min-h-[44px]"
+                >
+                  <span>Apply For Roster Entry</span>
+                  <ArrowRight className="w-4 h-4 ml-2 shrink-0" />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      )}
     </section>
   );
 }

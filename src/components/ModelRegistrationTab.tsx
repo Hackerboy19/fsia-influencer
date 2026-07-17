@@ -11,8 +11,11 @@ import {
   ShieldCheck, 
   Globe, 
   Image as ImageIcon,
-  ChevronDown
+  ChevronDown,
+  Briefcase,
+  Star
 } from "lucide-react";
+import DirectoryTab from "./DirectoryTab";
 
 interface RunwayCategory {
   id: string;
@@ -67,7 +70,7 @@ function SplitApplyButton() {
         className="h-14 bg-stone-900 hover:bg-stone-800 text-stone-100 font-sans text-xs tracking-[0.25em] font-bold pl-8 pr-6 rounded-l-xl uppercase flex items-center gap-2 transition-all cursor-pointer border-r border-stone-800 active:scale-[0.98] shadow-sm"
       >
         <Sparkles className="w-4 h-4 text-[#E1C699] animate-pulse" />
-        Apply Now
+        Get Verified
       </button>
 
       {/* Right side: Dropdown Toggle */}
@@ -297,145 +300,26 @@ export default function ModelRegistrationTab() {
         </div>
       </section>
 
-      {/* 2. DATA-DRIVEN SOCIAL PROOF (TRUST SIGNALS) */}
-      <section className="w-full border-y border-stone-200 py-8 my-16 bg-white/40 backdrop-blur-xs">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center max-w-5xl mx-auto px-4">
-          <div className="space-y-1.5">
-            <div className="text-4xl md:text-5xl font-serif font-light text-stone-900 tracking-tight">10,000+</div>
-            <div className="text-[11px] font-sans font-bold tracking-[0.2em] text-[#8E8D8A] uppercase">Active Creators</div>
-          </div>
-          <div className="space-y-1.5 border-y md:border-y-0 md:border-x border-stone-200 py-6 md:py-0">
-            <div className="text-4xl md:text-5xl font-serif font-light text-stone-900 tracking-tight">500+</div>
-            <div className="text-[11px] font-sans font-bold tracking-[0.2em] text-[#8E8D8A] uppercase">Brand Campaigns</div>
-          </div>
-          <div className="space-y-1.5">
-            <div className="text-4xl md:text-5xl font-serif font-light text-stone-900 tracking-tight">100%</div>
-            <div className="text-[11px] font-sans font-bold tracking-[0.2em] text-[#8E8D8A] uppercase">Transparent Payouts</div>
-          </div>
-        </div>
-      </section>
-
-      {/* 3. CORE BENEFITS GRID (REALISTIC VALUE PROPOSITIONS) */}
-      <section className="space-y-12 max-w-5xl mx-auto px-4">
-        <div className="text-center space-y-3">
-          <span className="font-sans text-[10px] tracking-[0.3em] text-[#8E8D8A] uppercase font-bold block">
-            CREATOR EMPOWERMENT
-          </span>
-          <h2 className="font-serif text-3xl md:text-4xl text-stone-900 font-normal tracking-tight">
-            Designed for Professional Digital Growth
-          </h2>
-          <p className="text-zinc-600 text-sm md:text-base max-w-2xl mx-auto font-serif-text leading-relaxed">
-            Experience premium representation tailored around data authenticity, campaign transparency, and luxury brand alignment.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Card 1 */}
-          <div className="bg-white/80 backdrop-blur-md border border-stone-200 p-8 rounded-2xl flex flex-col justify-between space-y-4 hover:shadow-md transition-all duration-300">
-            <div className="space-y-4">
-              <div className="w-12 h-12 bg-stone-50 rounded-xl flex items-center justify-center border border-stone-200/50">
-                <ShieldCheck className="w-6 h-6 text-stone-700" />
-              </div>
-              <h3 className="font-serif text-xl text-stone-900 font-medium">Official FSIA Verification</h3>
-              <p className="text-zinc-600 text-xs md:text-sm font-serif-text leading-relaxed">
-                Get the exclusive FSIA Verified Creator badge. We elevate your digital profile, making you instantly credible to high-paying enterprise brands and PR agencies.
-              </p>
-            </div>
-          </div>
-
-          {/* Card 2 */}
-          <div className="bg-white/80 backdrop-blur-md border border-stone-200 p-8 rounded-2xl flex flex-col justify-between space-y-4 hover:shadow-md transition-all duration-300">
-            <div className="space-y-4">
-              <div className="w-12 h-12 bg-stone-50 rounded-xl flex items-center justify-center border border-stone-200/50">
-                <Sparkles className="w-6 h-6 text-stone-700" />
-              </div>
-              <h3 className="font-serif text-xl text-stone-900 font-medium">Premium Brand Sponsorships</h3>
-              <p className="text-zinc-600 text-xs md:text-sm font-serif-text leading-relaxed">
-                Stop waiting for inbound emails. Gain direct access to our live marketplace of paid campaigns, product seeding, and exclusive ambassador programs.
-              </p>
-            </div>
-          </div>
-
-          {/* Card 3 */}
-          <div className="bg-white/80 backdrop-blur-md border border-stone-200 p-8 rounded-2xl flex flex-col justify-between space-y-4 hover:shadow-md transition-all duration-300">
-            <div className="space-y-4">
-              <div className="w-12 h-12 bg-stone-50 rounded-xl flex items-center justify-center border border-stone-200/50">
-                <UserPlus className="w-6 h-6 text-stone-700" />
-              </div>
-              <h3 className="font-serif text-xl text-stone-900 font-medium">Dedicated Campaign Managers</h3>
-              <p className="text-zinc-600 text-xs md:text-sm font-serif-text leading-relaxed">
-                Focus on content creation while our expert talent managers handle contract negotiations, campaign briefs, and secure, on-time payments.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 4. HOW IT WORKS (THE FUNNEL) */}
-      <section className="space-y-12 max-w-5xl mx-auto px-4 py-8">
-        <div className="text-center space-y-3">
-          <span className="font-sans text-[10px] tracking-[0.3em] text-[#8E8D8A] uppercase font-bold block">
-            ELEVATION PIPELINE
-          </span>
-          <h2 className="font-serif text-3xl md:text-5xl text-stone-900">
-            Your Path to Elite Influence
-          </h2>
-          <p className="text-zinc-600 text-sm md:text-base max-w-2xl mx-auto font-serif-text leading-relaxed">
-            Our multi-step verification pipeline ensures high audience engagement authenticity and pairs verified talent directly with global enterprise rosters.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative mt-12">
-          {/* Timeline Connector Line for Desktop */}
-          <div className="hidden md:block absolute top-[52px] left-[15%] right-[15%] h-[1px] bg-stone-200 -z-10" />
-
-          {/* Step 1 */}
-          <div className="bg-white/40 backdrop-blur-md border border-stone-200/60 p-6 rounded-2xl relative text-center space-y-4">
-            <div className="mx-auto w-10 h-10 rounded-full bg-stone-950 text-white flex items-center justify-center font-sans font-bold text-sm shadow-md">
-              1
-            </div>
-            <h4 className="font-serif text-lg text-stone-900 font-medium">Submit Your Portfolio</h4>
-            <p className="text-zinc-600 text-xs font-serif-text leading-relaxed">
-              Connect your social channels and share your niche metrics for an automated analytics review.
-            </p>
-          </div>
-
-          {/* Step 2 */}
-          <div className="bg-white/40 backdrop-blur-md border border-stone-200/60 p-6 rounded-2xl relative text-center space-y-4">
-            <div className="mx-auto w-10 h-10 rounded-full bg-stone-950 text-white flex items-center justify-center font-sans font-bold text-sm shadow-md">
-              2
-            </div>
-            <h4 className="font-serif text-lg text-stone-900 font-medium">Quality Screening</h4>
-            <p className="text-zinc-600 text-xs font-serif-text leading-relaxed">
-              Our expert talent team reviews your engagement rates, audience demographics, and content authenticity.
-            </p>
-          </div>
-
-          {/* Step 3 */}
-          <div className="bg-white/40 backdrop-blur-md border border-stone-200/60 p-6 rounded-2xl relative text-center space-y-4">
-            <div className="mx-auto w-10 h-10 rounded-full bg-[#E1C699] text-stone-950 flex items-center justify-center font-sans font-bold text-sm shadow-md">
-              3
-            </div>
-            <h4 className="font-serif text-lg text-stone-900 font-medium">Get Verified & Monetize</h4>
-            <p className="text-zinc-600 text-xs font-serif-text leading-relaxed">
-              Unlock your exclusive digital profile badge, enter active directories, and receive direct campaign briefs.
-            </p>
-          </div>
-        </div>
-      </section>
+      {/* 2. THE DIRECTORY GRID */}
+      <DirectoryTab 
+        hideHero={true} 
+        hideFooter={true} 
+        onOpenCollaboration={(name) => {
+          const event = new CustomEvent("open-vip-collaboration");
+          window.dispatchEvent(event);
+        }}
+        onSelectCreator={() => {}}
+      />
 
       {/* 5. REGISTRATION FORM SECTION */}
       <section id="registration-form-section" className="max-w-4xl mx-auto px-4 pt-8">
         <div className="border-t border-stone-200 pt-16 space-y-10">
           <div className="text-center space-y-3">
-            <span className="font-sans text-[10px] tracking-[0.3em] text-[#8E8D8A] uppercase font-bold block">
-              PORTAL REGISTRATION
-            </span>
-            <h2 className="font-serif text-3xl md:text-4xl text-stone-900 font-normal tracking-tight">
-              Begin Your Application
+            <h2 className="font-serif text-3xl text-stone-900 text-center mb-2">
+              Join The Elite Roster
             </h2>
-            <p className="text-zinc-600 text-xs md:text-sm max-w-xl mx-auto font-serif-text leading-relaxed">
-              Ready to walk our digital and physical high-fashion runways as an <strong className="text-stone-900 font-semibold">FSIA Verified</strong> creator? Secure your profile in our premier <strong className="text-stone-900 font-semibold">Verified Creator Network</strong> and initiate custom <strong className="text-stone-900 font-semibold">Content Monetization</strong> streams.
+            <p className="text-zinc-600 text-sm text-center mb-8">
+              Submit your portfolio to get FSIA Verified and access exclusive brand campaigns.
             </p>
           </div>
 
@@ -445,7 +329,7 @@ export default function ModelRegistrationTab() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="bg-white/80 backdrop-blur-md p-6 md:p-8 rounded-3xl border border-stone-200 shadow-md space-y-6"
+                className="bg-white/80 backdrop-blur-xl border border-stone-200 shadow-sm rounded-2xl p-8 max-w-2xl mx-auto space-y-6"
               >
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Secure Triage Notice */}
@@ -813,17 +697,16 @@ export default function ModelRegistrationTab() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full bg-stone-900 hover:bg-stone-800 text-stone-100 font-sans text-xs tracking-[0.2em] font-bold py-4 px-6 rounded-xl uppercase flex items-center justify-center gap-2 transition-all cursor-pointer shadow hover:shadow-md disabled:opacity-50"
+                    className="bg-stone-900 text-[#C9A227] hover:bg-stone-800 transition-colors w-full py-3 rounded-lg font-semibold flex items-center justify-center gap-2 shadow hover:shadow-md disabled:opacity-50"
                   >
                     {isSubmitting ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin" />
-                        DISPATCHING RUNWAY APPLICATION...
+                        <div className="w-4 h-4 border-2 border-t-transparent border-[#C9A227] rounded-full animate-spin" />
+                        SUBMITTING PORTFOLIO...
                       </>
                     ) : (
                       <>
-                        SUBMIT RUNWAY REGISTRATION REQUEST
-                        <ArrowRight className="w-4 h-4" />
+                        Submit Portfolio for Review
                       </>
                     )}
                   </button>

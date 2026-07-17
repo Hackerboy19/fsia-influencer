@@ -136,13 +136,9 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
 
   const triggerNotification = (type: "success" | "error", message: string) => {
     if (type === "success") {
-      setSuccess(message);
-      setError(null);
-      setTimeout(() => setSuccess(null), 4000);
+      toast.success(message);
     } else {
-      setError(message);
-      setSuccess(null);
-      setTimeout(() => setError(null), 5000);
+      toast.error(message);
     }
   };
 
@@ -222,8 +218,10 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
     });
   };
 
-  const handleDeleteSection = async (id: string) => {
-    if (!confirm("Are you sure you want to permanently purge this entire catwalk section and roster category? All affiliated models will remain in records but this section will disappear.")) return;
+  const handleDeleteSection = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this item? This action cannot be undone.")) return;
+    setSections(prev => prev.filter(s => s.id !== id));
     setLoading(true);
     try {
       const res = await fetch(`/api/sections/${id}`, {
@@ -232,15 +230,16 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
       });
       const data = await res.json();
       if (res.ok) {
-        triggerNotification("success", "Catwalk Section successfully purged.");
-        fetchAllData();
+        triggerNotification("success", "Item successfully deleted.");
         if (onRefresh) onRefresh();
         window.dispatchEvent(new Event("sections-updated"));
       } else {
-        triggerNotification("error", data.error || "Deletion failed.");
+        triggerNotification("error", data.error || "Failed to delete item. Please try again.");
+        fetchAllData();
       }
     } catch (err) {
-      triggerNotification("error", "Database connection interrupted.");
+      triggerNotification("error", "Failed to delete item. Please try again.");
+      fetchAllData();
     } finally {
       setLoading(false);
     }
@@ -313,8 +312,10 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
     });
   };
 
-  const handleDeleteCampaign = async (id: string) => {
-    if (!confirm("Are you sure you want to archive / delete this active brand campaign contract?")) return;
+  const handleDeleteCampaign = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this item? This action cannot be undone.")) return;
+    setCampaigns(prev => prev.filter(c => c.id !== id));
     setLoading(true);
     try {
       const res = await fetch(`/api/campaigns/${id}`, {
@@ -323,14 +324,15 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
       });
       const data = await res.json();
       if (res.ok) {
-        triggerNotification("success", "Brand Campaign contract archived successfully.");
-        fetchAllData();
+        triggerNotification("success", "Item successfully deleted.");
         if (onRefresh) onRefresh();
       } else {
-        triggerNotification("error", data.error || "Archival request declined.");
+        triggerNotification("error", data.error || "Failed to delete item. Please try again.");
+        fetchAllData();
       }
     } catch (err) {
-      triggerNotification("error", "Failed to reach branding service endpoints.");
+      triggerNotification("error", "Failed to delete item. Please try again.");
+      fetchAllData();
     } finally {
       setLoading(false);
     }
@@ -401,8 +403,10 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
     });
   };
 
-  const handleDeletePlan = async (id: string) => {
-    if (!confirm("Are you sure you want to completely delete this prestige membership tier and wipe its associated perks roster?")) return;
+  const handleDeletePlan = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this item? This action cannot be undone.")) return;
+    setPlans(prev => prev.filter(p => p.id !== id));
     setLoading(true);
     try {
       const res = await fetch(`/api/membership-plans/${id}`, {
@@ -411,14 +415,15 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
       });
       const data = await res.json();
       if (res.ok) {
-        triggerNotification("success", "Prestige Membership Tier successfully deleted.");
-        fetchAllData();
+        triggerNotification("success", "Item successfully deleted.");
         if (onRefresh) onRefresh();
       } else {
-        triggerNotification("error", data.error || "Deletion refused.");
+        triggerNotification("error", data.error || "Failed to delete item. Please try again.");
+        fetchAllData();
       }
     } catch (err) {
-      triggerNotification("error", "Database connection timed out.");
+      triggerNotification("error", "Failed to delete item. Please try again.");
+      fetchAllData();
     } finally {
       setLoading(false);
     }
@@ -808,7 +813,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                     value={planForm.perksString}
                     onChange={(e) => setPlanForm(prev => ({ ...prev, perksString: e.target.value }))}
                     className="w-full px-3 py-2 bg-white border border-black/10 rounded-xl text-xs resize-none"
-                    placeholder="Bespoke obsidian badges, Dedicated personal talent manager, Front-row national pageant passes"
+                    placeholder="Bespoke obsidian badges, Dedicated personal talent manager, Front-row national Brand Campaign passes"
                   />
                   <p className="text-[8px] text-[#888] italic">Separate premium inclusions using commas.</p>
                 </div>
@@ -886,8 +891,8 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => handleDeleteSection(sec.id)}
-                      className="p-1.5 hover:bg-red-50 text-red-600 rounded-lg border border-red-100 transition-colors cursor-pointer"
+                      onClick={(e) => handleDeleteSection(e, sec.id)}
+                      className="p-1.5 hover:bg-red-50 text-red-600 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg border border-red-100 transition-colors cursor-pointer"
                       title="Delete category"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -916,8 +921,8 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => handleDeleteCampaign(camp.id)}
-                        className="p-1.5 hover:bg-red-50 text-red-600 rounded-lg border border-red-100 transition-colors cursor-pointer"
+                        onClick={(e) => handleDeleteCampaign(e, camp.id)}
+                        className="p-1.5 hover:bg-red-50 text-red-600 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg border border-red-100 transition-colors cursor-pointer"
                         title="Purge campaign contract"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -988,8 +993,8 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => handleDeletePlan(plan.id)}
-                        className="p-1.5 hover:bg-red-50 text-red-600 rounded-lg border border-red-100 transition-colors cursor-pointer"
+                        onClick={(e) => handleDeletePlan(e, plan.id)}
+                        className="p-1.5 hover:bg-red-50 text-red-600 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg border border-red-100 transition-colors cursor-pointer"
                         title="Delete dynamic plan tier"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
