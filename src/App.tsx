@@ -23,6 +23,7 @@ import { gallerySections, Creator } from "./data";
 import ThreeGallery from "./components/ThreeGallery";
 import CreatorDetailPanel from "./components/CreatorDetailPanel";
 import VipCollaborationForm from "./components/VipCollaborationForm";
+import MoodboardModal from "./components/MoodboardModal";
 import DirectoryTab from "./components/DirectoryTab";
 import CampaignsTab from "./components/CampaignsTab";
 import MembershipTab from "./components/MembershipTab";
@@ -39,6 +40,8 @@ export default function App() {
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"catwalk" | "directory" | "campaigns" | "membership" | "faq" | "admin" | "apply">("catwalk");
+  const [moodboardItems, setMoodboardItems] = useState<string[]>([]);
+  const [isMoodboardOpen, setIsMoodboardOpen] = useState(false);
 
   // Dynamic full-stack database roster state
   const [sections, setSections] = useState<any[]>(gallerySections);
@@ -87,6 +90,19 @@ export default function App() {
   }, [activeTab]);
 
   useEffect(() => {
+    const savedMoodboard = sessionStorage.getItem("fsia_moodboard");
+    if (savedMoodboard) {
+      try {
+        setMoodboardItems(JSON.parse(savedMoodboard));
+      } catch(e) {}
+    }
+  }, []);
+
+  useEffect(() => {
+    sessionStorage.setItem("fsia_moodboard", JSON.stringify(moodboardItems));
+  }, [moodboardItems]);
+
+  useEffect(() => {
     window.addEventListener("sections-updated", refreshSections);
     
     const handleTabChange = (e: Event) => {
@@ -97,9 +113,26 @@ export default function App() {
     };
     window.addEventListener("change-tab", handleTabChange);
 
+    const handleToggleMoodboard = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const url = customEvent.detail;
+      setMoodboardItems(prev => {
+        if (prev.includes(url)) {
+          return prev.filter(u => u !== url);
+        }
+        return [...prev, url];
+      });
+    };
+    window.addEventListener("toggle-moodboard", handleToggleMoodboard);
+
+    const handleOpenMoodboard = () => setIsMoodboardOpen(true);
+    window.addEventListener("open-moodboard", handleOpenMoodboard);
+
     return () => {
       window.removeEventListener("sections-updated", refreshSections);
       window.removeEventListener("change-tab", handleTabChange);
+      window.removeEventListener("toggle-moodboard", handleToggleMoodboard);
+      window.removeEventListener("open-moodboard", handleOpenMoodboard);
     };
   }, []);
 
@@ -828,6 +861,7 @@ export default function App() {
                   creator={selectedCreator}
                   onClose={() => setSelectedCreator(null)}
                   onOpenCollaboration={() => setIsCollaborationOpen(true)}
+                  moodboardItems={moodboardItems}
                 />
               )}
             </AnimatePresence>
@@ -837,6 +871,15 @@ export default function App() {
               isOpen={isCollaborationOpen}
               onClose={() => setIsCollaborationOpen(false)}
               preselectedCreator={selectedCreator}
+            />
+
+            {/* --- MOODBOARD MODAL --- */}
+            <MoodboardModal
+              isOpen={isMoodboardOpen}
+              onClose={() => setIsMoodboardOpen(false)}
+              items={moodboardItems}
+              onRemoveItem={(url) => setMoodboardItems(prev => prev.filter(u => u !== url))}
+              onClearAll={() => setMoodboardItems([])}
             />
 
             {/* Back to Catwalk Floating Action Button (FAB) on Mobile when not on catwalk */}

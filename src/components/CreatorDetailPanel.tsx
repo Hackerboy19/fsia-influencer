@@ -1,19 +1,22 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "motion/react";
 import { X, ShieldCheck, MapPin, Award, Heart, Briefcase, ChevronRight } from "lucide-react";
 import { Creator } from "../data";
+import toast from "react-hot-toast";
 
 interface CreatorDetailPanelProps {
   key?: string;
   creator: Creator | null;
   onClose: () => void;
   onOpenCollaboration: () => void;
+  moodboardItems?: string[];
 }
 
 export default function CreatorDetailPanel({
   creator,
   onClose,
   onOpenCollaboration,
+  moodboardItems = [],
 }: CreatorDetailPanelProps) {
   const [lightboxImg, setLightboxImg] = React.useState<string | null>(null);
 
@@ -43,13 +46,30 @@ export default function CreatorDetailPanel({
             Verified VIP Installation
           </span>
         </div>
-        <button
-          onClick={onClose}
-          className="w-10 h-10 rounded-full border border-black/5 flex items-center justify-center hover:bg-black/5 transition-colors cursor-pointer"
-          id="close-creator-details-btn"
-        >
-          <X className="w-5 h-5 text-[#333]" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              window.dispatchEvent(new Event("open-moodboard"));
+            }}
+            className="w-10 h-10 rounded-full border border-black/5 bg-white flex items-center justify-center hover:bg-black/5 transition-colors cursor-pointer relative shadow-sm"
+            title="View Moodboard"
+          >
+            <Heart className="w-4 h-4 text-red-500" />
+            {moodboardItems.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-black text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
+                {moodboardItems.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={onClose}
+            className="w-10 h-10 rounded-full border border-black/5 flex items-center justify-center hover:bg-black/5 transition-colors cursor-pointer"
+            id="close-creator-details-btn"
+          >
+            <X className="w-5 h-5 text-[#333]" />
+          </button>
+        </div>
       </div>
 
       {/* Content Scroller */}
@@ -185,19 +205,68 @@ export default function CreatorDetailPanel({
           onClick={() => setLightboxImg(null)}
           className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] flex flex-col items-center justify-center p-4 cursor-zoom-out pointer-events-auto"
         >
-          <button 
-            onClick={() => setLightboxImg(null)}
-            className="absolute top-6 right-6 text-white hover:text-champagne transition-colors p-2 bg-white/10 rounded-full cursor-pointer"
-          >
-            <X className="w-6 h-6" />
-          </button>
-          <img 
-            src={lightboxImg} 
-            alt="Couture Detail" 
-            className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl border border-white/5"
-            referrerPolicy="no-referrer"
-          />
-          <p className="mt-4 text-xs font-serif-text italic text-[#E1C699] tracking-widest uppercase">
+          <div className="absolute top-6 right-6 flex items-center gap-4">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                window.dispatchEvent(new Event("open-moodboard"));
+                setLightboxImg(null);
+              }}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors cursor-pointer"
+            >
+              <Heart className="w-4 h-4" />
+              <span className="text-[10px] font-sans font-bold tracking-widest uppercase">Moodboard ({moodboardItems.length})</span>
+            </button>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxImg(null);
+              }}
+              className="text-white hover:text-champagne transition-colors p-2 bg-white/10 rounded-full cursor-pointer"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <img 
+              src={lightboxImg} 
+              alt="Couture Detail" 
+              className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl border border-white/5"
+              referrerPolicy="no-referrer"
+            />
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const isAdding = !moodboardItems.includes(lightboxImg);
+                window.dispatchEvent(new CustomEvent("toggle-moodboard", { detail: lightboxImg }));
+                
+                if (isAdding) {
+                  toast.success("Added to Moodboard", {
+                    style: {
+                      background: "#111",
+                      color: "#E1C699",
+                      fontSize: "12px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.1em",
+                      fontWeight: "bold"
+                    },
+                    iconTheme: {
+                      primary: "#E1C699",
+                      secondary: "#111",
+                    }
+                  });
+                }
+              }}
+              className="absolute -bottom-6 left-1/2 -translate-x-1/2 translate-y-1/2 w-16 h-16 bg-white rounded-full shadow-2xl flex items-center justify-center cursor-pointer hover:scale-105 transition-transform active:scale-95 group"
+            >
+              <Heart 
+                className={`w-8 h-8 transition-all duration-300 ${moodboardItems.includes(lightboxImg) ? 'text-red-500 fill-red-500 scale-110' : 'text-[#888] scale-100 group-hover:scale-110'}`} 
+              />
+            </button>
+          </div>
+
+          <p className="mt-12 text-xs font-serif-text italic text-[#E1C699] tracking-widest uppercase">
             Forever Star India Runway Detail • Click Anywhere to Close
           </p>
         </div>
