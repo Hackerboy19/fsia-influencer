@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   Plus, Edit2, Trash2, Check, X, Layout, Briefcase, Award, Star, Shield, Sparkles, AlertTriangle
 } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 interface AdminContentManagerProps {
   token: string;

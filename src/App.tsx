@@ -30,6 +30,7 @@ import ModelRegistrationTab from "./components/ModelRegistrationTab";
 import FaqTab from "./components/FaqTab";
 import AdminTab from "./components/AdminTab";
 import CursorParticleTrail from "./components/CursorParticleTrail";
+import { Toaster } from "react-hot-toast";
 
 export default function App() {
   // Navigation & Showcase States
@@ -271,6 +272,7 @@ export default function App() {
         scrollSnapType: "y mandatory"
       }}
     >
+      <Toaster position="top-right" reverseOrder={false} toastOptions={{ duration: 4000 }} />
       <AnimatePresence mode="wait">
         {!hasEntered ? (
           /* SECTION 1: THE ULTRA-PRESTIGE INVITATION GALA GATE */
