@@ -54,11 +54,15 @@ export interface Registration {
   scope?: string;
   duration?: string;
   verificationHash: string;
+  status?: "new" | "contacted" | "confirmed" | "closed";
+  notes?: string;
 }
 
 export interface AdminUser {
   username: string;
-  passwordHash: string; // "admin123" simple hash for demonstration / ease of access
+  passwordHash: string;
+  createdAt?: string;
+  lastLogin?: string;
 }
 
 export interface AdminLog {
@@ -109,6 +113,7 @@ export interface InfluencerApplication {
   phone: string;
   status: "pending" | "approved" | "declined";
   timestamp: string;
+  notes?: string;
 }
 
 export interface MembershipPlan {
@@ -369,16 +374,16 @@ const INITIAL_REGISTRATIONS: Registration[] = [
   }
 ];
 
+// Default operator account. The seeded password is a legacy SHA-256 hash of
+// "admin123" so that both the Node and PHP backends can verify it; it is
+// transparently upgraded to a salted hash on first successful login, and the
+// admin panel nags until it is changed. Override with ADMIN_USERNAME / ADMIN_PASSWORD.
 const INITIAL_USERS: AdminUser[] = [
   {
-    username: "admin",
-    // Simple verification check helper: in actual production, bcrypt or pbkdf2 is used.
-    // For local ease of demonstration and robustness of zero-dependency code, we'll store simple salt/string or check directly.
-    passwordHash: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918" // sha256 for "admin123"
-  },
-  {
-    username: "pm37855@gmail.com",
-    passwordHash: crypto.createHash("sha256").update("Xbox@1122").digest("hex")
+    username: process.env.ADMIN_USERNAME || "admin",
+    passwordHash: process.env.ADMIN_PASSWORD
+      ? hashPassword(process.env.ADMIN_PASSWORD)
+      : crypto.createHash("sha256").update("admin123").digest("hex")
   }
 ];
 
@@ -460,6 +465,63 @@ const INITIAL_LOGS: AdminLog[] = [
   }
 ];
 
+export const DEFAULT_SETTINGS: SystemSettings = {
+  websiteTitle: "FSIA — Forever Star India Awards",
+  heroTitle: "FOREVER STAR INDIA",
+  heroSubtitle: "THE EXQUISITE HALL OF LUXURY INFLUENCING & PRESTIGE COUTURE",
+  ctaText: "SECURE VIP RUNWAY ACCESS",
+  footerText: "© 2026 FOREVER STAR INDIA AWARDS (FSIA). ALL RIGHTS RESERVED.",
+  logoUrl: "",
+  primaryColor: "#E1C699",
+  secondaryColor: "#111111",
+  geminiApiKey: "",
+  aiSystemPrompt: "You are an elite, world-class haute couture brand director and luxury media strategist for FSIA. Your job is to optimize a creator's rough pitch/concept for a luxury brand sponsorship campaign into a majestic, highly professional premium proposal.",
+  modelSelection: "gemini-2.5-flash",
+  temperature: 0.7,
+  topK: 40
+};
+
+// Fresh database contents, also exported to php-backend/api/seed.json for the PHP build
+export function createDefaultDb(): DatabaseSchema {
+  return JSON.parse(JSON.stringify({
+    creators: INITIAL_CREATORS,
+    campaigns: INITIAL_CAMPAIGNS,
+    registrations: INITIAL_REGISTRATIONS,
+    admin_users: INITIAL_USERS,
+    admin_logs: INITIAL_LOGS,
+    system_settings: { ...DEFAULT_SETTINGS, geminiApiKey: process.env.GEMINI_API_KEY || "" },
+    prompt_logs: [],
+    influencer_applications: [],
+    membership_plans: INITIAL_PLANS
+  }));
+}
+
+// ----------------------------------------------------
+// PASSWORD HASHING
+// ----------------------------------------------------
+export function hashPassword(password: string): string {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.scryptSync(password, salt, 64).toString("hex");
+  return `scrypt$${salt}$${hash}`;
+}
+
+// Supports salted scrypt hashes and legacy unsalted SHA-256 hex digests
+export function verifyPassword(password: string, stored: string): boolean {
+  if (stored.startsWith("scrypt$")) {
+    const [, salt, hash] = stored.split("$");
+    const candidate = crypto.scryptSync(password, salt, 64);
+    const expected = Buffer.from(hash, "hex");
+    return expected.length === candidate.length && crypto.timingSafeEqual(candidate, expected);
+  }
+  const legacy = crypto.createHash("sha256").update(password).digest();
+  const expected = Buffer.from(stored, "hex");
+  return expected.length === legacy.length && crypto.timingSafeEqual(legacy, expected);
+}
+
+export function needsRehash(stored: string): boolean {
+  return !stored.startsWith("scrypt$");
+}
+
 // Initialize and Read Database
 export function getDb(): DatabaseSchema {
   const dir = path.dirname(DB_PATH);
@@ -467,34 +529,8 @@ export function getDb(): DatabaseSchema {
     fs.mkdirSync(dir, { recursive: true });
   }
 
-  const defaultSettings: SystemSettings = {
-    websiteTitle: "FSIA — Forever Star India Awards",
-    heroTitle: "FOREVER STAR INDIA",
-    heroSubtitle: "THE EXQUISITE HALL OF LUXURY INFLUENCING & PRESTIGE COUTURE",
-    ctaText: "SECURE VIP RUNWAY ACCESS",
-    footerText: "© 2026 FOREVER STAR INDIA AWARDS (FSIA). ALL RIGHTS RESERVED.",
-    logoUrl: "",
-    primaryColor: "#E1C699",
-    secondaryColor: "#111111",
-    geminiApiKey: process.env.GEMINI_API_KEY || "",
-    aiSystemPrompt: "You are an elite, world-class haute couture brand director and luxury media strategist for FSIA. Your job is to optimize a creator's rough pitch/concept for a luxury brand sponsorship campaign into a majestic, highly professional premium proposal.",
-    modelSelection: "gemini-3.5-flash",
-    temperature: 0.7,
-    topK: 40
-  };
-
   if (!fs.existsSync(DB_PATH)) {
-    const defaultData: DatabaseSchema = {
-      creators: INITIAL_CREATORS,
-      campaigns: INITIAL_CAMPAIGNS,
-      registrations: INITIAL_REGISTRATIONS,
-      admin_users: INITIAL_USERS,
-      admin_logs: INITIAL_LOGS,
-      system_settings: defaultSettings,
-      prompt_logs: [],
-      influencer_applications: [],
-      membership_plans: INITIAL_PLANS
-    };
+    const defaultData = createDefaultDb();
     fs.writeFileSync(DB_PATH, JSON.stringify(defaultData, null, 2), "utf8");
     return defaultData;
   }
@@ -503,7 +539,7 @@ export function getDb(): DatabaseSchema {
     const raw = fs.readFileSync(DB_PATH, "utf8");
     const parsed = JSON.parse(raw) as DatabaseSchema;
     if (!parsed.system_settings) {
-      parsed.system_settings = defaultSettings;
+      parsed.system_settings = { ...DEFAULT_SETTINGS };
     }
     if (!parsed.prompt_logs) {
       parsed.prompt_logs = [];
@@ -514,40 +550,31 @@ export function getDb(): DatabaseSchema {
     if (!parsed.membership_plans) {
       parsed.membership_plans = INITIAL_PLANS;
     }
-    if (!parsed.admin_users) {
+    if (!parsed.admin_users || parsed.admin_users.length === 0) {
       parsed.admin_users = INITIAL_USERS;
     }
-    const hasTargetUser = parsed.admin_users.some((u) => u.username === "pm37855@gmail.com");
-    if (!hasTargetUser) {
-      parsed.admin_users.push({
-        username: "pm37855@gmail.com",
-        passwordHash: crypto.createHash("sha256").update("Xbox@1122").digest("hex")
-      });
+    if (!parsed.admin_logs) {
+      parsed.admin_logs = [];
     }
-    fs.writeFileSync(DB_PATH, JSON.stringify(parsed, null, 2), "utf8");
     return parsed;
   } catch (error) {
-    console.error("Error reading JSON Database. Re-seeding defaults.", error);
-    const defaultData: DatabaseSchema = {
-      creators: INITIAL_CREATORS,
-      campaigns: INITIAL_CAMPAIGNS,
-      registrations: INITIAL_REGISTRATIONS,
-      admin_users: INITIAL_USERS,
-      admin_logs: INITIAL_LOGS,
-      system_settings: defaultSettings,
-      prompt_logs: [],
-      influencer_applications: [],
-      membership_plans: INITIAL_PLANS
-    };
+    // Never silently wipe a corrupt database: keep a copy for manual recovery
+    console.error("Error reading JSON Database. Backing up and re-seeding defaults.", error);
+    try {
+      fs.copyFileSync(DB_PATH, DB_PATH + ".corrupt-" + Date.now());
+    } catch {}
+    const defaultData = createDefaultDb();
     fs.writeFileSync(DB_PATH, JSON.stringify(defaultData, null, 2), "utf8");
     return defaultData;
   }
 }
 
-// Write Database
+// Write Database (atomic: write temp file then rename)
 export function saveDb(data: DatabaseSchema) {
   try {
-    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), "utf8");
+    const tmp = DB_PATH + ".tmp";
+    fs.writeFileSync(tmp, JSON.stringify(data, null, 2), "utf8");
+    fs.renameSync(tmp, DB_PATH);
   } catch (error) {
     console.error("Error writing to JSON Database", error);
   }
@@ -562,9 +589,9 @@ export function logAction(action: string, ip?: string) {
     action,
     ip
   });
-  // Keep logs to a clean max limit of 100 entries
-  if (db.admin_logs.length > 100) {
-    db.admin_logs = db.admin_logs.slice(0, 100);
+  // Keep a bounded audit trail
+  if (db.admin_logs.length > 500) {
+    db.admin_logs = db.admin_logs.slice(0, 500);
   }
   saveDb(db);
 }

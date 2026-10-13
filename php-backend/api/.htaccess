@@ -1,0 +1,8 @@
+# Only the router is reachable; seed data, config and libraries are private
+<FilesMatch "^(?!index\.php$).*$">
+    Require all denied
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>

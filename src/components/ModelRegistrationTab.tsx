@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { resizeImageFile } from "../lib/image";
+import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Sparkles, 
@@ -520,13 +522,13 @@ export default function ModelRegistrationTab() {
                             setIsDragActive(false);
                             const file = e.dataTransfer.files?.[0];
                             if (file) {
-                              const reader = new FileReader();
-                              reader.onloadend = () => {
-                                  setCustomImage(reader.result as string);
+                              resizeImageFile(file)
+                                .then((dataUrl) => {
+                                  setCustomImage(dataUrl);
                                   setUploadedFileName(file.name);
                                   setPresetImage("");
-                              };
-                              reader.readAsDataURL(file);
+                                })
+                                .catch(() => toast.error("That file could not be read as an image."));
                             }
                           }}
                           className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all flex flex-col items-center justify-center gap-3 cursor-pointer ${
@@ -546,13 +548,13 @@ export default function ModelRegistrationTab() {
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) {
-                                const reader = new FileReader();
-                                reader.onloadend = () => {
-                                  setCustomImage(reader.result as string);
+                                resizeImageFile(file)
+                                .then((dataUrl) => {
+                                  setCustomImage(dataUrl);
                                   setUploadedFileName(file.name);
                                   setPresetImage("");
-                                };
-                                reader.readAsDataURL(file);
+                                })
+                                .catch(() => toast.error("That file could not be read as an image."));
                               }
                             }}
                           />

@@ -3,9 +3,12 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   Lock, User, LogIn, LayoutDashboard, Sparkles, Users, Briefcase, FileText, 
   Trash2, Plus, Edit2, Check, RefreshCw, X, AlertTriangle, Shield, CheckCircle2,
-  TrendingUp, Phone, Mail, MapPin, Eye, FileSpreadsheet, Activity, UserPlus, Layout
+  TrendingUp, Phone, Mail, MapPin, Eye, FileSpreadsheet, Activity, UserPlus, Layout,
+  KeyRound, Search, Download
 } from "lucide-react";
 import AdminContentManager from "./AdminContentManager";
+import AdminSecurityPanel from "./AdminSecurityPanel";
+import { ADMIN_TOKEN_KEY, ADMIN_UNAUTHORIZED_EVENT, downloadCsv } from "../lib/adminSession";
 import { toast } from "react-hot-toast";
 
 interface Creator {
@@ -60,7 +63,18 @@ interface Registration {
   scope?: string;
   duration?: string;
   verificationHash: string;
+  status?: LeadStatus;
+  notes?: string;
 }
+
+type LeadStatus = "new" | "contacted" | "confirmed" | "closed";
+
+const LEAD_STATUSES: { id: LeadStatus; label: string; className: string }[] = [
+  { id: "new", label: "New", className: "bg-blue-50 text-blue-700 border-blue-100" },
+  { id: "contacted", label: "Contacted", className: "bg-amber-50 text-amber-700 border-amber-100" },
+  { id: "confirmed", label: "Confirmed", className: "bg-emerald-50 text-emerald-700 border-emerald-100" },
+  { id: "closed", label: "Closed", className: "bg-stone-100 text-stone-600 border-stone-200" }
+];
 
 interface InfluencerApplication {
   id: string;
@@ -96,6 +110,14 @@ export default function AdminTab() {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState("");
+  const [mustChangePassword, setMustChangePassword] = useState(false);
+
+  // Inbox filters
+  const [regQuery, setRegQuery] = useState("");
+  const [regStatusFilter, setRegStatusFilter] = useState<"all" | LeadStatus>("all");
+  const [appQuery, setAppQuery] = useState("");
+  const [appStatusFilter, setAppStatusFilter] = useState<"all" | InfluencerApplication["status"]>("all");
 
   // Active sub-section within Admin Workspace (extended with dynamic settings modules)
   const [adminActiveSubTab, setAdminActiveSubTab] = useState<string>("dashboard");
@@ -212,7 +234,7 @@ export default function AdminTab() {
   const handleDeleteCategory = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (!window.confirm("Are you sure you want to delete this item? This action cannot be undone.")) return;
-    setGallerySections(prev => prev.filter(s => s.id !== id));
+    setSections(prev => prev.filter(s => s.id !== id));
     try {
       const res = await fetch(`/api/sections/${id}`, {
         method: "DELETE",
@@ -234,14 +256,34 @@ export default function AdminTab() {
     }
   };
 
-  // Check login on load
+  // Restore and validate a saved session on load
   useEffect(() => {
-    const savedToken = localStorage.getItem("fsia_admin_token");
-    if (savedToken) {
-      setToken(savedToken);
-      setIsLoggedIn(true);
-      fetchAdminData(savedToken);
-    }
+    const savedToken = localStorage.getItem(ADMIN_TOKEN_KEY);
+    if (!savedToken) return;
+    fetch("/api/auth/me", { headers: { "Authorization": `Bearer ${savedToken}` } })
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((data) => {
+        setToken(savedToken);
+        setCurrentUser(data.username);
+        setMustChangePassword(!!data.mustChangePassword);
+        setIsLoggedIn(true);
+        fetchAdminData(savedToken);
+      })
+      .catch(() => localStorage.removeItem(ADMIN_TOKEN_KEY));
+  }, []);
+
+  // Any 401 from an admin call means the session expired or was revoked
+  useEffect(() => {
+    const onUnauthorized = () => {
+      if (!localStorage.getItem(ADMIN_TOKEN_KEY)) return;
+      localStorage.removeItem(ADMIN_TOKEN_KEY);
+      setToken("");
+      setIsLoggedIn(false);
+      setStats(null);
+      toast.error("Your admin session has expired. Please sign in again.");
+    };
+    window.addEventListener(ADMIN_UNAUTHORIZED_EVENT, onUnauthorized);
+    return () => window.removeEventListener(ADMIN_UNAUTHORIZED_EVENT, onUnauthorized);
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -261,7 +303,10 @@ export default function AdminTab() {
       const data = await res.json();
       if (res.ok && data.success) {
         setToken(data.token);
-        localStorage.setItem("fsia_admin_token", data.token);
+        localStorage.setItem(ADMIN_TOKEN_KEY, data.token);
+        setCurrentUser(data.username);
+        setMustChangePassword(!!data.mustChangePassword);
+        setPassword("");
         setIsLoggedIn(true);
         fetchAdminData(data.token);
       } else {
@@ -275,7 +320,8 @@ export default function AdminTab() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("fsia_admin_token");
+    fetch("/api/auth/logout", { method: "POST", headers: { "Authorization": `Bearer ${token}` } }).catch(() => {});
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
     setToken("");
     setIsLoggedIn(false);
     setStats(null);
@@ -320,7 +366,7 @@ export default function AdminTab() {
       }
 
       // 5. Fetch system settings
-      const settingsRes = await fetch("/api/settings");
+      const settingsRes = await fetch("/api/admin/settings", { headers });
       if (settingsRes.ok) {
         const settingsData = await settingsRes.json();
         setSettings(settingsData);
@@ -346,13 +392,15 @@ export default function AdminTab() {
         }
       });
       if (res.ok) {
+        toast.success("Applicant approved and published to the runway.");
+        window.dispatchEvent(new Event("sections-updated"));
         fetchAdminData(token);
       } else {
         const err = await res.json();
-        alert(err.error || "Approval failed.");
+        toast.error(err.error || "Approval failed.");
       }
     } catch (e) {
-      alert("Failed to communicate with administration service.");
+      toast.error("Failed to communicate with administration service.");
     }
   };
 
@@ -368,10 +416,10 @@ export default function AdminTab() {
         fetchAdminData(token);
       } else {
         const err = await res.json();
-        alert(err.error || "Decline failed.");
+        toast.error(err.error || "Decline failed.");
       }
     } catch (e) {
-      alert("Failed to communicate with administration service.");
+      toast.error("Failed to communicate with administration service.");
     }
   };
 
@@ -403,6 +451,71 @@ export default function AdminTab() {
       setIsSavingSettings(false);
     }
   };
+
+  // ----------------------------------------------------
+  // LEADS & APPLICANTS INBOX METHODS
+  // ----------------------------------------------------
+  const updateRegistration = async (id: string, patch: { status?: LeadStatus; notes?: string }) => {
+    setRegistrations((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+    try {
+      const res = await fetch(`/api/registrations/${encodeURIComponent(id)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify(patch)
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || "Failed to update lead.");
+        fetchAdminData(token);
+      }
+    } catch {
+      toast.error("Failed to update lead.");
+      fetchAdminData(token);
+    }
+  };
+
+  const deleteRegistration = async (id: string) => {
+    if (!window.confirm("Delete this brand lead permanently?")) return;
+    const res = await fetch(`/api/registrations/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (res.ok) {
+      toast.success("Lead deleted.");
+      setRegistrations((prev) => prev.filter((r) => r.id !== id));
+    } else {
+      toast.error("Failed to delete lead.");
+    }
+  };
+
+  const deleteInfluencerApplication = async (id: string) => {
+    if (!window.confirm("Delete this application permanently? Approved creators stay on the roster.")) return;
+    const res = await fetch(`/api/influencer-applications/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (res.ok) {
+      toast.success("Application deleted.");
+      setInfluencerApplications((prev) => prev.filter((a) => a.id !== id));
+    } else {
+      toast.error("Failed to delete application.");
+    }
+  };
+
+  const matches = (query: string, ...fields: (string | undefined)[]) =>
+    !query.trim() || fields.some((f) => (f || "").toLowerCase().includes(query.trim().toLowerCase()));
+
+  const filteredRegistrations = registrations.filter(
+    (r) =>
+      (regStatusFilter === "all" || (r.status || "new") === regStatusFilter) &&
+      matches(regQuery, r.brandName, r.creatorName, r.contactEmail, r.contactPhone, r.bookingId, r.clientCity)
+  );
+
+  const filteredApplications = influencerApplications.filter(
+    (a) =>
+      (appStatusFilter === "all" || a.status === appStatusFilter) &&
+      matches(appQuery, a.name, a.email, a.phone, a.city, a.category, a.role)
+  );
 
   // ----------------------------------------------------
   // CREATORS CRUD METHODS
@@ -525,7 +638,7 @@ export default function AdminTab() {
   const deleteCreator = async (e: React.MouseEvent, sectionId: string, name: string) => {
     e.stopPropagation();
     if (!window.confirm("Are you sure you want to delete this item? This action cannot be undone.")) return;
-    setGallerySections(prev => 
+    setSections(prev => 
       prev.map(section => {
         if (section.id === sectionId) {
           return {
@@ -761,9 +874,6 @@ export default function AdminTab() {
               </button>
             </form>
 
-            <div className="pt-2 text-[10px] font-mono text-[#888]">
-              Credentials Helper: Use <strong className="text-black">admin</strong> & <strong className="text-black">admin123</strong>
-            </div>
           </motion.div>
         </div>
       ) : (
@@ -778,7 +888,7 @@ export default function AdminTab() {
                 <span className="bg-emerald-50 text-emerald-700 text-[9px] font-sans font-bold px-2 py-0.5 rounded-md border border-emerald-100 flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3 text-emerald-600" /> ACTIVE CONTEXT
                 </span>
-                <span className="font-mono text-[10px] text-[#888]">TOKEN VERIFIED</span>
+                <span className="font-mono text-[10px] text-[#888]">SIGNED IN AS {currentUser.toUpperCase()}</span>
               </div>
               <h2 className="font-serif-display text-2xl font-bold text-[#111] tracking-tight">
                 VIP Editorial Workspace
@@ -810,6 +920,24 @@ export default function AdminTab() {
             </div>
           </div>
 
+          {mustChangePassword && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+              <div className="flex items-start gap-2.5 text-amber-800">
+                <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+                <p className="text-xs font-sans leading-relaxed">
+                  <strong>You are using the default password.</strong> Anyone who knows it can control this website.
+                  Change it now before going live.
+                </p>
+              </div>
+              <button
+                onClick={() => setAdminActiveSubTab("security")}
+                className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold tracking-widest uppercase px-4 py-2 rounded-lg cursor-pointer"
+              >
+                Change password
+              </button>
+            </div>
+          )}
+
           {/* Tab Navigation */}
           <div className="flex flex-wrap md:flex-nowrap items-center gap-1.5 md:gap-2 border-b border-[#E1C699]/30 pb-1 w-full max-w-full overflow-x-auto scrollbar-thin">
             {[
@@ -820,9 +948,10 @@ export default function AdminTab() {
               { id: "prompt_logs", label: "Prompt Logs", icon: Activity },
               { id: "creators", label: "Creator Roster", icon: Users },
               { id: "campaigns", label: "Brand Bookings", icon: Briefcase },
-              { id: "registrations", label: "VIP Applications", icon: FileText },
-              { id: "influencer_applications", label: "Creator Applicants", icon: UserPlus }
-            ].map((tab) => {
+              { id: "registrations", label: "VIP Applications", icon: FileText, badge: registrations.filter((r) => (r.status || "new") === "new").length },
+              { id: "influencer_applications", label: "Creator Applicants", icon: UserPlus, badge: influencerApplications.filter((a) => a.status === "pending").length },
+              { id: "security", label: "Security & Data", icon: KeyRound }
+            ].map((tab: { id: string; label: string; icon: typeof KeyRound; badge?: number }) => {
               const Icon = tab.icon;
               const active = adminActiveSubTab === tab.id;
               return (
@@ -837,6 +966,11 @@ export default function AdminTab() {
                 >
                   <Icon className={`w-3.5 h-3.5 md:w-4 md:h-4 ${active ? "text-champagne" : "text-[#888]"}`} />
                   {tab.label}
+                  {!!tab.badge && (
+                    <span className="ml-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[9px] leading-[18px] text-center">
+                      {tab.badge}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -887,17 +1021,40 @@ export default function AdminTab() {
                       <div className="text-2xl font-serif-display font-bold text-[#111]">{stats.apiSuccessRate !== undefined ? stats.apiSuccessRate : 100}%</div>
                       <div className="text-[10px] font-sans tracking-wider text-[#666] uppercase font-semibold">API Success Rate</div>
                     </div>
+                    <button
+                      onClick={() => setAdminActiveSubTab("registrations")}
+                      className="text-left bg-blue-50/60 p-5 rounded-2xl border border-blue-100 shadow-xs space-y-1 hover:bg-blue-50 cursor-pointer transition-colors"
+                    >
+                      <Mail className="w-5 h-5 text-blue-600" />
+                      <div className="text-2xl font-serif-display font-bold text-[#111]">{registrations.filter((r) => (r.status || "new") === "new").length}</div>
+                      <div className="text-[10px] font-sans tracking-wider text-[#666] uppercase font-semibold">New Brand Leads</div>
+                    </button>
+                    <button
+                      onClick={() => setAdminActiveSubTab("influencer_applications")}
+                      className="text-left bg-amber-50/60 p-5 rounded-2xl border border-amber-100 shadow-xs space-y-1 hover:bg-amber-50 cursor-pointer transition-colors"
+                    >
+                      <UserPlus className="w-5 h-5 text-amber-600" />
+                      <div className="text-2xl font-serif-display font-bold text-[#111]">{influencerApplications.filter((a) => a.status === "pending").length}</div>
+                      <div className="text-[10px] font-sans tracking-wider text-[#666] uppercase font-semibold">Applicants Awaiting Review</div>
+                    </button>
+                    <div className="bg-white/60 p-5 rounded-2xl border border-black/5 shadow-xs space-y-1">
+                      <Layout className="w-5 h-5 text-champagne" />
+                      <div className="text-2xl font-serif-display font-bold text-[#111]">{stats.categoriesCount ?? 0}</div>
+                      <div className="text-[10px] font-sans tracking-wider text-[#666] uppercase font-semibold">Runway Categories</div>
+                    </div>
                   </div>
 
                   {/* PHP MVC Architecture Announcement Callout */}
                   <div className="p-6 bg-champagne/10 border border-champagne/20 rounded-2xl space-y-3">
                     <div className="flex items-center gap-2 text-champagne font-bold font-sans text-xs uppercase tracking-widest">
                       <Shield className="w-4 h-4 text-champagne" />
-                      PHP BACKEND CONVERSION FULLY ARCHITECTED
+                      Go-live checklist
                     </div>
-                    <p className="text-xs text-[#444] font-serif-text leading-relaxed">
-                      This active full-stack panel communicates with local JSON storage in memory. The enterprise **PHP MVC blueprints (with raw PDO connections, prepared statements, MySQL relational schemas, and cURL-authenticated Gemini API request routing)** are completely compiled and exportable inside the <code>/php-mvc-blueprint/</code> directory of your codebase.
-                    </p>
+                    <ul className="text-xs text-[#444] font-serif-text leading-relaxed list-disc pl-5 space-y-1">
+                      <li>Change the default admin password and add named accounts for each team member (Security &amp; Data tab).</li>
+                      <li>Download a backup before every redeploy — uploading a new build never touches your saved data.</li>
+                      <li>Review new brand leads and creator applicants daily from the badges above.</li>
+                    </ul>
                   </div>
                 </div>
 
@@ -1502,23 +1659,70 @@ export default function AdminTab() {
                     </span>
                   </div>
 
+                  <div className="px-5 py-3 border-b border-black/5 bg-white/40 flex flex-col md:flex-row gap-2 md:items-center">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-2.5 w-4 h-4 text-[#888]" />
+                      <input
+                        value={regQuery}
+                        onChange={(e) => setRegQuery(e.target.value)}
+                        placeholder="Search brand, creator, email, phone or booking ID…"
+                        className="w-full pl-9 pr-3 py-2 bg-white border border-black/10 rounded-lg text-xs focus:outline-none focus:border-champagne"
+                      />
+                    </div>
+                    <select
+                      value={regStatusFilter}
+                      onChange={(e) => setRegStatusFilter(e.target.value as "all" | LeadStatus)}
+                      className="px-3 py-2 bg-white border border-black/10 rounded-lg text-xs focus:outline-none focus:border-champagne"
+                    >
+                      <option value="all">All statuses</option>
+                      {LEAD_STATUSES.map((st) => (
+                        <option key={st.id} value={st.id}>{st.label}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => downloadCsv(`fsia-brand-leads-${new Date().toISOString().slice(0, 10)}.csv`, filteredRegistrations as unknown as Record<string, unknown>[])}
+                      disabled={filteredRegistrations.length === 0}
+                      className="px-3 py-2 bg-[#111] text-white rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Export CSV
+                    </button>
+                  </div>
+
                   <div className="divide-y divide-black/5">
-                    {registrations.map((reg) => (
+                    {filteredRegistrations.map((reg) => (
                       <div key={reg.id} className="p-5 space-y-4 hover:bg-white/20 transition-all">
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
                               <span className="font-mono text-xs font-bold text-[#111]">{reg.bookingId}</span>
-                              <span className="text-[10px] bg-champagne/10 text-champagne border border-champagne/20 px-2 py-0.5 rounded font-sans font-semibold">
-                                ESCROW ACTIVE
-                              </span>
+                              <select
+                                value={reg.status || "new"}
+                                onChange={(e) => updateRegistration(reg.id, { status: e.target.value as LeadStatus })}
+                                className={`text-[10px] font-sans font-bold uppercase px-2 py-0.5 rounded border cursor-pointer focus:outline-none ${
+                                  (LEAD_STATUSES.find((st) => st.id === (reg.status || "new")) || LEAD_STATUSES[0]).className
+                                }`}
+                                title="Lead status"
+                              >
+                                {LEAD_STATUSES.map((st) => (
+                                  <option key={st.id} value={st.id}>{st.label}</option>
+                                ))}
+                              </select>
                             </div>
                             <h5 className="font-serif-display text-base font-bold text-black">{reg.brandName}</h5>
                           </div>
                           
-                          <div className="text-left md:text-right font-mono text-[10px] text-[#666]">
-                            <div>Budget: <strong className="text-black font-semibold">{reg.budget}</strong></div>
-                            <div>Applied: {reg.timestamp}</div>
+                          <div className="flex items-start gap-3">
+                            <div className="text-left md:text-right font-mono text-[10px] text-[#666]">
+                              <div>Budget: <strong className="text-black font-semibold">{reg.budget}</strong></div>
+                              <div>Applied: {reg.timestamp}</div>
+                            </div>
+                            <button
+                              onClick={() => deleteRegistration(reg.id)}
+                              className="p-2 rounded-lg text-red-600 hover:bg-red-50 cursor-pointer"
+                              title="Delete lead"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
 
@@ -1534,12 +1738,12 @@ export default function AdminTab() {
                           <div className="space-y-1">
                             <span className="text-[8px] font-sans font-bold tracking-wider text-[#888] uppercase block">CONTACT CHANNELS</span>
                             <div className="space-y-0.5">
-                              <div className="flex items-center gap-1.5 text-black">
+                              <a href={`mailto:${reg.contactEmail}`} className="flex items-center gap-1.5 text-black hover:underline">
                                 <Mail className="w-3.5 h-3.5 text-[#888]" /> {reg.contactEmail}
-                              </div>
-                              <div className="flex items-center gap-1.5 text-black">
+                              </a>
+                              <a href={`tel:${reg.contactPhone}`} className="flex items-center gap-1.5 text-black hover:underline">
                                 <Phone className="w-3.5 h-3.5 text-[#888]" /> {reg.contactPhone}
-                              </div>
+                              </a>
                             </div>
                           </div>
                           <div className="space-y-1">
@@ -1561,12 +1765,22 @@ export default function AdminTab() {
                             <span className="font-serif-text italic text-[#666]">Scope: {reg.scope} ({reg.duration || "3 Months"})</span>
                           )}
                         </div>
+
+                        <textarea
+                          defaultValue={reg.notes || ""}
+                          onBlur={(e) => {
+                            if (e.target.value !== (reg.notes || "")) updateRegistration(reg.id, { notes: e.target.value });
+                          }}
+                          placeholder="Private follow-up notes (saved when you click away)…"
+                          rows={2}
+                          className="w-full px-3 py-2 bg-white/70 border border-black/5 rounded-lg text-xs font-serif-text focus:outline-none focus:border-champagne"
+                        />
                       </div>
                     ))}
 
-                    {registrations.length === 0 && (
+                    {filteredRegistrations.length === 0 && (
                       <div className="p-12 text-center text-xs text-[#888] font-serif-text italic">
-                        No client escrow collaboration proposals received yet.
+                        {registrations.length === 0 ? "No client escrow collaboration proposals received yet." : "No leads match your filters."}
                       </div>
                     )}
                   </div>
@@ -1615,8 +1829,37 @@ export default function AdminTab() {
                     </div>
                   </div>
 
+                  <div className="px-5 py-3 border-b border-black/5 bg-white/40 flex flex-col md:flex-row gap-2 md:items-center">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-2.5 w-4 h-4 text-[#888]" />
+                      <input
+                        value={appQuery}
+                        onChange={(e) => setAppQuery(e.target.value)}
+                        placeholder="Search name, email, phone, city or category…"
+                        className="w-full pl-9 pr-3 py-2 bg-white border border-black/10 rounded-lg text-xs focus:outline-none focus:border-champagne"
+                      />
+                    </div>
+                    <select
+                      value={appStatusFilter}
+                      onChange={(e) => setAppStatusFilter(e.target.value as "all" | InfluencerApplication["status"])}
+                      className="px-3 py-2 bg-white border border-black/10 rounded-lg text-xs focus:outline-none focus:border-champagne"
+                    >
+                      <option value="all">All statuses</option>
+                      <option value="pending">Pending</option>
+                      <option value="approved">Approved</option>
+                      <option value="declined">Declined</option>
+                    </select>
+                    <button
+                      onClick={() => downloadCsv(`fsia-creator-applicants-${new Date().toISOString().slice(0, 10)}.csv`, filteredApplications as unknown as Record<string, unknown>[])}
+                      disabled={filteredApplications.length === 0}
+                      className="px-3 py-2 bg-[#111] text-white rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Export CSV
+                    </button>
+                  </div>
+
                   <div className="divide-y divide-black/5">
-                    {influencerApplications.map((app) => (
+                    {filteredApplications.map((app) => (
                       <div key={app.id} className="p-5 space-y-4 hover:bg-white/20 transition-all text-left">
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                           <div className="flex items-center gap-3">
@@ -1668,6 +1911,13 @@ export default function AdminTab() {
                                 </button>
                               </div>
                             )}
+                            <button
+                              onClick={() => deleteInfluencerApplication(app.id)}
+                              className="p-2 rounded-lg text-red-600 hover:bg-red-50 cursor-pointer"
+                              title="Delete application"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
 
@@ -1706,7 +1956,7 @@ export default function AdminTab() {
                                 <span className="text-[8px] font-sans font-bold tracking-wider text-[#888] uppercase block mb-1">SUBMITTED PORTFOLIO</span>
                                 <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
                                   {app.portfolio.map((img, i) => (
-                                    <a key={i} href={img} target="_blank" rel="noopener noreferrer" className="relative w-12 h-16 rounded overflow-hidden border border-black/5 bg-gray-50 flex-shrink-0 group">
+                                    <a key={i} href={/^https?:\/\//i.test(img) ? img : undefined} target="_blank" rel="noopener noreferrer" className="relative w-12 h-16 rounded overflow-hidden border border-black/5 bg-gray-50 flex-shrink-0 group">
                                       <img src={img} alt={`Portfolio ${i+1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform" referrerPolicy="no-referrer" />
                                       <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                         <Eye className="w-3.5 h-3.5 text-white" />
@@ -1725,14 +1975,23 @@ export default function AdminTab() {
                       </div>
                     ))}
 
-                    {influencerApplications.length === 0 && (
+                    {filteredApplications.length === 0 && (
                       <div className="p-12 text-center text-xs text-[#888] font-serif-text italic">
-                        No public model registration requests submitted yet.
+                        {influencerApplications.length === 0 ? "No public model registration requests submitted yet." : "No applicants match your filters."}
                       </div>
                     )}
                   </div>
                 </div>
               </motion.div>
+            )}
+
+            {adminActiveSubTab === "security" && (
+              <AdminSecurityPanel
+                token={token}
+                currentUser={currentUser}
+                onPasswordChanged={() => setMustChangePassword(false)}
+                onDataRestored={() => fetchAdminData(token)}
+              />
             )}
 
           </div>

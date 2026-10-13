@@ -1,20 +1,47 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# FSIA Influencer — Forever Star India
 
-# Run and deploy your AI Studio app
+3D editorial gallery, creator directory, brand campaigns, membership plans and a
+full admin panel for [influencer.fsia.in](https://influencer.fsia.in).
 
-This contains everything you need to run your app locally.
+## Stack
 
-View your app in AI Studio: https://ai.studio/apps/958017e4-dc79-43e3-9e51-7c91a0666485
+- **Frontend:** React 19 + Vite + Tailwind CSS 4 + Three.js (`src/`)
+- **Backend (two interchangeable implementations of the same `/api`):**
+  - `server.ts` — Node/Express, used for local development (`npm run dev`) and Node hosting
+  - `php-backend/` — PHP, used for the live site on shared hosting
+- **Storage:** a single JSON file (`server/db.json` for Node, `storage/db.json` for PHP),
+  seeded from `server/db.ts`
 
-## Run Locally
+## Development
 
-**Prerequisites:**  Node.js
+```bash
+npm install
+npm run dev          # http://localhost:3000 (Vite + Express API)
+npm run lint         # TypeScript type-check
+```
 
+Default admin login: `admin` / `admin123` (the panel forces you to change it).
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Build the live-site bundle
+
+```bash
+npm run package
+```
+
+Creates `release/fsia-influencer-live.zip` (static frontend + PHP API) ready to
+extract into the site's web root. See [DEPLOY.md](DEPLOY.md) for the step-by-step guide.
+
+To test the bundle locally:
+
+```bash
+php -S localhost:8080 -t release/fsia-influencer-live php-backend/dev-router.php
+```
+
+## Admin panel
+
+- **Overview:** live counters, new-lead / pending-applicant badges, audit trail
+- **Content Studio / Creator Roster / Brand Bookings:** manage categories, creators, campaigns and membership plans
+- **Campaign Copy / AI Config / Prompt Logs:** site text and colours, Gemini settings and history
+- **VIP Applications:** brand leads with search, status pipeline (new → contacted → confirmed → closed), notes, CSV export
+- **Creator Applicants:** approve straight onto the runway, decline, delete, search, CSV export
+- **Security & Data:** change password, admin team accounts, backup / restore, searchable audit log
