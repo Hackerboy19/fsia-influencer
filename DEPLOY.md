@@ -11,14 +11,36 @@ Apache). No Node.js, no MySQL and no build step is needed on the server.
 
 ## First-time install
 
-1. In cPanel → **File Manager**, open the folder for the subdomain
-   `influencer.fsia.in` (usually `public_html/influencer` or `influencer.fsia.in/`).
-2. Upload `fsia-influencer-live.zip` and **Extract** it there. You should see
-   `index.html`, `assets/`, `api/`, `storage/` and `.htaccess` directly in that folder
-   (enable *Show Hidden Files* to see `.htaccess`).
-3. Make sure the `storage/` folder is writable by PHP (permissions `755`; use `775` only if your host requires it).
-4. Open `https://influencer.fsia.in/api/health` — it should show `{"ok":true,...}`.
-5. Open `https://influencer.fsia.in`, go to the **Admin** tab and sign in with
+The fsia.in hosting runs **Plesk** (cPanel steps are listed after).
+
+### 0. Create the subdomain (required: `influencer.fsia.in` has no DNS record until you do)
+
+Plesk → **Websites & Domains** → **Add Subdomain** → name `influencer`, parent `fsia.in`,
+document root `influencer.fsia.in`. Because fsia.in uses the hosting company's
+nameservers, Plesk creates the DNS record for you; it can take up to an hour to work everywhere.
+
+Then on the new subdomain: **SSL/TLS Certificates** → **Let's Encrypt** → issue a free
+certificate (the site redirects every visitor to HTTPS). In **Hosting & DNS → Apache & nginx
+Settings**, keep the default "nginx as proxy to Apache" so `.htaccess` is honoured
+(do *not* enable "Serve static files directly by nginx" only / "proxy mode off").
+
+### 1. Upload
+
+1. Plesk → **Files** → open the subdomain's folder (`influencer.fsia.in/`).
+   Delete the placeholder `index.html` Plesk created there.
+2. Upload `fsia-influencer-live.zip`, then select it and click **Extract Files**.
+   You should see `index.html`, `assets/`, `api/`, `storage/` and `.htaccess`
+   directly in that folder, not inside an extra sub-folder.
+3. Make sure the `storage/` folder is writable by PHP (Plesk: right-click → *Change Permissions*, owner write).
+4. In **PHP Settings** for the subdomain choose PHP 8.x.
+
+*cPanel instead:* **Domains → Create a New Domain** `influencer.fsia.in`, then
+**File Manager** → its folder → Upload → Extract, and **SSL/TLS Status → Run AutoSSL**.
+
+### 2. Check it
+
+1. Open `https://influencer.fsia.in/api/health` — it should show `{"ok":true,...}`.
+2. Open `https://influencer.fsia.in`, go to the **Admin** tab (lock icon) and sign in with
    **admin / admin123**. A yellow banner asks you to change this password — do it
    immediately in **Security & Data**.
 
@@ -42,6 +64,9 @@ Copy `api/config.sample.php` to `api/config.php` and edit it to:
 
 | Symptom | Fix |
 | --- | --- |
+| Browser says "site can't be reached" / DNS_PROBE_FINISHED_NXDOMAIN | The subdomain doesn't exist yet: do step 0, then wait for DNS. |
+| Plesk "default page" or old site still shows | The files were extracted into the wrong folder or into a sub-folder; `index.html` must sit directly in the subdomain's document root. Clear the browser cache. |
+| Blank white page | Open the browser console: if `assets/…` files return 404, the `assets/` folder was not uploaded next to `index.html`. |
 | Admin login works but every action says "Unauthorized" | Your host strips the `Authorization` header; the app already sends a fallback header, so make sure the bundled `.htaccess` was uploaded. |
 | Pages other than the home page show 404 | `.htaccess` is missing or `mod_rewrite` is disabled. |
 | "Storage directory is not writable" | Set `storage/` permissions to 755 (or 775). |
