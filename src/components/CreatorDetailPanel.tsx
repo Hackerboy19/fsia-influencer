@@ -57,7 +57,7 @@ export default function CreatorDetailPanel({
           >
             <Heart className="w-4 h-4 text-red-500" />
             {moodboardItems.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-black text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
+              <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
                 {moodboardItems.length}
               </span>
             )}
@@ -116,26 +116,26 @@ export default function CreatorDetailPanel({
           <div className="grid grid-cols-2 gap-3">
             {/* Reach */}
             <div className="p-4 bg-white/50 border border-black/5 rounded-xl text-center space-y-1">
-              <span className="block text-[9px] font-sans text-[#888] uppercase tracking-wider">
+              <span className="block text-[10px] font-sans text-[#888] uppercase tracking-wider">
                 Digital Footprint
               </span>
               <span className="block font-serif-display text-2xl font-bold text-[#111]">
                 {creator.stats.reach}
               </span>
-              <span className="block text-[9px] font-sans text-champagne uppercase font-medium tracking-widest">
+              <span className="block text-[10px] font-sans text-champagne uppercase font-medium tracking-widest">
                 Combined Reach
               </span>
             </div>
 
             {/* Engagement */}
             <div className="p-4 bg-white/50 border border-black/5 rounded-xl text-center space-y-1">
-              <span className="block text-[9px] font-sans text-[#888] uppercase tracking-wider">
+              <span className="block text-[10px] font-sans text-[#888] uppercase tracking-wider">
                 Audience Core
               </span>
               <span className="block font-serif-display text-2xl font-bold text-[#111]">
                 {creator.stats.engagement}
               </span>
-              <span className="block text-[9px] font-sans text-champagne uppercase font-medium tracking-widest">
+              <span className="block text-[10px] font-sans text-champagne uppercase font-medium tracking-widest">
                 Interaction Ratio
               </span>
             </div>
@@ -177,7 +177,7 @@ export default function CreatorDetailPanel({
                   referrerPolicy="no-referrer"
                 />
                 <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
-                  <span className="text-[8px] tracking-widest uppercase text-white font-sans font-bold bg-black/60 px-2 py-1 rounded">
+                  <span className="text-[10px] tracking-widest uppercase text-white font-sans font-bold bg-black/60 px-2 py-1 rounded">
                     View
                   </span>
                 </div>
@@ -267,7 +267,7 @@ export default function CreatorDetailPanel({
           </div>
 
           <p className="mt-12 text-xs font-serif-text italic text-[#E1C699] tracking-widest uppercase">
-            Forever Star India Runway Detail • Click Anywhere to Close
+            FSIA Influencer Creator Profile • Click anywhere to close
           </p>
         </div>
       )}

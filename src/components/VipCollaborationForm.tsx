@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Send, ShieldCheck, Calendar, DollarSign, Award, ArrowRight, CheckCircle2, Phone, Briefcase, Landmark } from "lucide-react";
 import { Creator, gallerySections } from "../data";
@@ -33,9 +33,22 @@ export default function VipCollaborationForm({
   const [scope, setScope] = useState("Editorial Cover & Digital Campaign");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedCredential, setSubmittedCredential] = useState<any | null>(null);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  // Extract flat list of creators
-  const allCreators = gallerySections.flatMap((s) => s.creators);
+  // Live roster (falls back to the bundled list until the API answers)
+  const [allCreators, setAllCreators] = useState<Creator[]>(gallerySections.flatMap((s) => s.creators));
+  useEffect(() => {
+    if (!isOpen) return;
+    fetch("/api/creators")
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((data) => Array.isArray(data) && setAllCreators(data.flatMap((s: any) => s.creators || [])))
+      .catch(() => {});
+  }, [isOpen]);
+
+  // Follow the creator the visitor opened the form from
+  useEffect(() => {
+    if (isOpen) setSelectedCreatorName(preselectedCreator ? preselectedCreator.name : "All VIP Roster");
+  }, [isOpen, preselectedCreator]);
 
   // Indian Cities
   const indianCities = [
@@ -48,66 +61,47 @@ export default function VipCollaborationForm({
     if (!brandName || !contactEmail || !contactPhone) return;
 
     setIsSubmitting(true);
+    setErrorMsg("");
 
-    const bookingId = "FSIA-VIP-" + Math.floor(100000 + Math.random() * 900000);
-    const formattedBudget = currency === "INR" 
+    const formattedBudget = currency === "INR"
       ? "₹" + (budgetInr / 100000).toFixed(1) + " Lakhs"
       : budgetUsd.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-
-    const payload = {
-      bookingId,
-      brandName,
-      contactEmail,
-      contactPhone,
-      creatorName: selectedCreatorName,
-      budget: formattedBudget,
-      clientCity,
-      scope,
-      duration
-    };
 
     fetch("/api/registrations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    })
-    .then((res) => {
-      if (!res.ok) throw new Error("Server registration error");
-      return res.json();
-    })
-    .then((savedData) => {
-      setIsSubmitting(false);
-      setSubmittedCredential({
-        bookingId: savedData.bookingId || bookingId,
-        timestamp: new Date().toLocaleDateString("en-IN", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        }),
+      body: JSON.stringify({
         brandName,
+        contactEmail,
+        contactPhone,
         creatorName: selectedCreatorName,
         budget: formattedBudget,
         clientCity,
-        verificationHash: "0x" + Math.random().toString(16).substring(2, 10).toUpperCase() + "..." + Math.random().toString(16).substring(2, 6).toUpperCase(),
-      });
+        gstin,
+        scope,
+        duration
+      })
     })
-    .catch((err) => {
-      console.warn("Falling back to client-side emulation:", err);
-      setIsSubmitting(false);
-      setSubmittedCredential({
-        bookingId,
-        timestamp: new Date().toLocaleDateString("en-IN", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        }),
-        brandName,
-        creatorName: selectedCreatorName,
-        budget: formattedBudget,
-        clientCity,
-        verificationHash: "0x" + Math.random().toString(16).substring(2, 10).toUpperCase() + "..." + Math.random().toString(16).substring(2, 6).toUpperCase(),
-      });
-    });
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || "Your enquiry could not be sent.");
+        // Show exactly what was stored, so the reference matches the team's records
+        const saved = data.registration || {};
+        setSubmittedCredential({
+          bookingId: saved.bookingId,
+          timestamp: saved.timestamp,
+          brandName,
+          creatorName: selectedCreatorName,
+          budget: formattedBudget,
+          clientCity,
+          verificationHash: saved.verificationHash
+        });
+      })
+      .catch((err: Error) => {
+        // Never show a fake confirmation: the brand must know to try again
+        setErrorMsg((err.message || "Your enquiry could not be sent.") + " Please check your details and try again.");
+      })
+      .finally(() => setIsSubmitting(false));
   };
 
   const handleReset = () => {
@@ -118,6 +112,7 @@ export default function VipCollaborationForm({
     setBudgetInr(500000);
     setBudgetUsd(10000);
     setSubmittedCredential(null);
+    setErrorMsg("");
   };
 
   return (
@@ -161,16 +156,16 @@ export default function VipCollaborationForm({
                 <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
                   {/* Elite Intro */}
                   <div className="p-4 md:p-5 bg-white/60 border border-black/5 rounded-xl text-[11px] md:text-xs text-[#555] font-serif-text space-y-2 leading-relaxed">
-                    <div className="flex items-center gap-2 text-champagne font-bold mb-1 uppercase tracking-widest text-[9px] font-sans">
+                    <div className="flex items-center gap-2 text-champagne font-bold mb-1 uppercase tracking-widest text-[10px] font-sans">
                       <ShieldCheck className="w-4 h-4" />
                       SECURE ESCROW PROTOCOL & VIP TRIAGE
                     </div>
-                    By submitting this charter to the Forever Star India VIP Desk, your brand requirements enter the elite curation pipeline. Direct legal representatives are coordinates within 4 business hours.
+                    By submitting this charter to the FSIA Influencer brand desk, your brand requirements enter the elite curation pipeline. Our team will contact you within 4 business hours.
                   </div>
 
                   {/* Creator Selection */}
                   <div className="space-y-2">
-                    <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                    <label className="block text-[10px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
                       Select VIP Creator / Joint Roster
                     </label>
                     <select
@@ -190,7 +185,7 @@ export default function VipCollaborationForm({
                   {/* Corporate/Brand Credentials */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                      <label className="block text-[10px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
                         Brand House / Agency Name
                       </label>
                       <input
@@ -203,7 +198,7 @@ export default function VipCollaborationForm({
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                      <label className="block text-[10px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
                         Operating City (HQ)
                       </label>
                       <select
@@ -221,7 +216,7 @@ export default function VipCollaborationForm({
                   {/* Dual Contacts tailored to Indian standards (WhatsApp integration) */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                      <label className="block text-[10px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
                         Secure Corporate Email
                       </label>
                       <input
@@ -235,7 +230,7 @@ export default function VipCollaborationForm({
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
-                        <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                        <label className="block text-[10px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
                           Contact Number (+91 Preferred)
                         </label>
                       </div>
@@ -266,7 +261,7 @@ export default function VipCollaborationForm({
 
                   {/* Corporate Taxation/Verification (GSTIN / PAN) */}
                   <div className="space-y-2">
-                    <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                    <label className="block text-[10px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
                       GSTIN / Corporate PAN (Optional - for Proforma Invoice)
                     </label>
                     <div className="relative">
@@ -284,16 +279,16 @@ export default function VipCollaborationForm({
                   {/* Dual Currency Luxury Allocation Selector */}
                   <div className="space-y-4">
                     <div className="flex justify-between items-center border-b border-black/5 pb-2">
-                      <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                      <label className="block text-[10px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
                         Estimated Budget Allocation
                       </label>
-                      <div className="flex rounded-md overflow-hidden border border-black/10 text-[9px] font-bold font-sans">
+                      <div className="flex rounded-md overflow-hidden border border-black/10 text-[10px] font-bold font-sans">
                         <button
                           type="button"
                           onClick={() => setCurrency("INR")}
                           className={`px-2.5 py-1 transition-all ${
                             currency === "INR"
-                              ? "bg-champagne text-white"
+                              ? "bg-champagne text-[#111]"
                               : "bg-white text-[#666] hover:bg-black/5"
                           }`}
                         >
@@ -304,7 +299,7 @@ export default function VipCollaborationForm({
                           onClick={() => setCurrency("USD")}
                           className={`px-2.5 py-1 transition-all ${
                             currency === "USD"
-                              ? "bg-champagne text-white"
+                              ? "bg-champagne text-[#111]"
                               : "bg-white text-[#666] hover:bg-black/5"
                           }`}
                         >
@@ -331,7 +326,7 @@ export default function VipCollaborationForm({
                           onChange={(e) => setBudgetInr(Number(e.target.value))}
                           className="w-full accent-[#E1C699] h-1.5 bg-[#E5E5E2] rounded-lg cursor-pointer"
                         />
-                        <div className="flex justify-between text-[9px] text-[#888] font-sans">
+                        <div className="flex justify-between text-[10px] text-[#888] font-sans">
                           <span>₹1 Lakh</span>
                           <span>₹15 Lakhs</span>
                           <span>₹50 Lakhs</span>
@@ -356,7 +351,7 @@ export default function VipCollaborationForm({
                           onChange={(e) => setBudgetUsd(Number(e.target.value))}
                           className="w-full accent-[#E1C699] h-1.5 bg-[#E5E5E2] rounded-lg cursor-pointer"
                         />
-                        <div className="flex justify-between text-[9px] text-[#888] font-sans">
+                        <div className="flex justify-between text-[10px] text-[#888] font-sans">
                           <span>$5,000</span>
                           <span>$100,000</span>
                           <span>$500,000</span>
@@ -369,7 +364,7 @@ export default function VipCollaborationForm({
                   {/* Campaign Scope & Horizon */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                      <label className="block text-[10px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
                         Campaign Horizon
                       </label>
                       <div className="flex flex-wrap gap-2">
@@ -390,7 +385,7 @@ export default function VipCollaborationForm({
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                      <label className="block text-[10px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
                         Engagement Scope
                       </label>
                       <select
@@ -405,6 +400,12 @@ export default function VipCollaborationForm({
                       </select>
                     </div>
                   </div>
+
+                  {errorMsg && (
+                    <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-800 text-sm rounded-lg font-medium">
+                      {errorMsg}
+                    </div>
+                  )}
 
                   {/* Submit Button */}
                   <button
@@ -444,7 +445,7 @@ export default function VipCollaborationForm({
                     </div>
 
                     <div className="space-y-1">
-                      <span className="font-sans text-[9px] tracking-[0.3em] text-[#8E8D8A] uppercase font-bold">
+                      <span className="font-sans text-[10px] tracking-[0.3em] text-[#8E8D8A] uppercase font-bold">
                         FSIA India VIP Credential
                       </span>
                       <h4 className="font-serif-display text-xl md:text-2xl text-[#111] font-bold">
