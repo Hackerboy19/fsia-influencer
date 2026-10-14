@@ -43,7 +43,7 @@ export default function FaqTab() {
             }}
             className={`px-4 py-1.5 rounded-full text-xs font-sans tracking-wide transition-all cursor-pointer ${
               selectedCategory === cat
-                ? "bg-champagne text-white font-semibold"
+                ? "bg-champagne text-[#111] font-semibold"
                 : "bg-white hover:bg-[#F3F3F1] border border-black/5 text-[#555]"
             }`}
           >

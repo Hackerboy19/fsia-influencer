@@ -207,7 +207,7 @@ export default function MembershipTab() {
               transition={{ duration: 0.3 }}
             >
               {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-champagne text-white text-[10px] font-sans font-bold tracking-widest px-3 py-1 rounded-full uppercase shadow">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-champagne text-[#111] text-[10px] font-sans font-bold tracking-widest px-3 py-1 rounded-full uppercase shadow">
                   MOST POPULAR SELECTION
                 </div>
               )}

@@ -288,7 +288,7 @@ export default function VipCollaborationForm({
                           onClick={() => setCurrency("INR")}
                           className={`px-2.5 py-1 transition-all ${
                             currency === "INR"
-                              ? "bg-champagne text-white"
+                              ? "bg-champagne text-[#111]"
                               : "bg-white text-[#666] hover:bg-black/5"
                           }`}
                         >
@@ -299,7 +299,7 @@ export default function VipCollaborationForm({
                           onClick={() => setCurrency("USD")}
                           className={`px-2.5 py-1 transition-all ${
                             currency === "USD"
-                              ? "bg-champagne text-white"
+                              ? "bg-champagne text-[#111]"
                               : "bg-white text-[#666] hover:bg-black/5"
                           }`}
                         >

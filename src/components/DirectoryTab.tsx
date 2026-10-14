@@ -417,8 +417,8 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
                   />
 
                   {/* Floating Gold FSIA Verified Shield Badge */}
-                  <div className="absolute top-2 right-2 md:top-3 md:right-3 z-10 bg-stone-900/90 text-[#C9A227] border border-[#C9A227]/30 backdrop-blur-xs px-2.5 py-1 rounded-full text-[10px] md:text-[10px] font-bold tracking-wider flex items-center gap-1 shadow-md">
-                    <ShieldCheck className="w-3 h-3 text-[#C9A227] fill-[#C9A227]/10 shrink-0" />
+                  <div className="absolute top-2 right-2 md:top-3 md:right-3 z-10 bg-stone-900/90 text-[#F0D9A8] border border-[#C9A227]/50 backdrop-blur-xs px-2.5 py-1 rounded-full text-[10px] md:text-[10px] font-bold tracking-wider flex items-center gap-1 shadow-md">
+                    <ShieldCheck className="w-3 h-3 text-[#F0D9A8] shrink-0" />
                     <span>FSIA VERIFIED</span>
                   </div>
 
