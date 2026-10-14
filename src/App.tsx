@@ -154,10 +154,11 @@ export default function App() {
   // Keep the address bar and <head> (title, description, canonical, OG) in sync with the section
   useEffect(() => {
     const route = routeForTab(activeTab);
+    // Title/meta first: Google Analytics records the page view when the URL changes
+    applyRouteMeta(route);
     if (window.location.pathname !== route.path) {
       window.history.pushState({ tab: activeTab }, "", route.path);
     }
-    applyRouteMeta(route);
     contentScrollRef.current?.scrollTo({ top: 0 });
     document
       .querySelector('#main-nav-tabs [aria-current="page"]')
