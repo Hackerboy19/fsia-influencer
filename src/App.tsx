@@ -159,6 +159,9 @@ export default function App() {
     }
     applyRouteMeta(route);
     contentScrollRef.current?.scrollTo({ top: 0 });
+    document
+      .querySelector('#main-nav-tabs [aria-current="page"]')
+      ?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [activeTab]);
 
   useEffect(() => {
@@ -514,9 +517,9 @@ export default function App() {
             </div>
 
             {/* 1. TOP EDITORIAL BANNER */}
-            <header className="absolute top-0 inset-x-0 p-2 sm:p-4 md:p-5 lg:p-8 flex flex-col lg:flex-row justify-between items-center gap-2 sm:gap-3 md:gap-4 z-20 pointer-events-none select-none border-b border-black/[0.03] bg-white/20 backdrop-blur-xs">
+            <header className="absolute top-0 inset-x-0 p-2 sm:p-4 md:p-4 xl:p-8 flex flex-col xl:flex-row justify-between items-center gap-2 sm:gap-3 md:gap-4 xl:gap-3 z-20 pointer-events-none select-none border-b border-black/[0.03] bg-white/20 backdrop-blur-xs">
               {/* Top Row on Mobile: Logo & Actions */}
-              <div className="flex items-center justify-between w-full lg:w-auto gap-2 sm:gap-4 pointer-events-auto">
+              <div className="flex items-center justify-between w-full xl:w-auto xl:shrink-0 gap-2 sm:gap-4 pointer-events-auto">
                 {/* Logo */}
                 <div 
                   onDoubleClick={() => {
@@ -528,17 +531,17 @@ export default function App() {
                   className="flex items-center gap-1.5 sm:gap-2.5 bg-white/70 backdrop-blur-md px-2.5 py-1.5 sm:px-5 sm:py-3 rounded-xl border border-black/5 shadow-sm cursor-pointer hover:border-black/10 transition-all select-none"
                 >
                   <div className="space-y-0.5">
-                    <p className="font-serif-display text-[12px] sm:text-sm md:text-base lg:text-lg font-bold tracking-tight text-[#111] leading-none">
+                    <p className="font-serif-display text-[12px] sm:text-sm md:text-base lg:text-lg font-bold tracking-tight text-[#111] leading-none whitespace-nowrap">
                       FSIA INFLUENCER
                     </p>
-                    <p className="font-sans text-[9px] md:text-[10px] tracking-[0.16em] text-[#47453f] uppercase font-bold leading-none max-[350px]:hidden">
+                    <p className="font-sans text-[9px] md:text-[10px] tracking-[0.12em] text-[#47453f] uppercase font-bold leading-none whitespace-nowrap max-[350px]:hidden">
                       Creators &amp; Influencer Portal
                     </p>
                   </div>
                 </div>
 
                 {/* Buttons: Sound & VIP Register (shown next to logo on mobile/tablet, right-aligned on desktop) */}
-                <div className="flex items-center gap-1.5 sm:gap-2 lg:hidden">
+                <div className="flex items-center gap-1.5 sm:gap-2 xl:hidden">
                   {/* Custom Synthesizer Toggle */}
                   <button
                     onClick={toggleAudio}
@@ -589,15 +592,20 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Center Navigation Tabs (scrollable on mobile, centered on desktop) */}
-              <div className="pointer-events-auto flex items-center overflow-x-auto scrollbar-none gap-1 bg-white/70 backdrop-blur-md px-1.5 py-1 rounded-xl border border-black/5 shadow-xs w-full lg:w-auto max-w-full justify-start lg:justify-center">
+              {/* Navigation tabs: left-aligned and scrollable whenever they don't fit (centring would crop both ends) */}
+              <nav
+                aria-label="Main"
+                id="main-nav-tabs"
+                className="pointer-events-auto flex items-center overflow-x-auto scrollbar-none gap-0.5 xl:gap-1 bg-white/70 backdrop-blur-md px-1.5 py-1 rounded-xl border border-black/5 shadow-xs w-full xl:w-auto xl:flex-initial xl:min-w-0 max-w-full justify-start"
+              >
                 {(["catwalk", "directory", "campaigns", "membership", "apply", "faq"] as const).map((tab) => {
                   const isSelected = activeTab === tab;
-                  const label = 
-                    tab === "catwalk" ? "Agency Services" :
-                    tab === "directory" ? "Talent Roster" :
+                  // Short labels so all six tabs fit on laptop screens without scrolling
+                  const label =
+                    tab === "catwalk" ? "Explore" :
+                    tab === "directory" ? "Talent" :
                     tab === "campaigns" ? "Campaigns" :
-                    tab === "membership" ? "VIP Membership" :
+                    tab === "membership" ? "Membership" :
                     tab === "apply" ? "Get Verified" : "FAQs";
                   return (
                     <a
@@ -611,7 +619,7 @@ export default function App() {
                         setSelectedCreator(null);
                         playCrystalChime();
                       }}
-                      className={`px-3 py-1.5 rounded-lg text-[10px] md:text-[10px] font-sans font-bold tracking-widest uppercase transition-all cursor-pointer whitespace-nowrap ${
+                      className={`shrink-0 px-2.5 xl:px-3 py-1.5 rounded-lg text-[10px] font-sans font-bold tracking-wider xl:tracking-widest uppercase transition-all cursor-pointer whitespace-nowrap ${
                         isSelected
                           ? "bg-[#111] text-[#FAF9F6] shadow-xs"
                           : "hover:bg-black/5 text-[#2e2c29]"
@@ -621,14 +629,16 @@ export default function App() {
                     </a>
                   );
                 })}
-              </div>
+              </nav>
 
               {/* Actions on Desktop Only */}
-              <div className="hidden lg:flex pointer-events-auto items-center justify-end gap-2.5 lg:w-auto">
+              <div className="hidden xl:flex pointer-events-auto items-center justify-end gap-2.5 shrink-0">
                 {/* Custom Synthesizer Toggle */}
                 <button
                   onClick={toggleAudio}
-                  className={`hud-interactive px-3 py-2.5 md:px-4 md:py-3 rounded-xl backdrop-blur-md border border-black/5 flex items-center gap-2 text-[10px] md:text-[10px] font-sans font-bold tracking-wider uppercase transition-all shadow-sm cursor-pointer ${
+                  title={audioEnabled ? "Ambient sound on — click to mute" : "Ambient sound off — click to play"}
+                  aria-label={audioEnabled ? "Mute ambient sound" : "Play ambient sound"}
+                  className={`hud-interactive px-3 py-2.5 2xl:px-4 md:py-3 rounded-xl backdrop-blur-md border border-black/5 flex items-center gap-2 text-[10px] font-sans font-bold tracking-wider uppercase whitespace-nowrap transition-all shadow-sm cursor-pointer ${
                     audioEnabled
                       ? "bg-champagne/15 border border-champagne text-[#111]"
                       : "bg-white/60 hover:bg-white text-[#666]"
@@ -638,12 +648,12 @@ export default function App() {
                   {audioEnabled ? (
                     <>
                       <Volume2 className="w-4 h-4 text-champagne animate-bounce" />
-                      <span className="hidden xs:inline">AMBIENT:</span> ACTIVE
+                      <span className="hidden 2xl:inline">Sound on</span>
                     </>
                   ) : (
                     <>
                       <VolumeX className="w-4 h-4 text-[#888]" />
-                      <span className="hidden xs:inline">AMBIENT:</span> MUTED
+                      <span className="hidden 2xl:inline">Sound off</span>
                     </>
                   )}
                 </button>
@@ -655,7 +665,8 @@ export default function App() {
                     setSelectedCreator(null);
                     playCrystalChime();
                   }}
-                  className={`hud-interactive px-3 py-2.5 md:px-4 md:py-3 rounded-xl backdrop-blur-md border border-black/5 flex items-center justify-center text-[#8e8d8a] hover:text-black hover:bg-white/60 transition-all shadow-sm cursor-pointer ${
+                  aria-label="Admin"
+                  className={`hud-interactive px-3 py-2.5 xl:px-4 md:py-3 rounded-xl backdrop-blur-md border border-black/5 flex items-center justify-center text-[#8e8d8a] hover:text-black hover:bg-white/60 transition-all shadow-sm cursor-pointer ${
                     activeTab === "admin" ? "bg-white text-black border-black/25" : "bg-white/60"
                   }`}
                   title="Administrative Portal Entrance"
@@ -668,15 +679,18 @@ export default function App() {
                   href="https://www.fsia.in"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hud-interactive px-3 py-2.5 md:px-4 md:py-3 rounded-xl backdrop-blur-md border border-black/10 flex items-center justify-center text-[#111] bg-white hover:bg-stone-50 transition-all shadow-sm cursor-pointer text-[10px] md:text-[10px] font-sans font-bold tracking-wider uppercase"
+                  title="FSIA Portal (fsia.in)"
+                  className="hud-interactive px-3 py-2.5 xl:px-4 md:py-3 rounded-xl backdrop-blur-md border border-black/10 flex items-center justify-center gap-1.5 text-[#111] bg-white hover:bg-stone-50 transition-all shadow-sm cursor-pointer text-[10px] font-sans font-bold tracking-wider uppercase whitespace-nowrap"
                 >
-                  FSIA Portal
+                  <ExternalLink className="w-4 h-4 xl:hidden" aria-hidden="true" />
+                  <span className="hidden xl:inline">FSIA Portal</span>
+                  <span className="sr-only xl:hidden">FSIA Portal</span>
                 </a>
 
                 {/* VIP Collaboration Gateway Trigger */}
                 <button
                   onClick={() => setIsCollaborationOpen(true)}
-                  className="hud-interactive bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[10px] md:text-[10px] tracking-[0.15em] font-bold px-4 py-2.5 md:px-5 md:py-3 rounded-xl shadow-md cursor-pointer flex items-center gap-2 uppercase active:scale-95"
+                  className="hud-interactive bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[10px] tracking-[0.12em] font-bold px-4 py-2.5 xl:px-5 md:py-3 rounded-xl shadow-md cursor-pointer flex items-center gap-2 uppercase whitespace-nowrap active:scale-95"
                   id="open-collaboration-form-btn"
                 >
                   <FileText className="w-4 h-4 text-champagne" />
@@ -892,7 +906,7 @@ export default function App() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -30 }}
                   transition={{ duration: 0.5, ease: "easeOut" }}
-                  className="absolute inset-0 top-[115px] sm:top-[125px] lg:top-28 bottom-0 overflow-y-auto px-4 md:px-8 pb-36 sm:pb-28 z-15 pointer-events-auto bg-[#FAF9F6] scrollbar-thin scrollbar-thumb-black/10"
+                  className="absolute inset-0 top-[108px] sm:top-[138px] md:top-[146px] xl:top-[124px] bottom-0 overflow-y-auto px-4 md:px-8 pb-36 sm:pb-28 z-15 pointer-events-auto bg-[#FAF9F6] scrollbar-thin scrollbar-thumb-black/10"
                 >
                   {activeTab === "directory" && (
                     <DirectoryTab

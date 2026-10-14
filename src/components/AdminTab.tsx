@@ -314,7 +314,7 @@ export default function AdminTab() {
         setLoginError(data.error || "Invalid administrative credentials.");
       }
     } catch (err) {
-      setLoginError("Failed to communicate with FSIA Auth Service.");
+      setLoginError("Could not reach the server (the connection was dropped). Please wait a few seconds and try again. If this keeps happening, ask your hosting provider to check its firewall for dropped connections.");
     } finally {
       setIsLoading(false);
     }
