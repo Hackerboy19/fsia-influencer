@@ -116,6 +116,21 @@ export interface InfluencerApplication {
   notes?: string;
 }
 
+// Campaign applications and membership plan requests sent from the public site
+export interface Enquiry {
+  id: string;
+  type: "campaign" | "membership";
+  subject: string;
+  refId?: string;
+  name: string;
+  email: string;
+  phone: string;
+  details: Record<string, string>;
+  status: "new" | "contacted" | "confirmed" | "closed";
+  notes?: string;
+  timestamp: string;
+}
+
 export interface MembershipPlan {
   id: string;
   name: string;
@@ -138,6 +153,8 @@ export interface DatabaseSchema {
   prompt_logs: PromptLog[];
   influencer_applications: InfluencerApplication[];
   membership_plans?: MembershipPlan[];
+  enquiries?: Enquiry[];
+  migrations?: Record<string, string>;
 }
 
 const DB_PATH = path.join(process.cwd(), "server", "db.json");
@@ -146,14 +163,14 @@ const DB_PATH = path.join(process.cwd(), "server", "db.json");
 const INITIAL_CREATORS: GallerySection[] = [
   {
     id: "miss-india",
-    title: "Forever Miss India 2026",
+    title: "Miss India 2026",
     subtitle: "The Reign of Couture & Prestige",
     zOffset: 0,
     primaryColor: "#E1C699",
     creators: [
       {
         name: "Aishwarya Sen",
-        role: "Winner, Forever Miss India 2026",
+        role: "Winner, Miss India 2026",
         city: "Mumbai",
         image: "https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?q=80&w=600&auto=format&fit=crop",
         bio: "An epitome of modern intellect and poise, Aishwarya championed rural girls' education and visual arts while walking the runways of Milan and Paris Couture Weeks. Her advocacy combined with high-fashion presence sets a new gold standard.",
@@ -173,7 +190,7 @@ const INITIAL_CREATORS: GallerySection[] = [
       },
       {
         name: "Meera Deshmukh",
-        role: "1st Runner Up, Forever Miss India 2026",
+        role: "1st Runner Up, Miss India 2026",
         city: "New Delhi",
         image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format&fit=crop",
         bio: "A classical Odissi dancer and high-fashion enthusiast, Meera blends deep-rooted cultural heritage with sharp, high-fashion styling. She represents the seamless dialogue between classical antiquity and modern avant-garde design.",
@@ -393,7 +410,7 @@ const INITIAL_PLANS: MembershipPlan[] = [
     name: "Elite Star",
     badge: "Standard Entry",
     price: "₹0",
-    period: "Forever Free",
+    period: "Always Free",
     accent: "#8E8D8A",
     icon: "Star",
     perks: [
@@ -466,11 +483,11 @@ const INITIAL_LOGS: AdminLog[] = [
 ];
 
 export const DEFAULT_SETTINGS: SystemSettings = {
-  websiteTitle: "FSIA — Forever Star India Awards",
-  heroTitle: "FOREVER STAR INDIA",
-  heroSubtitle: "THE EXQUISITE HALL OF LUXURY INFLUENCING & PRESTIGE COUTURE",
-  ctaText: "SECURE VIP RUNWAY ACCESS",
-  footerText: "© 2026 FOREVER STAR INDIA AWARDS (FSIA). ALL RIGHTS RESERVED.",
+  websiteTitle: "FSIA Creators & Influencer Portal",
+  heroTitle: "FSIA INFLUENCER",
+  heroSubtitle: "Connect with verified creators, launch brand campaigns and grow your influence.",
+  ctaText: "EXPLORE THE PORTAL",
+  footerText: "© 2026 FSIA Influencer. All rights reserved.",
   logoUrl: "",
   primaryColor: "#E1C699",
   secondaryColor: "#111111",
@@ -492,7 +509,9 @@ export function createDefaultDb(): DatabaseSchema {
     system_settings: { ...DEFAULT_SETTINGS, geminiApiKey: process.env.GEMINI_API_KEY || "" },
     prompt_logs: [],
     influencer_applications: [],
-    membership_plans: INITIAL_PLANS
+    membership_plans: INITIAL_PLANS,
+    enquiries: [],
+    migrations: { debrand_v1: "seed" }
   }));
 }
 
@@ -520,6 +539,43 @@ export function verifyPassword(password: string, stored: string): boolean {
 
 export function needsRehash(stored: string): boolean {
   return !stored.startsWith("scrypt$");
+}
+
+// ----------------------------------------------------
+// BRAND DECOUPLING — strip "Forever" branding from stored content (one-time migration)
+// Keep in sync with debrand_text() in php-backend/api/lib/helpers.php
+// ----------------------------------------------------
+// A null replacement keeps the first capture group
+const DEBRAND_RULES: [RegExp, string | null][] = [
+  [/FSIA\s*[—-]\s*Forever Star India Awards/g, "FSIA Creators & Influencer Portal"],
+  [/Forever Star India(?: Awards| Association)?(?: \(FSIA\))?/gi, "FSIA Influencer"],
+  [/\bForever Free\b/gi, "Always Free"],
+  // Brand prefix only (capitalised); ordinary prose such as "forever young" is left alone
+  [/\b(?:Forever|FOREVER)\s+/g, ""],
+  [/\s*\b(?:Forever|FOREVER)\b/g, ""],
+  [/\b(FSIA Influencer) Influencer\b/gi, null]
+];
+
+export function debrandText(text: string): string {
+  return DEBRAND_RULES.reduce(
+    (out, [pattern, replacement]) =>
+      out.replace(pattern, (m: string, group?: unknown) => {
+        const value = replacement ?? String(group);
+        return m === m.toUpperCase() && /[A-Z]/.test(m) ? value.toUpperCase() : value;
+      }),
+    text
+  );
+}
+
+function debrandValue<T>(value: T): T {
+  if (typeof value === "string") {
+    return (/^(https?:|data:)/i.test(value) ? value : debrandText(value)) as T;
+  }
+  if (Array.isArray(value)) return value.map(debrandValue) as T;
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, debrandValue(v)])) as T;
+  }
+  return value;
 }
 
 // Initialize and Read Database
@@ -555,6 +611,30 @@ export function getDb(): DatabaseSchema {
     }
     if (!parsed.admin_logs) {
       parsed.admin_logs = [];
+    }
+    if (!parsed.enquiries) {
+      parsed.enquiries = [];
+    }
+    if (!parsed.migrations?.debrand_v1) {
+      // Settings still on the old default copy get the new defaults; customised text is only debranded
+      const oldDefaults: Partial<Record<keyof SystemSettings, string>> = {
+        websiteTitle: "FSIA — Forever Star India Awards",
+        heroTitle: "FOREVER STAR INDIA",
+        heroSubtitle: "THE EXQUISITE HALL OF LUXURY INFLUENCING & PRESTIGE COUTURE",
+        ctaText: "SECURE VIP RUNWAY ACCESS",
+        footerText: "© 2026 FOREVER STAR INDIA AWARDS (FSIA). ALL RIGHTS RESERVED."
+      };
+      for (const [field, before] of Object.entries(oldDefaults) as [keyof SystemSettings, string][]) {
+        if (parsed.system_settings[field] === before) {
+          (parsed.system_settings as any)[field] = DEFAULT_SETTINGS[field];
+        }
+      }
+      parsed.creators = debrandValue(parsed.creators);
+      parsed.campaigns = debrandValue(parsed.campaigns);
+      parsed.membership_plans = debrandValue(parsed.membership_plans);
+      parsed.system_settings = debrandValue(parsed.system_settings);
+      parsed.migrations = { ...parsed.migrations, debrand_v1: new Date().toISOString() };
+      saveDb(parsed);
     }
     return parsed;
   } catch (error) {

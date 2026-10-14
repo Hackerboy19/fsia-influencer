@@ -31,15 +31,30 @@ import ModelRegistrationTab from "./components/ModelRegistrationTab";
 import FaqTab from "./components/FaqTab";
 import AdminTab from "./components/AdminTab";
 import CursorParticleTrail from "./components/CursorParticleTrail";
+import SiteFooter from "./components/SiteFooter";
 import { Toaster } from "react-hot-toast";
+import { TabId, routeForPath, routeForTab, applyRouteMeta } from "./seo";
+
+const ENTERED_KEY = "fsia_entered";
+
+function readEntered(): boolean {
+  try {
+    return sessionStorage.getItem(ENTERED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
 export default function App() {
   // Navigation & Showcase States
-  const [hasEntered, setHasEntered] = useState(false);
+  // Deep links (/talent/, /join/ …) and return visits skip the welcome screen
+  const initialTab = routeForPath(window.location.pathname).tab;
+  const [hasEntered, setHasEntered] = useState(initialTab !== "catwalk" || readEntered());
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"catwalk" | "directory" | "campaigns" | "membership" | "faq" | "admin" | "apply">("catwalk");
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
+  const contentScrollRef = useRef<HTMLDivElement>(null);
   const [moodboardItems, setMoodboardItems] = useState<string[]>([]);
   const [isMoodboardOpen, setIsMoodboardOpen] = useState(false);
 
@@ -48,11 +63,11 @@ export default function App() {
 
   // Enterprise Dynamic Configuration Settings State
   const [settings, setSettings] = useState<any>({
-    websiteTitle: "FSIA — Forever Star India Awards",
-    heroTitle: "FSIA VIP GALLERY",
-    heroSubtitle: "Immerse in a sun-drenched architectural pavilion of verified Brand Campaign victors, social champions, and elite digital authorities.",
-    ctaText: "ACCEPT VIP INVITATION",
-    footerText: "© 2026 FOREVER STAR INDIA. ALL RIGHTS SECURED.",
+    websiteTitle: "FSIA Creators & Influencer Portal",
+    heroTitle: "FSIA INFLUENCER",
+    heroSubtitle: "Connect with verified creators, launch brand campaigns and grow your influence.",
+    ctaText: "EXPLORE THE PORTAL",
+    footerText: "© 2026 FSIA Influencer. All rights reserved.",
     logoUrl: "",
     primaryColor: "#E1C699",
     secondaryColor: "#111111"
@@ -135,6 +150,32 @@ export default function App() {
       window.removeEventListener("open-moodboard", handleOpenMoodboard);
     };
   }, []);
+
+  // Keep the address bar and <head> (title, description, canonical, OG) in sync with the section
+  useEffect(() => {
+    const route = routeForTab(activeTab);
+    if (window.location.pathname !== route.path) {
+      window.history.pushState({ tab: activeTab }, "", route.path);
+    }
+    applyRouteMeta(route);
+    contentScrollRef.current?.scrollTo({ top: 0 });
+  }, [activeTab]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      setActiveTab(routeForPath(window.location.pathname).tab);
+      setSelectedCreator(null);
+      setHasEntered(true);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  const navigateTo = (tab: TabId) => {
+    setHasEntered(true);
+    setActiveTab(tab);
+    setSelectedCreator(null);
+  };
 
   // Audio Control (Procedural Runway Lounge Synth)
   const [audioEnabled, setAudioEnabled] = useState(false);
@@ -274,10 +315,13 @@ export default function App() {
     }
   };
 
-  const handleEnterExperience = () => {
-    setHasEntered(true);
-    // Automatically trigger ambient audio to immerse the visitor
-    startAmbientSynth();
+  // Entering never auto-plays sound; visitors can switch ambient audio on from the header
+  const handleEnterExperience = (tab: TabId = "catwalk", openEnquiry = false) => {
+    try {
+      sessionStorage.setItem(ENTERED_KEY, "1");
+    } catch {}
+    navigateTo(tab);
+    if (openEnquiry) setIsCollaborationOpen(true);
   };
 
   const activeSection = sections[activeSectionIndex] || sections[0] || { id: "none", title: "No Category", creators: [], primaryColor: "#E1C699" };
@@ -327,11 +371,11 @@ export default function App() {
               {settings.logoUrl ? (
                 <img src={settings.logoUrl} alt="Logo" className="h-6 object-contain" />
               ) : (
-                <span className="font-sans text-xs tracking-[0.35em] text-[#8E8D8A] uppercase font-bold">
+                <span className="font-sans text-xs tracking-[0.3em] text-[#111] uppercase font-bold">
                   {settings.websiteTitle}
                 </span>
               )}
-              <span className="px-3.5 py-1 rounded-full border border-champagne/30 text-[9px] font-sans text-champagne uppercase font-bold tracking-[0.2em]">
+              <span className="px-3.5 py-1 rounded-full border border-champagne/30 text-[10px] font-sans text-champagne uppercase font-bold tracking-[0.2em]">
                 VIP Tier Access
               </span>
             </div>
@@ -346,13 +390,13 @@ export default function App() {
                   className="inline-flex items-center gap-2 text-xs font-sans tracking-[0.4em] text-champagne font-bold uppercase"
                 >
                   <Sparkles className="w-4.5 h-4.5 animate-pulse text-champagne" />
-                  Bespoke Editorial Exposition
+                  Creators &amp; Influencer Portal
                 </motion.span>
                 <motion.h1
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="font-serif-display text-4xl md:text-6xl lg:text-7xl font-light tracking-tight text-[#111] leading-[1.05] uppercase"
+                  className="font-serif-display text-4xl md:text-6xl lg:text-7xl font-medium tracking-tight text-[#111] leading-[1.05] uppercase"
                 >
                   {settings.heroTitle}
                 </motion.h1>
@@ -360,43 +404,52 @@ export default function App() {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.6 }}
-                  className="font-serif-text italic text-base md:text-xl text-[#666] max-w-2xl mx-auto leading-relaxed"
+                  className="font-serif-text text-lg md:text-2xl text-[#2e2c29] max-w-2xl mx-auto leading-relaxed"
                 >
                   {settings.heroSubtitle}
                 </motion.p>
               </div>
 
-              {/* Invitation Acceptance Seal */}
+              {/* Entry choices: one clear primary action, two direct shortcuts */}
               <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
+                initial={{ scale: 0.97, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.8 }}
-                className="inline-block p-8 border border-champagne/20 bg-white/40 backdrop-blur-md rounded-2xl max-w-md shadow-sm relative overflow-hidden"
+                className="flex flex-col items-center gap-4"
               >
-                <span className="block text-[10px] font-sans tracking-[0.3em] text-[#8E8D8A] uppercase font-bold mb-1">
-                  Daylight Gala Commendation
-                </span>
-                <p className="font-sans text-[11px] text-[#555] leading-relaxed mb-6">
-                  Interactive WebGL exposition. For optimal fidelity, the system will execute soft audio drones and physical day-lighting modules.
-                </p>
-
                 <button
-                  onClick={handleEnterExperience}
-                  className="inline-flex items-center gap-3 bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[11px] tracking-[0.25em] font-medium py-4 px-8 rounded-lg uppercase cursor-pointer transition-all shadow-md hover:shadow-xl active:scale-95"
+                  onClick={() => handleEnterExperience()}
+                  className="inline-flex items-center gap-3 bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[13px] tracking-[0.2em] font-semibold py-4 px-9 rounded-xl uppercase cursor-pointer transition-all shadow-md hover:shadow-xl active:scale-95"
                   id="enter-exposition-btn"
                 >
                   {settings.ctaText}
                   <ChevronRight className="w-4 h-4 text-champagne" />
                 </button>
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                  <button
+                    onClick={() => handleEnterExperience("apply")}
+                    className="inline-flex items-center gap-2 bg-white border-2 border-[#111] text-[#111] hover:bg-[#111] hover:text-white font-sans text-[13px] font-semibold py-3 px-6 rounded-xl cursor-pointer transition-colors"
+                  >
+                    <UserPlus className="w-4 h-4" /> I'm a creator — join
+                  </button>
+                  <button
+                    onClick={() => handleEnterExperience("directory", true)}
+                    className="inline-flex items-center gap-2 bg-white border-2 border-[#111] text-[#111] hover:bg-[#111] hover:text-white font-sans text-[13px] font-semibold py-3 px-6 rounded-xl cursor-pointer transition-colors"
+                  >
+                    <Briefcase className="w-4 h-4" /> I'm a brand — enquire
+                  </button>
+                </div>
               </motion.div>
             </div>
 
             {/* Footer */}
-            <div className="flex flex-col md:flex-row justify-between items-center text-[10px] text-[#8E8D8A] font-sans tracking-widest gap-2 z-10">
-              <span className="uppercase">{settings.footerText}</span>
-              <span className="flex items-center gap-1">
-                DESIGN BY VIP EDITORIAL TEAM <ExternalLink className="w-3 h-3 text-[#E1C699] ml-1" />
-              </span>
+            <div className="z-10">
+              <SiteFooter
+                compact
+                footerText={settings.footerText}
+                onNavigate={(tab) => handleEnterExperience(tab)}
+                onBrandEnquiry={() => handleEnterExperience("directory", true)}
+              />
             </div>
           </motion.div>
         ) : (
@@ -434,6 +487,8 @@ export default function App() {
               </motion.div>
             </div>
 
+            {activeTab === "catwalk" && <h1 className="sr-only">FSIA Creators &amp; Influencer Portal</h1>}
+
             {/* The 3D Canvas Container */}
             <div className="absolute inset-0 w-full h-full z-0">
               <ThreeGallery
@@ -453,7 +508,7 @@ export default function App() {
               <div className="absolute inset-0 flex items-center justify-center">
                  <div className="w-1.5 h-1.5 bg-[#E1C699] rounded-full animate-ping"></div>
               </div>
-              <div className="absolute -top-7 left-0 text-[8px] tracking-[0.4em] uppercase whitespace-nowrap rotate-90 origin-bottom-left text-[#8E8D8A] font-bold">
+              <div className="absolute -top-7 left-0 text-[10px] tracking-[0.4em] uppercase whitespace-nowrap rotate-90 origin-bottom-left text-[#8E8D8A] font-bold">
                 REFRACTIVE INDEX: PURE
               </div>
             </div>
@@ -473,11 +528,11 @@ export default function App() {
                   className="flex items-center gap-1.5 sm:gap-2.5 bg-white/70 backdrop-blur-md px-2.5 py-1.5 sm:px-5 sm:py-3 rounded-xl border border-black/5 shadow-sm cursor-pointer hover:border-black/10 transition-all select-none"
                 >
                   <div className="space-y-0.5">
-                    <h1 className="font-serif-display text-[10px] sm:text-xs md:text-base lg:text-lg font-bold tracking-tight text-[#111] leading-none">
+                    <p className="font-serif-display text-[12px] sm:text-sm md:text-base lg:text-lg font-bold tracking-tight text-[#111] leading-none">
                       FSIA INFLUENCER
-                    </h1>
-                    <p className="font-sans text-[6px] sm:text-[7px] md:text-[9px] tracking-[0.2em] text-[#888] uppercase font-bold leading-none max-[350px]:hidden">
-                      By FOREVER STAR INDIA
+                    </p>
+                    <p className="font-sans text-[9px] md:text-[10px] tracking-[0.16em] text-[#47453f] uppercase font-bold leading-none max-[350px]:hidden">
+                      Creators &amp; Influencer Portal
                     </p>
                   </div>
                 </div>
@@ -525,7 +580,7 @@ export default function App() {
                   {/* VIP Collaboration Gateway Trigger */}
                   <button
                     onClick={() => setIsCollaborationOpen(true)}
-                    className="bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[8px] sm:text-[9px] tracking-[0.1em] font-bold px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg shadow-xs cursor-pointer flex items-center gap-1 uppercase active:scale-95"
+                    className="bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[10px] sm:text-[10px] tracking-[0.1em] font-bold px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg shadow-xs cursor-pointer flex items-center gap-1 uppercase active:scale-95"
                     id="open-collaboration-form-btn-mobile"
                   >
                     <FileText className="w-3.5 h-3.5 text-champagne" />
@@ -545,21 +600,25 @@ export default function App() {
                     tab === "membership" ? "VIP Membership" :
                     tab === "apply" ? "Get Verified" : "FAQs";
                   return (
-                    <button
+                    <a
                       key={tab}
-                      onClick={() => {
+                      href={routeForTab(tab).path}
+                      aria-current={isSelected ? "page" : undefined}
+                      onClick={(e) => {
+                        if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+                        e.preventDefault();
                         setActiveTab(tab);
                         setSelectedCreator(null);
                         playCrystalChime();
                       }}
-                      className={`px-3 py-1.5 rounded-lg text-[8px] md:text-[10px] font-sans font-bold tracking-widest uppercase transition-all cursor-pointer whitespace-nowrap ${
+                      className={`px-3 py-1.5 rounded-lg text-[10px] md:text-[10px] font-sans font-bold tracking-widest uppercase transition-all cursor-pointer whitespace-nowrap ${
                         isSelected
                           ? "bg-[#111] text-[#FAF9F6] shadow-xs"
-                          : "hover:bg-black/5 text-[#666]"
+                          : "hover:bg-black/5 text-[#2e2c29]"
                       }`}
                     >
                       {label}
-                    </button>
+                    </a>
                   );
                 })}
               </div>
@@ -569,7 +628,7 @@ export default function App() {
                 {/* Custom Synthesizer Toggle */}
                 <button
                   onClick={toggleAudio}
-                  className={`hud-interactive px-3 py-2.5 md:px-4 md:py-3 rounded-xl backdrop-blur-md border border-black/5 flex items-center gap-2 text-[9px] md:text-[10px] font-sans font-bold tracking-wider uppercase transition-all shadow-sm cursor-pointer ${
+                  className={`hud-interactive px-3 py-2.5 md:px-4 md:py-3 rounded-xl backdrop-blur-md border border-black/5 flex items-center gap-2 text-[10px] md:text-[10px] font-sans font-bold tracking-wider uppercase transition-all shadow-sm cursor-pointer ${
                     audioEnabled
                       ? "bg-champagne/15 border border-champagne text-[#111]"
                       : "bg-white/60 hover:bg-white text-[#666]"
@@ -609,7 +668,7 @@ export default function App() {
                   href="https://www.fsia.in"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hud-interactive px-3 py-2.5 md:px-4 md:py-3 rounded-xl backdrop-blur-md border border-black/10 flex items-center justify-center text-[#111] bg-white hover:bg-stone-50 transition-all shadow-sm cursor-pointer text-[9px] md:text-[10px] font-sans font-bold tracking-wider uppercase"
+                  className="hud-interactive px-3 py-2.5 md:px-4 md:py-3 rounded-xl backdrop-blur-md border border-black/10 flex items-center justify-center text-[#111] bg-white hover:bg-stone-50 transition-all shadow-sm cursor-pointer text-[10px] md:text-[10px] font-sans font-bold tracking-wider uppercase"
                 >
                   FSIA Portal
                 </a>
@@ -617,7 +676,7 @@ export default function App() {
                 {/* VIP Collaboration Gateway Trigger */}
                 <button
                   onClick={() => setIsCollaborationOpen(true)}
-                  className="hud-interactive bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[9px] md:text-[10px] tracking-[0.15em] font-bold px-4 py-2.5 md:px-5 md:py-3 rounded-xl shadow-md cursor-pointer flex items-center gap-2 uppercase active:scale-95"
+                  className="hud-interactive bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[10px] md:text-[10px] tracking-[0.15em] font-bold px-4 py-2.5 md:px-5 md:py-3 rounded-xl shadow-md cursor-pointer flex items-center gap-2 uppercase active:scale-95"
                   id="open-collaboration-form-btn"
                 >
                   <FileText className="w-4 h-4 text-champagne" />
@@ -630,7 +689,7 @@ export default function App() {
             {activeTab === "catwalk" && (
               <nav className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 hidden lg:flex flex-col gap-6 z-10 pointer-events-none max-h-[80vh] overflow-y-auto scrollbar-none">
                 <div className="hud-interactive bg-white/45 backdrop-blur-md p-6 rounded-2xl border border-black/5 shadow-sm flex flex-col gap-5 pointer-events-auto pb-8">
-                  <span className="block text-[9px] font-sans tracking-[0.3em] text-[#8E8D8A] uppercase font-bold border-b border-black/5 pb-2">
+                  <span className="block text-[10px] font-sans tracking-[0.3em] text-[#8E8D8A] uppercase font-bold border-b border-black/5 pb-2">
                     RUNWAY STATIONS
                   </span>
                   {sections.map((sec, idx) => {
@@ -662,7 +721,7 @@ export default function App() {
                         {/* Section details */}
                         <div>
                           <span
-                            className={`block text-[9px] font-mono tracking-wider transition-colors ${
+                            className={`block text-[10px] font-mono tracking-wider transition-colors ${
                               isActive ? "text-champagne font-bold" : "text-[#999]"
                             }`}
                           >
@@ -699,7 +758,7 @@ export default function App() {
                           setSelectedCreator(null);
                           playCrystalChime();
                         }}
-                        className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[9px] font-sans font-bold tracking-wider uppercase transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                        className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-sans font-bold tracking-wider uppercase transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
                           isActive
                             ? "bg-[#111] text-[#FAF9F6] shadow-2xs"
                             : "bg-white/40 hover:bg-white/80 text-[#666]"
@@ -723,13 +782,13 @@ export default function App() {
             {activeTab === "catwalk" && (
               <aside className="absolute right-6 md:right-8 top-1/2 -translate-y-1/2 hidden lg:flex flex-col gap-4 z-10 pointer-events-none">
                 <div className="hud-interactive bg-white/45 backdrop-blur-md p-6 rounded-2xl border border-black/5 shadow-sm flex flex-col gap-4 pointer-events-auto w-64">
-                  <span className="block text-[9px] font-sans tracking-[0.3em] text-[#8E8D8A] uppercase font-bold border-b border-black/5 pb-2">
+                  <span className="block text-[10px] font-sans tracking-[0.3em] text-[#8E8D8A] uppercase font-bold border-b border-black/5 pb-2">
                     VIP ROSTER METRICS
                   </span>
 
                   <div className="space-y-3">
                     <div className="space-y-0.5">
-                      <span className="text-[9px] font-sans text-[#888] uppercase tracking-wider block">
+                      <span className="text-[10px] font-sans text-[#888] uppercase tracking-wider block">
                         Combined Roster Reach
                       </span>
                       <div className="flex items-center gap-2">
@@ -741,7 +800,7 @@ export default function App() {
                     </div>
 
                     <div className="space-y-0.5">
-                      <span className="text-[9px] font-sans text-[#888] uppercase tracking-wider block">
+                      <span className="text-[10px] font-sans text-[#888] uppercase tracking-wider block">
                         Escrow Safeguard
                       </span>
                       <span className="font-serif-text text-xs text-[#222] font-semibold flex items-center gap-1">
@@ -751,7 +810,7 @@ export default function App() {
                     </div>
 
                     <div className="space-y-0.5">
-                      <span className="text-[9px] font-sans text-[#888] uppercase tracking-wider block">
+                      <span className="text-[10px] font-sans text-[#888] uppercase tracking-wider block">
                         Verification Block
                       </span>
                       <span className="font-mono text-[10px] text-[#555] bg-black/5 px-2 py-0.5 rounded">
@@ -768,7 +827,7 @@ export default function App() {
               <footer className="absolute bottom-20 lg:bottom-0 inset-x-0 p-4 md:p-8 flex flex-col items-center gap-3 z-10 pointer-events-none">
                 {/* Dynamic scroll indicator banner if no card selected */}
                 {!selectedCreator && (
-                  <div className="bg-white/45 backdrop-blur-md border border-black/5 shadow-sm px-4 py-2 md:px-5 md:py-2.5 rounded-full flex items-center gap-2 text-[9px] md:text-[10px] font-sans text-[#666] tracking-widest uppercase animate-bounce pointer-events-auto">
+                  <div className="bg-white/45 backdrop-blur-md border border-black/5 shadow-sm px-4 py-2 md:px-5 md:py-2.5 rounded-full flex items-center gap-2 text-[10px] md:text-[10px] font-sans text-[#666] tracking-widest uppercase animate-bounce pointer-events-auto">
                     <Compass className="w-4 h-4 text-champagne animate-spin-slow" />
                     <span className="hidden xs:inline">Scroll / Wheel Drag to</span> Glide Catwalk
                   </div>
@@ -787,7 +846,7 @@ export default function App() {
                       <ChevronLeft className="w-5 h-5" />
                     </button>
                     <div className="text-center sm:text-left min-w-[140px] md:min-w-[200px]">
-                      <span className="block text-[8px] font-mono text-[#888] uppercase tracking-widest">
+                      <span className="block text-[10px] font-mono text-[#888] uppercase tracking-widest">
                         ACTIVE SECTION — {activeSectionIndex + 1} / {sections.length}
                       </span>
                       <span className="block font-serif-display text-xs md:text-sm font-bold text-[#111] truncate max-w-[180px] md:max-w-none">
@@ -806,7 +865,7 @@ export default function App() {
 
                   {/* Elegant Runway Catwalk Progress Slider */}
                   <div className="hidden sm:block flex-1 max-w-sm w-full space-y-1">
-                    <div className="flex justify-between text-[8px] font-sans text-[#888] tracking-widest uppercase font-bold">
+                    <div className="flex justify-between text-[10px] font-sans text-[#888] tracking-widest uppercase font-bold">
                       <span>CATWALK ENTRANCE</span>
                       <span>VIP ARCHIVE</span>
                     </div>
@@ -828,6 +887,7 @@ export default function App() {
               {activeTab !== "catwalk" && (
                 <motion.div
                   key={activeTab}
+                  ref={contentScrollRef}
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -30 }}
@@ -849,6 +909,14 @@ export default function App() {
                   {activeTab === "apply" && <ModelRegistrationTab />}
                   {activeTab === "faq" && <FaqTab />}
                   {activeTab === "admin" && <AdminTab />}
+                  {activeTab !== "admin" && (
+                    <SiteFooter
+                      footerText={settings.footerText}
+                      onNavigate={navigateTo}
+                      onBrandEnquiry={() => setIsCollaborationOpen(true)}
+                      onBackToTop={() => contentScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
+                    />
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -905,11 +973,11 @@ export default function App() {
             {/* --- MAJESTIC FLOATING MOBILE BOTTOM NAVIGATION BAR --- */}
             <div className="fixed bottom-4 inset-x-4 h-16 bg-[#111]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex items-center justify-around px-3 z-50 lg:hidden pointer-events-auto">
               {[
-                { id: "catwalk", label: "Agency Services", icon: Compass },
-                { id: "directory", label: "Talent Roster", icon: Users },
+                { id: "catwalk", label: "Explore", icon: Compass },
+                { id: "directory", label: "Talent", icon: Users },
                 { id: "campaigns", label: "Campaigns", icon: Briefcase },
-                { id: "apply", label: "Get Verified", icon: UserPlus },
-                { id: "membership", label: "VIP Club", icon: Sparkles },
+                { id: "apply", label: "Join", icon: UserPlus },
+                { id: "membership", label: "Plans", icon: Sparkles },
               ].map((item) => {
                 const isSelected = activeTab === item.id;
                 const Icon = item.icon;
@@ -945,7 +1013,7 @@ export default function App() {
                     <div className={`p-1 rounded-xl transition-all duration-300 ${isSelected ? "text-champagne scale-110" : "text-[#8e8d8a] hover:text-white"}`}>
                       <Icon className="w-5 h-5" />
                     </div>
-                    <span className={`text-[8px] font-sans font-bold tracking-widest uppercase transition-colors duration-300 ${isSelected ? "text-champagne font-extrabold" : "text-[#8e8d8a]"}`}>
+                    <span className={`text-[10px] font-sans font-bold tracking-widest uppercase transition-colors duration-300 ${isSelected ? "text-champagne font-extrabold" : "text-[#8e8d8a]"}`}>
                       {item.label}
                     </span>
                     {isSelected && (

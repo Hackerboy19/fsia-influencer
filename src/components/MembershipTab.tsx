@@ -27,7 +27,7 @@ const FALLBACK_PLANS: Plan[] = [
     name: "Elite Star",
     badge: "Standard Entry",
     price: "₹0",
-    period: "Forever Free",
+    period: "Always Free",
     accent: "#8E8D8A",
     icon: Star,
     perks: [
@@ -96,6 +96,8 @@ export default function MembershipTab() {
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState<"form" | "success">("form");
+  const [requestError, setRequestError] = useState("");
+  const [requestRef, setRequestRef] = useState("");
   const [billingDetails, setBillingDetails] = useState({
     name: "",
     email: "",
@@ -129,11 +131,39 @@ export default function MembershipTab() {
     e.preventDefault();
     if (!billingDetails.name || !billingDetails.email || !billingDetails.phone) return;
 
+    if (!selectedPlan) return;
+
+    // No payment is taken online: the request goes to the team, who send payment details
     setIsProcessing(true);
-    setTimeout(() => {
-      setIsProcessing(false);
-      setCheckoutStep("success");
-    }, 1800);
+    setRequestError("");
+    const totals = calculateTotal(selectedPlan.price);
+    fetch("/api/enquiries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "membership",
+        subject: `${selectedPlan.name} plan`,
+        refId: selectedPlan.id,
+        name: billingDetails.name,
+        email: billingDetails.email,
+        phone: billingDetails.phone,
+        details: {
+          plan: selectedPlan.name,
+          price: `${selectedPlan.price} ${selectedPlan.period}`,
+          totalWithGst: totals.total ? `₹${totals.total.toLocaleString("en-IN")}` : "Free",
+          pan: billingDetails.pan,
+          gstin: billingDetails.gstin
+        }
+      })
+    })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || "Your request could not be sent.");
+        setRequestRef(data.enquiry?.id || "");
+        setCheckoutStep("success");
+      })
+      .catch((err: Error) => setRequestError((err.message || "Your request could not be sent.") + " Please try again."))
+      .finally(() => setIsProcessing(false));
   };
 
   const calculateTotal = (priceStr: string) => {
@@ -177,7 +207,7 @@ export default function MembershipTab() {
               transition={{ duration: 0.3 }}
             >
               {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-champagne text-white text-[9px] font-sans font-bold tracking-widest px-3 py-1 rounded-full uppercase shadow">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-champagne text-white text-[10px] font-sans font-bold tracking-widest px-3 py-1 rounded-full uppercase shadow">
                   MOST POPULAR SELECTION
                 </div>
               )}
@@ -186,7 +216,7 @@ export default function MembershipTab() {
                 {/* Header */}
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <span className="text-[9px] font-sans text-[#8E8D8A] tracking-wider uppercase font-semibold block">
+                    <span className="text-[10px] font-sans text-[#8E8D8A] tracking-wider uppercase font-semibold block">
                       {plan.badge}
                     </span>
                     <h3 className="font-serif-display text-2xl font-bold text-[#111]">
@@ -225,10 +255,12 @@ export default function MembershipTab() {
               <button
                 onClick={() => {
                   if (plan.price === "₹0") {
-                    alert("Standard entry is automatically granted with standard registration. Please submit the registration form.");
+                    // The free tier comes with standard registration
+                    window.dispatchEvent(new CustomEvent("change-tab", { detail: "apply" }));
                   } else {
                     setSelectedPlan(plan);
                     setCheckoutStep("form");
+                    setRequestError("");
                   }
                 }}
                 className={`w-full font-sans text-[10px] tracking-widest font-bold py-3 px-4 rounded-lg uppercase transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer ${
@@ -263,7 +295,7 @@ export default function MembershipTab() {
               <div className="p-5 md:p-8 border-b border-black/5 flex items-center justify-between bg-[#F4F3F0]">
                 <div>
                   <span className="font-sans text-[10px] tracking-[0.25em] text-[#8E8D8A] uppercase font-bold">
-                    FSIA Secure Payment Desk
+                    Membership request
                   </span>
                   <h3 className="font-serif-display text-lg md:text-xl text-[#111] tracking-tight mt-1">
                     Join {selectedPlan.name}
@@ -283,8 +315,8 @@ export default function MembershipTab() {
                   <form onSubmit={handleCheckoutSubmit} className="space-y-6">
                     {/* Invoice Pricing Calculator */}
                     <div className="p-5 bg-white border border-black/5 rounded-2xl shadow-sm space-y-4">
-                      <span className="block text-[9px] font-sans tracking-[0.2em] text-[#8E8D8A] uppercase font-bold border-b border-black/5 pb-2">
-                        Tax Invoice Summary
+                      <span className="block text-[10px] font-sans tracking-[0.2em] text-[#8E8D8A] uppercase font-bold border-b border-black/5 pb-2">
+                        Price summary
                       </span>
                       <div className="space-y-2 text-xs font-serif-text text-[#555]">
                         <div className="flex justify-between">
@@ -386,11 +418,17 @@ export default function MembershipTab() {
                     <div className="p-4 bg-white border border-[#E1C699]/35 rounded-xl text-[11px] font-serif-text text-[#555] flex items-start gap-2 leading-relaxed">
                       <HelpCircle className="w-5 h-5 text-champagne shrink-0 mt-0.5" />
                       <span>
-                        This is an official demonstration sandboxed payment. In the live environment, submitting triggers a secure UPI / credit card QR gateway, which verifies KYC details instantly against Indian banking networks.
+                        No payment is taken on this page. After you send this request, our team will confirm your plan and share secure payment details by email or WhatsApp.
                       </span>
                     </div>
 
-                    {/* Pay button */}
+                    {requestError && (
+                      <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-800 text-sm rounded-lg font-medium">
+                        {requestError}
+                      </div>
+                    )}
+
+                    {/* Request button */}
                     <button
                       type="submit"
                       disabled={isProcessing}
@@ -399,11 +437,11 @@ export default function MembershipTab() {
                       {isProcessing ? (
                         <>
                           <div className="w-4 h-4 border-2 border-t-transparent border-[#FAF9F6] rounded-full animate-spin" />
-                          LAUNCHING SECURE BANK GATE...
+                          SENDING REQUEST…
                         </>
                       ) : (
                         <>
-                          SECURELY PROCESS PAYOUT
+                          REQUEST THIS PLAN
                           <ArrowRight className="w-4 h-4" />
                         </>
                       )}
@@ -418,42 +456,40 @@ export default function MembershipTab() {
                     </div>
 
                     <div className="space-y-1">
-                      <span className="font-sans text-[9px] tracking-[0.3em] text-[#8E8D8A] uppercase font-bold animate-pulse">
-                        OBSIDIAN TRANSACTION SEALED
+                      <span className="font-sans text-[10px] tracking-[0.3em] text-[#8E8D8A] uppercase font-bold animate-pulse">
+                        Request received
                       </span>
                       <h4 className="font-serif-display text-xl md:text-2xl text-[#111] font-bold">
-                        Welcome to {selectedPlan.name}!
+                        Thanks — we've received your {selectedPlan.name} request
                       </h4>
                     </div>
 
-                    <div className="bg-white/90 border border-black/5 p-4 rounded-xl text-left space-y-2.5 font-sans text-[11px] text-[#444]">
-                      <div className="flex justify-between">
-                        <span>SUBSCRIBER:</span>
+                    <div className="bg-white/90 border border-black/5 p-4 rounded-xl text-left space-y-2.5 font-sans text-sm text-[#2e2c29]">
+                      <div className="flex justify-between gap-3">
+                        <span>Name</span>
                         <strong className="text-[#111]">{billingDetails.name}</strong>
                       </div>
-                      <div className="flex justify-between">
-                        <span>PLAN ASSIGNED:</span>
-                        <strong className="text-champagne uppercase">{selectedPlan.name}</strong>
+                      <div className="flex justify-between gap-3">
+                        <span>Plan requested</span>
+                        <strong className="text-[#111]">{selectedPlan.name}</strong>
                       </div>
-                      <div className="flex justify-between">
-                        <span>RECEIPT NUMBER:</span>
-                        <strong className="font-mono text-[#111]">FSIA-TAX-{Math.floor(100000 + Math.random() * 900000)}</strong>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>GST PORTION:</span>
-                        <strong className="text-[#111]">₹{calculateTotal(selectedPlan.price).gst.toLocaleString("en-IN")}.00</strong>
-                      </div>
+                      {requestRef && (
+                        <div className="flex justify-between gap-3">
+                          <span>Reference</span>
+                          <strong className="font-mono text-[#111]">{requestRef}</strong>
+                        </div>
+                      )}
                     </div>
 
-                    <p className="text-xs text-[#555] font-serif-text leading-relaxed">
-                      Your premium tier account is officially signed. You will receive an official tax invoice containing full PDF credentials and your account setup link at <strong className="text-[#111]">{billingDetails.email}</strong>. Live talent manager matchmaking has been initialized.
+                    <p className="text-sm text-[#2e2c29] leading-relaxed">
+                      Our team will contact you at <strong className="text-[#111]">{billingDetails.email}</strong> or on WhatsApp to confirm your plan and share payment details. Nothing has been charged.
                     </p>
 
                     <button
                       onClick={() => setSelectedPlan(null)}
                       className="w-full bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-xs tracking-[0.25em] py-3.5 px-6 rounded-lg uppercase cursor-pointer"
                     >
-                      RETURN TO HOME
+                      BACK TO PLANS
                     </button>
                   </div>
                 )}

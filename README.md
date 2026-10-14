@@ -1,4 +1,4 @@
-# FSIA Influencer — Forever Star India
+# FSIA Influencer — Creators & Influencer Portal
 
 3D editorial gallery, creator directory, brand campaigns, membership plans and a
 full admin panel for [influencer.fsia.in](https://influencer.fsia.in).
@@ -37,6 +37,14 @@ To test the bundle locally:
 php -S localhost:8080 -t release/fsia-influencer-live php-backend/dev-router.php
 ```
 
+## SEO
+
+`src/seo.ts` is the single source for page URLs, titles, descriptions and structured data.
+`scripts/prerender-seo.ts` runs after `vite build` and writes one HTML file per route
+(`dist/talent/index.html`, …) with complete meta tags and crawlable fallback content,
+plus `robots.txt` and `sitemap.xml`. In the browser the same data keeps `<head>` in sync
+as visitors move between sections.
+
 ## Admin panel
 
 - **Overview:** live counters, new-lead / pending-applicant badges, audit trail
@@ -44,4 +52,5 @@ php -S localhost:8080 -t release/fsia-influencer-live php-backend/dev-router.php
 - **Campaign Copy / AI Config / Prompt Logs:** site text and colours, Gemini settings and history
 - **VIP Applications:** brand leads with search, status pipeline (new → contacted → confirmed → closed), notes, CSV export
 - **Creator Applicants:** approve straight onto the runway, decline, delete, search, CSV export
+- **Enquiries:** campaign applications and membership plan requests from the public site
 - **Security & Data:** change password, admin team accounts, backup / restore, searchable audit log

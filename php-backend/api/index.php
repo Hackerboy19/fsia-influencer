@@ -641,6 +641,82 @@ try {
     }
 
     // ------------------------------------------------
+    // 6B. ENQUIRIES (campaign applications & membership plan requests)
+    // ------------------------------------------------
+    if ($is('POST', 'enquiries')) {
+        $type = (string)($body['type'] ?? '');
+        if (!in_array($type, ['campaign', 'membership'], true)) {
+            fail(400, 'Unknown enquiry type.');
+        }
+        if (trim((string)($body['name'] ?? '')) === '' || trim((string)($body['email'] ?? '')) === '' || trim((string)($body['phone'] ?? '')) === '') {
+            fail(400, 'Name, email and phone are required.');
+        }
+        if (!valid_email(trim((string)$body['email']))) {
+            fail(400, 'Please provide a valid email address.');
+        }
+        $details = [];
+        if (is_array($body['details'] ?? null)) {
+            foreach (array_slice($body['details'], 0, 12, true) as $k => $v) {
+                $details[str_cut($k, 40)] = str_cut(is_scalar($v) ? trim((string)$v) : '', 2000);
+            }
+        }
+        $enquiry = [
+            'id' => 'enq-' . now_ms(),
+            'type' => $type,
+            'subject' => str_cut(trim((string)($body['subject'] ?? '')), 300),
+            'refId' => str_cut(trim((string)($body['refId'] ?? '')), 100),
+            'name' => str_cut(trim((string)$body['name']), 200),
+            'email' => str_cut(trim((string)$body['email']), 200),
+            'phone' => str_cut(trim((string)$body['phone']), 50),
+            'details' => (object)$details,
+            'status' => 'new',
+            'timestamp' => gmdate('c'),
+        ];
+        array_unshift($db['enquiries'], $enquiry);
+        $db['enquiries'] = array_slice($db['enquiries'], 0, 5000);
+        $store->log('New ' . $type . ' enquiry from ' . $enquiry['name'] . ': ' . $enquiry['subject']);
+        $store->save();
+        respond(['success' => true, 'enquiry' => ['id' => $enquiry['id'], 'timestamp' => $enquiry['timestamp']]], 201);
+    }
+
+    if ($is('GET', 'enquiries')) {
+        require_admin($store);
+        respond($db['enquiries']);
+    }
+
+    if ($is('PUT', 'enquiries/{id}', $p)) {
+        require_admin($store);
+        $i = $findById('enquiries', $p[0]);
+        if ($i === null) {
+            fail(404, 'Enquiry not found.');
+        }
+        if (isset($body['status'])) {
+            if (!in_array($body['status'], ['new', 'contacted', 'confirmed', 'closed'], true)) {
+                fail(400, 'Invalid status.');
+            }
+            $db['enquiries'][$i]['status'] = $body['status'];
+        }
+        if (isset($body['notes'])) {
+            $db['enquiries'][$i]['notes'] = str_cut($body['notes'], 2000);
+        }
+        $store->log('Updated enquiry ' . $p[0] . (isset($body['status']) ? ' → ' . $body['status'] : ''));
+        $store->save();
+        respond(['success' => true, 'enquiry' => $db['enquiries'][$i]]);
+    }
+
+    if ($is('DELETE', 'enquiries/{id}', $p)) {
+        require_admin($store);
+        $i = $findById('enquiries', $p[0]);
+        if ($i === null) {
+            fail(404, 'Enquiry not found.');
+        }
+        array_splice($db['enquiries'], $i, 1);
+        $store->log('Deleted enquiry ' . $p[0]);
+        $store->save();
+        respond(['success' => true]);
+    }
+
+    // ------------------------------------------------
     // 7. SETTINGS & AI
     // ------------------------------------------------
     if ($is('GET', 'settings')) {
@@ -714,7 +790,7 @@ try {
             "3. INTEGRATED OUTREACH STRATEGY (Specifically designed to showcase high engagement metrics)";
         $payload = [
             'contents' => [['parts' => [['text' => $userPrompt]]]],
-            'systemInstruction' => ['parts' => [['text' => ($settings['aiSystemPrompt'] ?? '') ?: 'You are an elite luxury media strategist for FSIA (Forever Star India). Format the output in clean markdown under 280 words.']]],
+            'systemInstruction' => ['parts' => [['text' => ($settings['aiSystemPrompt'] ?? '') ?: 'You are an elite luxury media strategist for FSIA Influencer. Format the output in clean markdown under 280 words.']]],
             'generationConfig' => ['temperature' => (float)($settings['temperature'] ?? 0.7)],
         ];
 
@@ -770,6 +846,7 @@ try {
             'influencerApplicationsCount' => count($db['influencer_applications']),
             'pendingApplicationsCount' => count(array_filter($db['influencer_applications'], function ($a) { return ($a['status'] ?? '') === 'pending'; })),
             'newLeadsCount' => count(array_filter($db['registrations'], function ($r) { return empty($r['status']) || $r['status'] === 'new'; })),
+            'newEnquiriesCount' => count(array_filter($db['enquiries'], function ($e) { return ($e['status'] ?? '') === 'new'; })),
             'membershipPlansCount' => count($db['membership_plans']),
             'estimatedRosterReach' => number_format($reach / 1000000, 1, '.', '') . 'M',
             'totalPromptsCount' => $prompts,
@@ -802,7 +879,7 @@ try {
         }
         $db['creators'] = $body['creators'];
         $db['campaigns'] = $body['campaigns'];
-        foreach (['registrations', 'influencer_applications', 'prompt_logs'] as $key) {
+        foreach (['registrations', 'influencer_applications', 'prompt_logs', 'enquiries'] as $key) {
             $db[$key] = is_array($body[$key] ?? null) ? $body[$key] : [];
         }
         if (is_array($body['membership_plans'] ?? null)) {

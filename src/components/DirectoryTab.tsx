@@ -417,7 +417,7 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
                   />
 
                   {/* Floating Gold FSIA Verified Shield Badge */}
-                  <div className="absolute top-2 right-2 md:top-3 md:right-3 z-10 bg-stone-900/90 text-[#C9A227] border border-[#C9A227]/30 backdrop-blur-xs px-2.5 py-1 rounded-full text-[9px] md:text-[10px] font-bold tracking-wider flex items-center gap-1 shadow-md">
+                  <div className="absolute top-2 right-2 md:top-3 md:right-3 z-10 bg-stone-900/90 text-[#C9A227] border border-[#C9A227]/30 backdrop-blur-xs px-2.5 py-1 rounded-full text-[10px] md:text-[10px] font-bold tracking-wider flex items-center gap-1 shadow-md">
                     <ShieldCheck className="w-3 h-3 text-[#C9A227] fill-[#C9A227]/10 shrink-0" />
                     <span>FSIA VERIFIED</span>
                   </div>
@@ -434,19 +434,19 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
                         <span className="text-[10px] md:text-xs text-[#C9A227] block font-mono">
                           {formattedHandle}
                         </span>
-                        <span className="text-[9px] md:text-[10px] text-stone-500 font-semibold block uppercase tracking-wider">
+                        <span className="text-[10px] md:text-[10px] text-stone-500 font-semibold block uppercase tracking-wider">
                           {currentCategory}
                         </span>
                       </div>
 
                       {/* Stats Row */}
-                      <div className="flex items-center justify-between text-[9px] md:text-[10px] text-zinc-500 font-semibold pt-1.5 mt-1.5 border-t border-stone-100">
+                      <div className="flex items-center justify-between text-[10px] md:text-[10px] text-zinc-500 font-semibold pt-1.5 mt-1.5 border-t border-stone-100">
                         <div>
-                          <span className="block text-[8px] text-stone-400 uppercase font-bold tracking-wider">Followers</span>
+                          <span className="block text-[10px] text-stone-400 uppercase font-bold tracking-wider">Followers</span>
                           <span className="text-stone-800 font-bold">{creator.stats.reach || "500K"}</span>
                         </div>
                         <div className="text-right">
-                          <span className="block text-[8px] text-stone-400 uppercase font-bold tracking-wider">Engagement</span>
+                          <span className="block text-[10px] text-stone-400 uppercase font-bold tracking-wider">Engagement</span>
                           <span className="text-stone-800 font-bold">{creator.stats.engagement || "4.8%"}</span>
                         </div>
                       </div>

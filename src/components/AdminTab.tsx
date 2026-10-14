@@ -4,10 +4,11 @@ import {
   Lock, User, LogIn, LayoutDashboard, Sparkles, Users, Briefcase, FileText, 
   Trash2, Plus, Edit2, Check, RefreshCw, X, AlertTriangle, Shield, CheckCircle2,
   TrendingUp, Phone, Mail, MapPin, Eye, FileSpreadsheet, Activity, UserPlus, Layout,
-  KeyRound, Search, Download
+  KeyRound, Search, Download, Inbox
 } from "lucide-react";
 import AdminContentManager from "./AdminContentManager";
 import AdminSecurityPanel from "./AdminSecurityPanel";
+import AdminEnquiriesPanel from "./AdminEnquiriesPanel";
 import { ADMIN_TOKEN_KEY, ADMIN_UNAUTHORIZED_EVENT, downloadCsv } from "../lib/adminSession";
 import { toast } from "react-hot-toast";
 
@@ -131,11 +132,11 @@ export default function AdminTab() {
 
   // Enterprise Dynamic Settings Configuration State
   const [settings, setSettings] = useState({
-    websiteTitle: "FSIA — Forever Star India Awards",
-    heroTitle: "FOREVER STAR INDIA",
+    websiteTitle: "FSIA Creators & Influencer Portal",
+    heroTitle: "FSIA INFLUENCER",
     heroSubtitle: "THE EXQUISITE HALL OF LUXURY INFLUENCING & PRESTIGE COUTURE",
     ctaText: "SECURE VIP RUNWAY ACCESS",
-    footerText: "© 2026 FOREVER STAR INDIA AWARDS (FSIA). ALL RIGHTS RESERVED.",
+    footerText: "© 2026 FSIA Influencer. All rights reserved.",
     logoUrl: "",
     primaryColor: "#E1C699",
     secondaryColor: "#111111",
@@ -825,7 +826,7 @@ export default function AdminTab() {
               )}
 
               <div className="space-y-1.5">
-                <label className="block text-[9px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                <label className="block text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
                   Operator Username
                 </label>
                 <div className="relative">
@@ -842,7 +843,7 @@ export default function AdminTab() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-[9px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                <label className="block text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
                   Administrative Password
                 </label>
                 <div className="relative">
@@ -885,7 +886,7 @@ export default function AdminTab() {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/70 backdrop-blur-md p-6 rounded-2xl border border-black/5 shadow-xs">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="bg-emerald-50 text-emerald-700 text-[9px] font-sans font-bold px-2 py-0.5 rounded-md border border-emerald-100 flex items-center gap-1">
+                <span className="bg-emerald-50 text-emerald-700 text-[10px] font-sans font-bold px-2 py-0.5 rounded-md border border-emerald-100 flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3 text-emerald-600" /> ACTIVE CONTEXT
                 </span>
                 <span className="font-mono text-[10px] text-[#888]">SIGNED IN AS {currentUser.toUpperCase()}</span>
@@ -950,6 +951,7 @@ export default function AdminTab() {
               { id: "campaigns", label: "Brand Bookings", icon: Briefcase },
               { id: "registrations", label: "VIP Applications", icon: FileText, badge: registrations.filter((r) => (r.status || "new") === "new").length },
               { id: "influencer_applications", label: "Creator Applicants", icon: UserPlus, badge: influencerApplications.filter((a) => a.status === "pending").length },
+              { id: "enquiries", label: "Enquiries", icon: Inbox, badge: stats?.newEnquiriesCount },
               { id: "security", label: "Security & Data", icon: KeyRound }
             ].map((tab: { id: string; label: string; icon: typeof KeyRound; badge?: number }) => {
               const Icon = tab.icon;
@@ -958,7 +960,7 @@ export default function AdminTab() {
                 <button
                   key={tab.id}
                   onClick={() => setAdminActiveSubTab(tab.id)}
-                  className={`px-2.5 md:px-4 py-2 md:py-2.5 rounded-t-xl text-[9px] md:text-xs font-sans font-bold tracking-widest uppercase transition-all flex items-center gap-1.5 md:gap-2 whitespace-nowrap cursor-pointer ${
+                  className={`px-2.5 md:px-4 py-2 md:py-2.5 rounded-t-xl text-[10px] md:text-xs font-sans font-bold tracking-widest uppercase transition-all flex items-center gap-1.5 md:gap-2 whitespace-nowrap cursor-pointer ${
                     active 
                       ? "bg-white border-t-2 border-champagne text-[#111] shadow-xs" 
                       : "text-[#666] hover:text-black hover:bg-black/[0.02]"
@@ -967,7 +969,7 @@ export default function AdminTab() {
                   <Icon className={`w-3.5 h-3.5 md:w-4 md:h-4 ${active ? "text-champagne" : "text-[#888]"}`} />
                   {tab.label}
                   {!!tab.badge && (
-                    <span className="ml-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[9px] leading-[18px] text-center">
+                    <span className="ml-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-[18px] text-center">
                       {tab.badge}
                     </span>
                   )}
@@ -1070,7 +1072,7 @@ export default function AdminTab() {
                   <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
                     {stats.logs.map((log) => (
                       <div key={log.id} className="text-[11px] border-b border-black/[0.02] pb-2 space-y-1">
-                        <div className="flex justify-between font-mono text-[9px] text-[#888]">
+                        <div className="flex justify-between font-mono text-[10px] text-[#888]">
                           <span>{new Date(log.timestamp).toLocaleTimeString()}</span>
                           <span>IP: {log.ip || "127.0.0.1"}</span>
                         </div>
@@ -1117,7 +1119,7 @@ export default function AdminTab() {
                         value={settings.websiteTitle} 
                         onChange={(e) => setSettings(prev => ({ ...prev, websiteTitle: e.target.value }))} 
                         className="w-full px-4 py-2.5 bg-white border border-black/10 rounded-xl text-xs" 
-                        placeholder="FSIA — Forever Star India Awards" 
+                        placeholder="FSIA Creators & Influencer Portal" 
                       />
                     </div>
                     <div className="space-y-2">
@@ -1247,18 +1249,18 @@ export default function AdminTab() {
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <label className="text-[9px] font-sans font-bold text-[#666] uppercase">Category Title</label>
+                        <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Category Title</label>
                         <input
                           type="text"
                           required
-                          placeholder="e.g. Forever Teen India 2026"
+                          placeholder="e.g. Teen India 2026"
                           value={newCategoryTitle}
                           onChange={(e) => setNewCategoryTitle(e.target.value)}
                           className="w-full px-3 py-2 bg-white border border-black/10 rounded-lg text-xs"
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[9px] font-sans font-bold text-[#666] uppercase">Category Subtitle</label>
+                        <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Category Subtitle</label>
                         <input
                           type="text"
                           placeholder="e.g. Celebrating Youthful Glamour and Poise"
@@ -1271,7 +1273,7 @@ export default function AdminTab() {
 
                     <div className="flex flex-col sm:flex-row items-end sm:items-center justify-between gap-4 pt-2">
                       <div className="space-y-1 w-full sm:w-auto">
-                        <label className="text-[9px] font-sans font-bold text-[#666] uppercase block">Primary Accent Theme Color</label>
+                        <label className="text-[10px] font-sans font-bold text-[#666] uppercase block">Primary Accent Theme Color</label>
                         <div className="flex gap-2 items-center">
                           <input
                             type="color"
@@ -1315,7 +1317,7 @@ export default function AdminTab() {
                               />
                             </div>
                             <p className="text-[10px] text-[#888] truncate">{sec.subtitle || "No Subtitle"}</p>
-                            <div className="flex items-center gap-2 pt-1 font-mono text-[9px] text-[#666]">
+                            <div className="flex items-center gap-2 pt-1 font-mono text-[10px] text-[#666]">
                               <span className="bg-[#FAF9F6] px-1.5 py-0.5 rounded border border-black/5 uppercase">ID: {sec.id}</span>
                               <span className="bg-[#FAF9F6] px-1.5 py-0.5 rounded border border-black/5">{sec.creators?.length || 0} Models</span>
                             </div>
@@ -1447,7 +1449,7 @@ export default function AdminTab() {
                   <div className="mt-6 overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="border-b border-black/5 text-[9px] font-sans font-bold tracking-wider text-[#666] uppercase">
+                        <tr className="border-b border-black/5 text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase">
                           <th className="py-3 px-4">Timestamp</th>
                           <th className="py-3 px-4">AI Model</th>
                           <th className="py-3 px-4">Status</th>
@@ -1464,18 +1466,18 @@ export default function AdminTab() {
                               <span className="bg-black/5 border border-black/5 px-2 py-0.5 rounded text-[10px] font-mono text-black">{log.modelUsed}</span>
                             </td>
                             <td className="py-4 px-4">
-                              <span className={`px-2 py-0.5 rounded text-[9px] font-sans uppercase font-bold ${log.status === "success" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-red-50 text-red-700 border border-red-100"}`}>
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-sans uppercase font-bold ${log.status === "success" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-red-50 text-red-700 border border-red-100"}`}>
                                 {log.status}
                               </span>
                             </td>
                             <td className="py-4 px-4 max-w-md">
                               <div className="space-y-2">
                                 <div className="p-2.5 bg-black/[0.02] rounded-lg border border-black/[0.03] text-[11px] font-serif-text text-[#555]">
-                                  <strong className="text-[9px] font-sans text-black uppercase font-bold tracking-wider block mb-1">USER PROMPT CONTENT:</strong>
+                                  <strong className="text-[10px] font-sans text-black uppercase font-bold tracking-wider block mb-1">USER PROMPT CONTENT:</strong>
                                   {log.userPrompt}
                                 </div>
                                 <div className="p-2.5 bg-champagne/[0.03] rounded-lg border border-champagne/10 text-[11px] font-serif-text text-black">
-                                  <strong className="text-[9px] font-sans text-champagne uppercase font-bold tracking-wider block mb-1">GENERATED HARMONIC CURATION:</strong>
+                                  <strong className="text-[10px] font-sans text-champagne uppercase font-bold tracking-wider block mb-1">GENERATED HARMONIC CURATION:</strong>
                                   <div className="whitespace-pre-wrap leading-relaxed line-clamp-4 hover:line-clamp-none transition-all">{log.aiResponse}</div>
                                 </div>
                               </div>
@@ -1522,9 +1524,9 @@ export default function AdminTab() {
                       <div className="px-5 py-3.5 bg-[#F4F3F0] border-b border-black/5 flex justify-between items-center">
                         <div>
                           <h4 className="font-serif-display text-sm font-bold text-[#111]">{section.title}</h4>
-                          <span className="text-[9px] text-[#888] tracking-widest uppercase font-mono">{section.subtitle}</span>
+                          <span className="text-[10px] text-[#888] tracking-widest uppercase font-mono">{section.subtitle}</span>
                         </div>
-                        <span className="text-[9px] font-mono text-[#888] bg-white border border-black/5 px-2.5 py-1 rounded-full">
+                        <span className="text-[10px] font-mono text-[#888] bg-white border border-black/5 px-2.5 py-1 rounded-full">
                           Z_OFFSET: {section.zOffset}m
                         </span>
                       </div>
@@ -1538,7 +1540,7 @@ export default function AdminTab() {
                                 <div className="flex items-center gap-2">
                                   <h5 className="font-serif-display text-sm font-bold text-[#111]">{c.name}</h5>
                                   {c.stats.verified && (
-                                    <span className="text-[8px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded font-sans uppercase font-bold">Verified</span>
+                                    <span className="text-[10px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded font-sans uppercase font-bold">Verified</span>
                                   )}
                                 </div>
                                 <p className="text-[11px] font-sans text-[#666]">{c.role} — <span className="italic">{c.city}</span></p>
@@ -1548,7 +1550,7 @@ export default function AdminTab() {
                             <div className="flex items-center gap-6">
                               <div className="text-right hidden md:block">
                                 <div className="text-xs font-mono font-bold">{c.stats.reach}</div>
-                                <div className="text-[9px] text-[#888] tracking-wider uppercase font-semibold">Reach / {c.stats.engagement} ER</div>
+                                <div className="text-[10px] text-[#888] tracking-wider uppercase font-semibold">Reach / {c.stats.engagement} ER</div>
                               </div>
 
                               <div className="flex items-center gap-1.5">
@@ -1608,10 +1610,10 @@ export default function AdminTab() {
                       <div className="space-y-2">
                         <div className="flex justify-between items-start">
                           <div>
-                            <span className="text-[9px] font-sans text-champagne font-bold tracking-widest uppercase block">{camp.brand}</span>
+                            <span className="text-[10px] font-sans text-champagne font-bold tracking-widest uppercase block">{camp.brand}</span>
                             <h4 className="font-serif-display text-sm font-bold text-[#111] mt-0.5">{camp.title}</h4>
                           </div>
-                          <span className="bg-white border border-black/5 text-[#111] text-[9px] font-sans font-bold px-2.5 py-1 rounded">
+                          <span className="bg-white border border-black/5 text-[#111] text-[10px] font-sans font-bold px-2.5 py-1 rounded">
                             {camp.budget}
                           </span>
                         </div>
@@ -1619,7 +1621,7 @@ export default function AdminTab() {
                       </div>
 
                       <div className="pt-3 border-t border-black/5 flex justify-between items-center">
-                        <span className="text-[9px] font-mono text-[#888] uppercase">DURATION: {camp.duration}</span>
+                        <span className="text-[10px] font-mono text-[#888] uppercase">DURATION: {camp.duration}</span>
                         <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => openEditCampaign(camp)}
@@ -1652,7 +1654,7 @@ export default function AdminTab() {
                   <div className="px-5 py-4 bg-[#F4F3F0] border-b border-black/5 flex items-center justify-between">
                     <div>
                       <h4 className="font-serif-display text-sm font-bold text-[#111]">VIP Escrow Curation Applications</h4>
-                      <p className="text-[9px] text-[#888] uppercase tracking-wider font-mono">Secured applications arriving via Client Charter gateways</p>
+                      <p className="text-[10px] text-[#888] uppercase tracking-wider font-mono">Secured applications arriving via Client Charter gateways</p>
                     </div>
                     <span className="bg-champagne/15 text-champagne border border-champagne text-[10px] font-sans font-bold px-3 py-1 rounded-full">
                       {registrations.length} APPLICATIONS
@@ -1729,14 +1731,14 @@ export default function AdminTab() {
                         {/* Submission Metadata details */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white/45 p-3.5 rounded-xl border border-black/[0.03] text-xs font-serif-text">
                           <div className="space-y-1">
-                            <span className="text-[8px] font-sans font-bold tracking-wider text-[#888] uppercase block">TARGET CREATOR</span>
+                            <span className="text-[10px] font-sans font-bold tracking-wider text-[#888] uppercase block">TARGET CREATOR</span>
                             <div className="flex items-center gap-1.5 font-sans font-semibold text-black">
                               <Users className="w-3.5 h-3.5 text-champagne" />
                               {reg.creatorName}
                             </div>
                           </div>
                           <div className="space-y-1">
-                            <span className="text-[8px] font-sans font-bold tracking-wider text-[#888] uppercase block">CONTACT CHANNELS</span>
+                            <span className="text-[10px] font-sans font-bold tracking-wider text-[#888] uppercase block">CONTACT CHANNELS</span>
                             <div className="space-y-0.5">
                               <a href={`mailto:${reg.contactEmail}`} className="flex items-center gap-1.5 text-black hover:underline">
                                 <Mail className="w-3.5 h-3.5 text-[#888]" /> {reg.contactEmail}
@@ -1747,7 +1749,7 @@ export default function AdminTab() {
                             </div>
                           </div>
                           <div className="space-y-1">
-                            <span className="text-[8px] font-sans font-bold tracking-wider text-[#888] uppercase block">CURRENCY & LOCATION</span>
+                            <span className="text-[10px] font-sans font-bold tracking-wider text-[#888] uppercase block">CURRENCY & LOCATION</span>
                             <div>
                               <div className="flex items-center gap-1.5 text-black">
                                 <MapPin className="w-3.5 h-3.5 text-[#888]" /> {reg.clientCity}
@@ -1759,7 +1761,7 @@ export default function AdminTab() {
                           </div>
                         </div>
 
-                        <div className="flex justify-between items-center font-mono text-[9px] text-[#888]">
+                        <div className="flex justify-between items-center font-mono text-[10px] text-[#888]">
                           <span>VERIFICATION HASH: <code className="text-[#444] bg-white px-1.5 py-0.5 rounded border border-black/5">{reg.verificationHash}</code></span>
                           {reg.scope && (
                             <span className="font-serif-text italic text-[#666]">Scope: {reg.scope} ({reg.duration || "3 Months"})</span>
@@ -1798,23 +1800,23 @@ export default function AdminTab() {
                 {/* Metrics bar */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-white/60 p-4 rounded-xl border border-black/5 shadow-xs">
-                    <span className="text-[9px] text-[#888] uppercase tracking-wider font-sans font-bold block">Total Applications</span>
+                    <span className="text-[10px] text-[#888] uppercase tracking-wider font-sans font-bold block">Total Applications</span>
                     <strong className="text-xl font-bold text-[#111]">{influencerApplications.length}</strong>
                   </div>
                   <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100/50 shadow-xs">
-                    <span className="text-[9px] text-amber-700 uppercase tracking-wider font-sans font-bold block">Pending Audit</span>
+                    <span className="text-[10px] text-amber-700 uppercase tracking-wider font-sans font-bold block">Pending Audit</span>
                     <strong className="text-xl font-bold text-amber-700">
                       {influencerApplications.filter(a => a.status === "pending").length}
                     </strong>
                   </div>
                   <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100/50 shadow-xs">
-                    <span className="text-[9px] text-emerald-700 uppercase tracking-wider font-sans font-bold block">Approved & Rostered</span>
+                    <span className="text-[10px] text-emerald-700 uppercase tracking-wider font-sans font-bold block">Approved & Rostered</span>
                     <strong className="text-xl font-bold text-emerald-700">
                       {influencerApplications.filter(a => a.status === "approved").length}
                     </strong>
                   </div>
                   <div className="bg-red-50/50 p-4 rounded-xl border border-red-100/50 shadow-xs">
-                    <span className="text-[9px] text-red-700 uppercase tracking-wider font-sans font-bold block">Declined</span>
+                    <span className="text-[10px] text-red-700 uppercase tracking-wider font-sans font-bold block">Declined</span>
                     <strong className="text-xl font-bold text-red-700">
                       {influencerApplications.filter(a => a.status === "declined").length}
                     </strong>
@@ -1825,7 +1827,7 @@ export default function AdminTab() {
                   <div className="px-5 py-4 bg-[#F4F3F0] border-b border-black/5 flex items-center justify-between flex-wrap gap-3">
                     <div>
                       <h4 className="font-serif-display text-sm font-bold text-[#111]">Runway Model Applicants</h4>
-                      <p className="text-[9px] text-[#888] uppercase tracking-wider font-mono">Approve submitted registrations to directly deploy them into the 3D catwalk and directory roster</p>
+                      <p className="text-[10px] text-[#888] uppercase tracking-wider font-mono">Approve submitted registrations to directly deploy them into the 3D catwalk and directory roster</p>
                     </div>
                   </div>
 
@@ -1869,7 +1871,7 @@ export default function AdminTab() {
                             <div className="space-y-0.5">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <h5 className="font-serif-display text-base font-bold text-black">{app.name}</h5>
-                                <span className={`text-[8px] font-sans font-bold px-2 py-0.5 rounded border uppercase ${
+                                <span className={`text-[10px] font-sans font-bold px-2 py-0.5 rounded border uppercase ${
                                   app.status === "approved" 
                                     ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
                                     : app.status === "declined"
@@ -1887,7 +1889,7 @@ export default function AdminTab() {
 
                           <div className="flex items-center gap-4">
                             <div className="text-left md:text-right">
-                              <span className="text-[8px] font-sans font-bold text-[#888] uppercase block">AUDITED METRICS</span>
+                              <span className="text-[10px] font-sans font-bold text-[#888] uppercase block">AUDITED METRICS</span>
                               <div className="text-xs font-mono font-bold text-black">
                                 {app.reach} Followers / {app.engagement} ER
                               </div>
@@ -1925,7 +1927,7 @@ export default function AdminTab() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#FAF9F6] p-4 rounded-xl border border-black/[0.02]">
                           <div className="space-y-2">
                             <div>
-                              <span className="text-[8px] font-sans font-bold tracking-wider text-[#888] uppercase block">BIOGRAPHY & PITCH</span>
+                              <span className="text-[10px] font-sans font-bold tracking-wider text-[#888] uppercase block">BIOGRAPHY & PITCH</span>
                               <p className="text-xs text-[#555] font-serif-text leading-relaxed mt-0.5">{app.bio}</p>
                             </div>
                             {app.quote && (
@@ -1938,13 +1940,13 @@ export default function AdminTab() {
                           <div className="space-y-3 font-serif-text text-xs">
                             <div className="grid grid-cols-2 gap-2">
                               <div>
-                                <span className="text-[8px] font-sans font-bold tracking-wider text-[#888] uppercase block">EMAIL CONTACT</span>
+                                <span className="text-[10px] font-sans font-bold tracking-wider text-[#888] uppercase block">EMAIL CONTACT</span>
                                 <a href={`mailto:${app.email}`} className="text-black hover:underline flex items-center gap-1 font-sans font-semibold mt-0.5">
                                   <Mail className="w-3.5 h-3.5 text-[#888]" /> {app.email}
                                 </a>
                               </div>
                               <div>
-                                <span className="text-[8px] font-sans font-bold tracking-wider text-[#888] uppercase block">PHONE CONTACT</span>
+                                <span className="text-[10px] font-sans font-bold tracking-wider text-[#888] uppercase block">PHONE CONTACT</span>
                                 <a href={`tel:${app.phone}`} className="text-black hover:underline flex items-center gap-1 font-sans font-semibold mt-0.5">
                                   <Phone className="w-3.5 h-3.5 text-[#888]" /> {app.phone}
                                 </a>
@@ -1953,7 +1955,7 @@ export default function AdminTab() {
 
                             {app.portfolio && app.portfolio.length > 0 && (
                               <div>
-                                <span className="text-[8px] font-sans font-bold tracking-wider text-[#888] uppercase block mb-1">SUBMITTED PORTFOLIO</span>
+                                <span className="text-[10px] font-sans font-bold tracking-wider text-[#888] uppercase block mb-1">SUBMITTED PORTFOLIO</span>
                                 <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
                                   {app.portfolio.map((img, i) => (
                                     <a key={i} href={/^https?:\/\//i.test(img) ? img : undefined} target="_blank" rel="noopener noreferrer" className="relative w-12 h-16 rounded overflow-hidden border border-black/5 bg-gray-50 flex-shrink-0 group">
@@ -1969,7 +1971,7 @@ export default function AdminTab() {
                           </div>
                         </div>
 
-                        <div className="text-[9px] font-mono text-[#888] text-right">
+                        <div className="text-[10px] font-mono text-[#888] text-right">
                           RECEIVED VIA PUBLIC PORTAL: {app.timestamp}
                         </div>
                       </div>
@@ -1983,6 +1985,10 @@ export default function AdminTab() {
                   </div>
                 </div>
               </motion.div>
+            )}
+
+            {adminActiveSubTab === "enquiries" && (
+              <AdminEnquiriesPanel token={token} onChange={() => fetchAdminData(token)} />
             )}
 
             {adminActiveSubTab === "security" && (
@@ -2064,7 +2070,7 @@ export default function AdminTab() {
                     <input
                       type="text"
                       required
-                      placeholder="e.g., Winner, Forever Miss India 2026"
+                      placeholder="e.g., Winner, Miss India 2026"
                       value={creatorForm.role}
                       onChange={(e) => setCreatorForm(prev => ({ ...prev, role: e.target.value }))}
                       className="w-full px-3 py-2 bg-white border border-black/10 rounded-lg text-xs focus:outline-none focus:border-champagne"
@@ -2103,7 +2109,7 @@ export default function AdminTab() {
                     onChange={(e) => setCreatorForm(prev => ({ ...prev, portfolioUrls: e.target.value }))}
                     className="w-full px-3 py-2 bg-white border border-black/10 rounded-lg text-xs focus:outline-none focus:border-champagne font-mono"
                   />
-                  <p className="text-[9px] text-[#8e8d8a] leading-none mt-0.5">
+                  <p className="text-[10px] text-[#8e8d8a] leading-none mt-0.5">
                     Paste multiple high-res image URLs separated by commas to populate the lookbook sliding reels on the Catwalk 3D tab detail panel.
                   </p>
                 </div>

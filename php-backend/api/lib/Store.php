@@ -57,7 +57,7 @@ class Store
             return $data;
         }
         $seed = null;
-        foreach (['creators', 'campaigns', 'registrations', 'admin_logs', 'prompt_logs', 'influencer_applications', 'sessions'] as $key) {
+        foreach (['creators', 'campaigns', 'registrations', 'admin_logs', 'prompt_logs', 'influencer_applications', 'sessions', 'enquiries'] as $key) {
             if (!isset($data[$key]) || !is_array($data[$key])) {
                 $data[$key] = [];
             }
@@ -69,6 +69,27 @@ class Store
                     $data[$key] = $seed[$key];
                 }
             }
+        }
+        if (empty($data['migrations']['debrand_v1'])) {
+            // Settings still on the old default copy get the new defaults; customised text is only debranded
+            $oldDefaults = [
+                'websiteTitle' => ['FSIA — Forever Star India Awards', 'FSIA Creators & Influencer Portal'],
+                'heroTitle' => ['FOREVER STAR INDIA', 'FSIA INFLUENCER'],
+                'heroSubtitle' => ['THE EXQUISITE HALL OF LUXURY INFLUENCING & PRESTIGE COUTURE', 'Connect with verified creators, launch brand campaigns and grow your influence.'],
+                'ctaText' => ['SECURE VIP RUNWAY ACCESS', 'EXPLORE THE PORTAL'],
+                'footerText' => ['© 2026 FOREVER STAR INDIA AWARDS (FSIA). ALL RIGHTS RESERVED.', '© 2026 FSIA Influencer. All rights reserved.'],
+            ];
+            foreach ($oldDefaults as $field => [$before, $after]) {
+                if (($data['system_settings'][$field] ?? null) === $before) {
+                    $data['system_settings'][$field] = $after;
+                }
+            }
+            foreach (['creators', 'campaigns', 'membership_plans', 'system_settings'] as $key) {
+                $data[$key] = debrand_value($data[$key]);
+            }
+            $data['migrations']['debrand_v1'] = gmdate('c');
+            $this->data = $data;
+            $this->save();
         }
         return $data;
     }

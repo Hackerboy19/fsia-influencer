@@ -13,6 +13,7 @@ const run = (cmd) => execSync(cmd, { stdio: "inherit", cwd: root });
 
 run("npx tsx scripts/export-seed.ts");
 run("npx vite build");
+run("npx tsx scripts/prerender-seo.ts");
 
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.rmSync(zipPath, { force: true });

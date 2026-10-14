@@ -212,7 +212,7 @@ export default function AdminSecurityPanel({ token, currentUser, onPasswordChang
                 <div className="text-sm font-semibold text-black truncate flex items-center gap-1.5">
                   {op.username}
                   {op.username === currentUser && (
-                    <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded">YOU</span>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded">YOU</span>
                   )}
                 </div>
                 <div className="text-[10px] font-mono text-[#888]">Last login: {formatDate(op.lastLogin)}</div>
@@ -292,7 +292,7 @@ export default function AdminSecurityPanel({ token, currentUser, onPasswordChang
         <div className="max-h-[320px] overflow-y-auto space-y-2 pr-1">
           {filteredLogs.map((log) => (
             <div key={log.id} className="text-[11px] border-b border-black/[0.04] pb-2">
-              <div className="flex justify-between font-mono text-[9px] text-[#888]">
+              <div className="flex justify-between font-mono text-[10px] text-[#888]">
                 <span>{new Date(log.timestamp).toLocaleString()}</span>
                 <span>{log.ip || ""}</span>
               </div>

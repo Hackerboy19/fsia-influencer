@@ -192,3 +192,40 @@ function require_admin(Store $store): string
     }
     return $user;
 }
+
+// ----------------------------------------------------
+// BRAND DECOUPLING — strip "Forever" branding from stored content (one-time migration)
+// Keep in sync with debrandText() in server/db.ts
+// ----------------------------------------------------
+function debrand_text(string $text): string
+{
+    $rules = [
+        ['/FSIA\s*[—-]\s*Forever Star India Awards/u', 'FSIA Creators & Influencer Portal'],
+        ['/Forever Star India(?: Awards| Association)?(?: \(FSIA\))?/iu', 'FSIA Influencer'],
+        ['/\bForever Free\b/iu', 'Always Free'],
+        // Brand prefix only (capitalised); ordinary prose such as "forever young" is left alone
+        ['/\b(?:Forever|FOREVER)\s+/u', ''],
+        ['/\s*\b(?:Forever|FOREVER)\b/u', ''],
+        ['/\b(FSIA Influencer) Influencer\b/iu', null],
+    ];
+    foreach ($rules as [$pattern, $replacement]) {
+        $text = preg_replace_callback($pattern, function ($m) use ($replacement) {
+            $out = $replacement ?? $m[1];
+            return $m[0] === strtoupper($m[0]) && preg_match('/[A-Z]/', $m[0]) ? strtoupper($out) : $out;
+        }, $text);
+    }
+    return $text;
+}
+
+function debrand_value($value)
+{
+    if (is_string($value)) {
+        return preg_match('#^(https?:|data:)#i', $value) ? $value : debrand_text($value);
+    }
+    if (is_array($value)) {
+        foreach ($value as $k => $v) {
+            $value[$k] = debrand_value($v);
+        }
+    }
+    return $value;
+}

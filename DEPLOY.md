@@ -51,6 +51,32 @@ Settings**, keep the default "nginx as proxy to Apache" so `.htaccess` is honour
    Your data lives in `storage/db.json`, which the zip never contains, so it is kept.
 3. Hard-refresh the site (Ctrl + F5).
 
+## Google Search Console (indexing)
+
+The bundle already contains everything Google needs: a title, description, canonical URL,
+Open Graph/Twitter tags and structured data (WebSite, Organization, FAQPage) on every page,
+plus `/robots.txt` and `/sitemap.xml`. Each section has its own URL:
+`/`, `/talent/`, `/campaigns/`, `/join/`, `/membership/`, `/faq/`.
+
+1. **Add the property.** In [Search Console](https://search.google.com/search-console):
+   - *Domain property* `fsia.in` covers every subdomain, but needs a DNS TXT record at your
+     DNS host (cloudhostdns), or
+   - *URL-prefix property* `https://influencer.fsia.in/`, verified by one of the methods below.
+2. **Verify (URL-prefix):** pick one
+   - **HTML file (easiest on Plesk):** download Google's `googleXXXX.html` file and upload it
+     into the `influencer.fsia.in` folder next to `index.html`. It is served as-is.
+   - **HTML tag:** open `index.html` in Plesk File Manager and replace the line
+     `<!--GSC-VERIFICATION-->` with Google's `<meta name="google-site-verification" …>` tag.
+     Redo this after uploading a new version, or build with
+     `GSC_VERIFICATION=<token> npm run package` so it is included automatically.
+   - **DNS TXT:** add the TXT record Google shows you at your DNS provider.
+3. **Submit the sitemap:** Search Console → *Sitemaps* → enter `sitemap.xml` → *Submit*.
+4. **Request indexing:** paste `https://influencer.fsia.in/` into the URL Inspection bar →
+   *Test live URL* → when it shows as available, click *Request indexing*. Repeat for
+   `/talent/`, `/campaigns/` and `/join/` if you want them crawled sooner.
+
+Check any time: `https://influencer.fsia.in/robots.txt` and `https://influencer.fsia.in/sitemap.xml`.
+
 ## Optional configuration
 
 Copy `api/config.sample.php` to `api/config.php` and edit it to:

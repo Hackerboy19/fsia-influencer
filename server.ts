@@ -916,7 +916,7 @@ app.post("/api/gemini/optimize", async (req, res) => {
 
   const modelName = settings.modelSelection || "gemini-3.5-flash";
   const systemInstruction = settings.aiSystemPrompt || `
-    You are an elite, world-class haute couture brand director and luxury media strategist for FSIA (Forever Star India).
+    You are an elite, world-class haute couture brand director and luxury media strategist for FSIA Influencer.
     Your job is to optimize a creator's rough pitch/concept for a luxury brand sponsorship campaign into a majestic, highly professional premium proposal.
     Format the output beautifully in clean markdown. Keep it under 280 words.
   `;
@@ -1023,6 +1023,7 @@ app.get("/api/admin/stats", authenticateAdmin, (req, res) => {
       influencerApplicationsCount: db.influencer_applications?.length || 0,
       pendingApplicationsCount: (db.influencer_applications || []).filter((a) => a.status === "pending").length,
       newLeadsCount: db.registrations.filter((r) => !r.status || r.status === "new").length,
+      newEnquiriesCount: (db.enquiries || []).filter((e) => e.status === "new").length,
       membershipPlansCount: db.membership_plans?.length || 0,
       estimatedRosterReach: (totalReach / 1000000).toFixed(1) + "M",
       totalPromptsCount: totalPrompts,
@@ -1033,6 +1034,77 @@ app.get("/api/admin/stats", authenticateAdmin, (req, res) => {
   } catch (error: any) {
     res.status(500).json({ error: "Failed to compile metrics: " + error.message });
   }
+});
+
+// ----------------------------------------------------
+// ENQUIRIES (campaign applications & membership plan requests)
+// ----------------------------------------------------
+const ENQUIRY_TYPES = ["campaign", "membership"];
+const clip = (value: unknown, max: number) => String(value ?? "").trim().slice(0, max);
+
+app.post("/api/enquiries", (req, res) => {
+  const body = req.body || {};
+  if (!ENQUIRY_TYPES.includes(body.type)) {
+    return res.status(400).json({ error: "Unknown enquiry type." });
+  }
+  if (!clip(body.name, 200) || !clip(body.email, 200) || !clip(body.phone, 50)) {
+    return res.status(400).json({ error: "Name, email and phone are required." });
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clip(body.email, 200))) {
+    return res.status(400).json({ error: "Please provide a valid email address." });
+  }
+  const details: Record<string, string> = {};
+  if (body.details && typeof body.details === "object") {
+    for (const [key, value] of Object.entries(body.details).slice(0, 12)) {
+      details[clip(key, 40)] = clip(value, 2000);
+    }
+  }
+  const db = getDb();
+  const enquiry = {
+    id: "enq-" + Date.now(),
+    type: body.type,
+    subject: clip(body.subject, 300),
+    refId: clip(body.refId, 100),
+    name: clip(body.name, 200),
+    email: clip(body.email, 200),
+    phone: clip(body.phone, 50),
+    details,
+    status: "new" as const,
+    timestamp: new Date().toISOString()
+  };
+  db.enquiries = [enquiry, ...(db.enquiries || [])].slice(0, 5000);
+  saveDb(db);
+  logAction(`New ${enquiry.type} enquiry from ${enquiry.name}: ${enquiry.subject}`, req.ip);
+  res.status(201).json({ success: true, enquiry: { id: enquiry.id, timestamp: enquiry.timestamp } });
+});
+
+app.get("/api/enquiries", authenticateAdmin, (req, res) => {
+  res.json(getDb().enquiries || []);
+});
+
+app.put("/api/enquiries/:id", authenticateAdmin, (req, res) => {
+  const { status, notes } = req.body || {};
+  if (status !== undefined && !REGISTRATION_STATUSES.includes(status)) {
+    return res.status(400).json({ error: "Invalid status." });
+  }
+  const db = getDb();
+  const enquiry = (db.enquiries || []).find((e) => e.id === req.params.id);
+  if (!enquiry) return res.status(404).json({ error: "Enquiry not found." });
+  if (status !== undefined) enquiry.status = status;
+  if (notes !== undefined) enquiry.notes = clip(notes, 2000);
+  saveDb(db);
+  logAction(`Updated enquiry ${enquiry.id}${status ? ` → ${status}` : ""}`, req.ip);
+  res.json({ success: true, enquiry });
+});
+
+app.delete("/api/enquiries/:id", authenticateAdmin, (req, res) => {
+  const db = getDb();
+  const before = (db.enquiries || []).length;
+  db.enquiries = (db.enquiries || []).filter((e) => e.id !== req.params.id);
+  if (db.enquiries.length === before) return res.status(404).json({ error: "Enquiry not found." });
+  saveDb(db);
+  logAction(`Deleted enquiry ${req.params.id}`, req.ip);
+  res.json({ success: true });
 });
 
 // Full audit trail
@@ -1063,6 +1135,7 @@ app.post("/api/admin/restore", authenticateAdmin, (req, res) => {
   db.influencer_applications = Array.isArray(backup.influencer_applications) ? backup.influencer_applications : [];
   db.membership_plans = Array.isArray(backup.membership_plans) ? backup.membership_plans : defaults.membership_plans;
   db.prompt_logs = Array.isArray(backup.prompt_logs) ? backup.prompt_logs : [];
+  db.enquiries = Array.isArray(backup.enquiries) ? backup.enquiries : [];
   if (backup.system_settings && typeof backup.system_settings === "object") {
     // Masked keys in backups must not overwrite the real key
     const { geminiApiKey, ...rest } = backup.system_settings;
