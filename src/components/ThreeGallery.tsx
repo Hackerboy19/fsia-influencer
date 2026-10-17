@@ -354,6 +354,11 @@ export default function ThreeGallery({
     // 6. Navigation, Camera Target Lerping & Interaction Engines
     let runwayZ = 3.2; // default home z position of camera
     let targetRunwayZ = 3.2;
+    // Section changes made outside the scene (arrows, station list, swipes) glide the
+    // camera to that section; the "nearest section" check waits until it arrives,
+    // otherwise it would report the old section and undo the change.
+    let lastSeenSectionIdx = activeSectionIndexRef.current;
+    let glidingToSection = false;
 
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
@@ -393,6 +398,7 @@ export default function ThreeGallery({
         const deltaY = clientY - prevMouseY;
         prevMouseY = clientY;
         // Map deltaY directly to Z runway depth (slower, smooth)
+        glidingToSection = false;
         targetRunwayZ += deltaY * 0.02;
         // Boundary constraints
         targetRunwayZ = Math.min(3.8, Math.max(-20, targetRunwayZ));
@@ -484,6 +490,7 @@ export default function ThreeGallery({
     // Wheel Scroll glide down runway
     const handleWheel = (e: WheelEvent) => {
       if (selectedCreatorRef.current) return; // scroll disabled in focused modal
+      glidingToSection = false;
       targetRunwayZ -= e.deltaY * 0.005;
       targetRunwayZ = Math.min(3.8, Math.max(-20, targetRunwayZ));
     };
@@ -589,8 +596,13 @@ export default function ThreeGallery({
         const activeIdx = activeSectionIndexRef.current;
         const targetSectionZ = (sections[activeIdx] || sections[0] || { zOffset: 0 }).zOffset + 3.8;
 
-        // If active section changes externally (HUD clicks), snap/lerp runway position
-        if (Math.abs(targetRunwayZ - runwayZ) < 0.1) {
+        if (activeIdx !== lastSeenSectionIdx) {
+          // Changed outside the scene (arrows, station list, swipe): glide to that section
+          lastSeenSectionIdx = activeIdx;
+          targetRunwayZ = targetSectionZ;
+          glidingToSection = true;
+        } else if (!glidingToSection && Math.abs(targetRunwayZ - runwayZ) < 0.1) {
+          // At rest after scrolling: settle gently onto the current section
           targetRunwayZ = THREE.MathUtils.lerp(targetRunwayZ, targetSectionZ, 0.08);
         }
 
@@ -611,6 +623,10 @@ export default function ThreeGallery({
         // Dynamic lookAt slightly down the hallway path
         targetLookAt.set(0, 1.25, runwayZ - 5);
 
+        if (glidingToSection && Math.abs(camera.position.z - targetRunwayZ) < 0.3) {
+          glidingToSection = false;
+        }
+
         // SECTION HIGHLIGHT TRIGGER (Report section updates based on camera runwayZ coordinate)
         const currentZ = camera.position.z;
         // Determine nearest section index
@@ -624,7 +640,11 @@ export default function ThreeGallery({
           }
         });
 
-        if (closestIdx !== activeSectionIndexRef.current) {
+        if (!glidingToSection && closestIdx !== activeSectionIndexRef.current) {
+          // Record it now: React updates the prop a frame or two later, and until then
+          // the scene must not mistake its own report for an outside change
+          lastSeenSectionIdx = closestIdx;
+          activeSectionIndexRef.current = closestIdx;
           onSectionChange(closestIdx);
         }
       }

@@ -40,7 +40,7 @@ Settings**, keep the default "nginx as proxy to Apache" so `.htaccess` is honour
 ### 2. Check it
 
 1. Open `https://influencer.fsia.in/api/health` — it should show `{"ok":true,...}`.
-2. Open `https://influencer.fsia.in`, go to the **Admin** tab (lock icon) and sign in with
+2. Open **`https://influencer.fsia.in/admin/`** (there is no admin button on the public site; bookmark it) and sign in with
    **admin / admin123**. The panel stays locked (the server refuses every admin action)
    until you set a new password in **Security & Data**: this default is public knowledge.
 

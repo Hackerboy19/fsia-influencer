@@ -4,6 +4,7 @@ import {
   inputClass, labelClass, helpClass, optionalClass, errorBoxClass,
   isValidEmail, isValidPhone, EMAIL_ERROR, PHONE_ERROR, focusField
 } from "../lib/forms";
+import { CREATOR_CATEGORIES, OTHER_CATEGORY } from "../content/creatorCategories";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -21,11 +22,6 @@ import {
   Upload,
   Link as LinkIcon
 } from "lucide-react";
-
-interface RunwayCategory {
-  id: string;
-  title: string;
-}
 
 const PRESET_PORTRAITS = [
   { 
@@ -60,7 +56,7 @@ const STEPS = [
 
 // Unsent answers survive a reload or an accidental tab switch (cleared after a successful submit)
 const DRAFT_KEY = "fsia_registration_draft";
-const DRAFT_FIELDS = ["name", "category", "role", "city", "bio", "reach", "engagement", "quote", "email", "phone", "portfolioUrls"] as const;
+const DRAFT_FIELDS = ["name", "category", "categoryOther", "role", "city", "bio", "reach", "engagement", "quote", "email", "phone", "portfolioUrls"] as const;
 type Draft = Partial<Record<(typeof DRAFT_FIELDS)[number], string>>;
 
 function readDraft(): Draft {
@@ -80,14 +76,16 @@ function openBrandEnquiry() {
 }
 
 export default function ModelRegistrationTab() {
-  const [categories, setCategories] = useState<RunwayCategory[]>([]);
-  const [loadingCats, setLoadingCats] = useState(true);
   const [step, setStep] = useState(0);
   const draft = useRef(readDraft()).current;
 
   // Form state
   const [name, setName] = useState(draft.name || "");
-  const [category, setCategory] = useState(draft.category || "");
+  // A draft from before the category list existed may hold a runway section id: start over then
+  const [category, setCategory] = useState(
+    draft.category && (CREATOR_CATEGORIES.includes(draft.category) || draft.category === OTHER_CATEGORY) ? draft.category : ""
+  );
+  const [categoryOther, setCategoryOther] = useState(draft.categoryOther || "");
   const [role, setRole] = useState(draft.role || "");
   const [city, setCity] = useState(draft.city || "Mumbai");
   const [imageType, setImageType] = useState<"upload" | "preset" | "custom">("upload");
@@ -111,12 +109,12 @@ export default function ModelRegistrationTab() {
   const invalid = (id: string) => (invalidField === id ? true : undefined);
 
   useEffect(() => {
-    const values: Draft = { name, category, role, city, bio, reach, engagement, quote, email, phone, portfolioUrls };
+    const values: Draft = { name, category, categoryOther, role, city, bio, reach, engagement, quote, email, phone, portfolioUrls };
     try {
       if (successData) sessionStorage.removeItem(DRAFT_KEY);
       else sessionStorage.setItem(DRAFT_KEY, JSON.stringify(values));
     } catch {}
-  }, [name, category, role, city, bio, reach, engagement, quote, email, phone, portfolioUrls, successData]);
+  }, [name, category, categoryOther, role, city, bio, reach, engagement, quote, email, phone, portfolioUrls, successData]);
 
   // Moving between steps puts keyboard focus on the first field of the new step
   const firstRender = useRef(true);
@@ -127,22 +125,6 @@ export default function ModelRegistrationTab() {
     }
     focusField(["reg-name", "reg-reach", "reg-email"][step]);
   }, [step]);
-
-  useEffect(() => {
-    fetch("/api/creators")
-      .then((res) => {
-        if (!res.ok) throw new Error();
-        return res.json();
-      })
-      .then((data) => {
-        const cats = data.map((sec: any) => ({ id: sec.id, title: sec.title }));
-        setCategories(cats);
-        // Keep a category restored from the draft if it still exists
-        if (cats.length > 0) setCategory((current) => (cats.some((c: RunwayCategory) => c.id === current) ? current : cats[0].id));
-      })
-      .catch(() => setErrorMsg("We couldn't load categories. Please refresh the page."))
-      .finally(() => setLoadingCats(false));
-  }, []);
 
   const handleFile = (file?: File) => {
     if (!file) return;
@@ -163,6 +145,9 @@ export default function ModelRegistrationTab() {
     if (index === 0) {
       if (!name.trim()) return { field: "reg-name", message: "Please enter your full name." };
       if (!category) return { field: "reg-category", message: "Please choose a category." };
+      if (category === OTHER_CATEGORY && categoryOther.trim().length < 2) {
+        return { field: "reg-category-other", message: "Please type your category (for example, Astrology or Cricket)." };
+      }
     }
     if (index === 1 && imageType === "custom" && customImage && !/^https?:\/\//i.test(customImage)) {
       return { field: "reg-image-link", message: "The image link must start with http:// or https://" };
@@ -200,7 +185,7 @@ export default function ModelRegistrationTab() {
     }
     const problem = validateStep(0) || validateStep(1) || validateStep(2);
     if (problem) {
-      const problemStep = ["reg-name", "reg-category"].includes(problem.field) ? 0 : problem.field === "reg-image-link" ? 1 : 2;
+      const problemStep = ["reg-name", "reg-category", "reg-category-other"].includes(problem.field) ? 0 : problem.field === "reg-image-link" ? 1 : 2;
       setStep(problemStep);
       showProblem(problem);
       return;
@@ -219,7 +204,7 @@ export default function ModelRegistrationTab() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: name.trim(),
-        category,
+        category: categoryTitle,
         role: role.trim(),
         city,
         image,
@@ -250,6 +235,8 @@ export default function ModelRegistrationTab() {
   const handleReset = () => {
     setStep(0);
     setName("");
+    setCategory("");
+    setCategoryOther("");
     setRole("");
     setCity("Mumbai");
     setImageType("upload");
@@ -268,7 +255,7 @@ export default function ModelRegistrationTab() {
     setSuccessData(null);
   };
 
-  const categoryTitle = categories.find((c) => c.id === category)?.title || category;
+  const categoryTitle = category === OTHER_CATEGORY ? categoryOther.trim() : category;
 
   return (
     <div className="w-full max-w-5xl mx-auto pb-8" id="influencer-registration-tab-container">
@@ -346,12 +333,21 @@ export default function ModelRegistrationTab() {
                       <div>
                         <label htmlFor="reg-category" className={labelClass}>Category *</label>
                         <select id="reg-category" value={category} onChange={(e) => setCategory(e.target.value)}
-                          aria-required="true" aria-invalid={invalid("reg-category")} className={inputClass} disabled={loadingCats}>
-                          {loadingCats && <option>Loading…</option>}
-                          {categories.map((cat) => (
-                            <option key={cat.id} value={cat.id}>{cat.title}</option>
+                          aria-required="true" aria-invalid={invalid("reg-category")} className={inputClass}>
+                          <option value="" disabled>Choose your main category</option>
+                          {CREATOR_CATEGORIES.map((cat) => (
+                            <option key={cat} value={cat}>{cat}</option>
                           ))}
+                          <option value={OTHER_CATEGORY}>Other (type your own)</option>
                         </select>
+                        {category === OTHER_CATEGORY && (
+                          <div className="mt-3">
+                            <label htmlFor="reg-category-other" className={labelClass}>Your category *</label>
+                            <input id="reg-category-other" type="text" maxLength={60} placeholder="e.g. Astrology, Cricket, Agriculture"
+                              aria-required="true" aria-invalid={invalid("reg-category-other")}
+                              value={categoryOther} onChange={(e) => setCategoryOther(e.target.value)} className={inputClass} />
+                          </div>
+                        )}
                       </div>
                       <div>
                         <label htmlFor="reg-city" className={labelClass}>City</label>
@@ -524,7 +520,7 @@ export default function ModelRegistrationTab() {
                       <ArrowLeft className="w-4 h-4" /> Back
                     </button>
                   ) : <span />}
-                  <button type="submit" disabled={isSubmitting || loadingCats} aria-busy={isSubmitting}
+                  <button type="submit" disabled={isSubmitting} aria-busy={isSubmitting}
                     className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#111] hover:bg-[#222] text-white font-semibold text-sm cursor-pointer disabled:opacity-60">
                     {isSubmitting ? (
                       <>

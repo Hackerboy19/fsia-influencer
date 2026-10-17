@@ -795,8 +795,9 @@ app.post("/api/influencer-applications", limitSubmissions, (req, res) => {
     const newApplication = {
       id: "inf-app-" + Date.now(),
       name,
-      category,
-      role: role || "Featured Star Model",
+      category: String(category).trim().slice(0, 100),
+      // Without a title, the category describes the creator (and files them on the Talent page)
+      role: role || String(category).trim().slice(0, 100) || "Featured Star Model",
       city: city || "Mumbai",
       image: profileImage,
       bio: bio || "Enthusiastic fashion icon looking to make an impact on the high-fashion runway.",
@@ -842,10 +843,15 @@ app.post("/api/influencer-applications/:id/approve", authenticateAdmin, (req, re
     }
 
     const application = db.influencer_applications[appIndex];
+    // The admin chooses the runway section; older applications stored a section id as their category
+    const sectionId = typeof req.body?.sectionId === "string" && req.body.sectionId ? req.body.sectionId : application.category;
+    const section = db.creators.find((s) => s.id === sectionId);
+    if (!section) {
+      return res.status(400).json({ error: "Choose the runway section this creator should join." });
+    }
     application.status = "approved";
 
     // Inject model directly into the creators database category roster
-    const section = db.creators.find((s) => s.id === application.category);
     if (section) {
       // Check duplicate
       const alreadyExists = section.creators.some((c) => c.name.toLowerCase() === application.name.toLowerCase());

@@ -61,6 +61,9 @@ as visitors move between sections.
 
 ## Admin panel
 
+Open `/admin/` directly (visitors see no admin button). New creator applications carry a content
+category (a fixed list plus "Other"); the admin picks the runway section when approving.
+
 - **Overview:** live counters, new-lead / pending-applicant badges, audit trail
 - **Content Studio / Creator Roster / Brand Bookings:** manage categories, creators, campaigns and membership plans
 - **Campaign Copy / AI Config / Prompt Logs:** site text and colours, Gemini settings and history

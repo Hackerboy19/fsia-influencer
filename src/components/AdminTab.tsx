@@ -126,6 +126,10 @@ export default function AdminTab() {
   // Admin Workspace Data
   const [stats, setStats] = useState<any | null>(null);
   const [sections, setSections] = useState<GallerySection[]>([]);
+  // Runway section chosen for each pending applicant (the form collects a content category)
+  const [approveSection, setApproveSection] = useState<Record<string, string>>({});
+  const defaultSectionFor = (app: { id: string; category: string }) =>
+    approveSection[app.id] ?? (sections.some((s) => s.id === app.category) ? app.category : sections[0]?.id || "");
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [influencerApplications, setInfluencerApplications] = useState<InfluencerApplication[]>([]);
@@ -388,16 +392,19 @@ export default function AdminTab() {
     }
   };
 
-  const approveInfluencerApplication = async (id: string) => {
+  const approveInfluencerApplication = async (id: string, sectionId: string) => {
     try {
       const res = await fetch(`/api/influencer-applications/${id}/approve`, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${token}`
-        }
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ sectionId })
       });
       if (res.ok) {
-        toast.success("Applicant approved and published to the runway.");
+        const sectionTitle = sections.find((s) => s.id === sectionId)?.title || "the runway";
+        toast.success(`Applicant approved and added to ${sectionTitle}.`);
         window.dispatchEvent(new Event("sections-updated"));
         fetchAdminData(token);
       } else {
@@ -1902,9 +1909,23 @@ export default function AdminTab() {
                             </div>
 
                             {app.status === "pending" && (
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <label htmlFor={`approve-section-${app.id}`} className="sr-only">
+                                  Runway section for {app.name}
+                                </label>
+                                <select
+                                  id={`approve-section-${app.id}`}
+                                  value={defaultSectionFor(app)}
+                                  onChange={(e) => setApproveSection((prev) => ({ ...prev, [app.id]: e.target.value }))}
+                                  title="Runway section this creator joins when approved"
+                                  className="px-2 py-1.5 bg-white border border-black/15 rounded-lg text-xs font-sans text-[#111] max-w-[180px]"
+                                >
+                                  {sections.map((sec) => (
+                                    <option key={sec.id} value={sec.id}>{sec.title}</option>
+                                  ))}
+                                </select>
                                 <button
-                                  onClick={() => approveInfluencerApplication(app.id)}
+                                  onClick={() => approveInfluencerApplication(app.id, defaultSectionFor(app))}
                                   className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-sans text-[11px] font-bold uppercase rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
                                   title="Approve and publish to 3D Runway"
                                 >

@@ -16,7 +16,6 @@ import {
   Users,
   Briefcase,
   HelpCircle,
-  Lock,
   UserPlus
 } from "lucide-react";
 import { gallerySections, Creator } from "./data";
@@ -549,7 +548,8 @@ export default function App() {
 
             {/* 1. TOP EDITORIAL BANNER */}
             <header className="absolute top-0 inset-x-0 p-2 sm:p-4 md:p-4 xl:p-8 flex flex-col xl:flex-row justify-between items-center gap-2 sm:gap-3 md:gap-4 xl:gap-3 z-20 pointer-events-none select-none border-b border-black/[0.03] bg-white/20 backdrop-blur-xs">
-              {/* Top Row on Mobile: Logo & Actions */}
+              {/* Top Row on Mobile: Logo & Actions. (No admin button for visitors: the
+                  admin workspace is opened directly at /admin/.) */}
               <div className="flex items-center justify-between w-full xl:w-auto xl:shrink-0 gap-2 sm:gap-4 pointer-events-auto">
                 {/* Logo: home link */}
                 <a
@@ -589,20 +589,6 @@ export default function App() {
                     ) : (
                       <VolumeX className="w-4 h-4" aria-hidden="true" />
                     )}
-                  </button>
-
-                  {/* Subtle Admin Entrance Mobile */}
-                  <button
-                    onClick={() => {
-                      setActiveTab("admin");
-                      setSelectedCreator(null);
-                      playCrystalChime();
-                    }}
-                    className="min-w-8 min-h-8 px-2 py-1.5 sm:px-2.5 sm:py-2 rounded-lg backdrop-blur-md border border-black/10 flex items-center justify-center text-[#2e2c29] bg-white/85 hover:text-black hover:bg-white cursor-pointer"
-                    title="Administrative Workspace"
-                    aria-label="Admin sign-in"
-                  >
-                    <Lock className="w-4 h-4" aria-hidden="true" />
                   </button>
 
                   {/* FSIA Portal Mobile */}
@@ -694,22 +680,6 @@ export default function App() {
                       <span className="hidden 2xl:inline">Sound off</span>
                     </>
                   )}
-                </button>
-
-                {/* Subtle Admin Entrance Desktop */}
-                <button
-                  onClick={() => {
-                    setActiveTab("admin");
-                    setSelectedCreator(null);
-                    playCrystalChime();
-                  }}
-                  aria-label="Admin"
-                  className={`hud-interactive px-3 py-2.5 xl:px-4 md:py-3 rounded-xl backdrop-blur-md border border-black/5 flex items-center justify-center text-[#8e8d8a] hover:text-black hover:bg-white/60 transition-all shadow-sm cursor-pointer ${
-                    activeTab === "admin" ? "bg-white text-black border-black/25" : "bg-white/60"
-                  }`}
-                  title="Administrative Portal Entrance"
-                >
-                  <Lock className="w-4 h-4" />
                 </button>
 
                 {/* FSIA Portal Button */}

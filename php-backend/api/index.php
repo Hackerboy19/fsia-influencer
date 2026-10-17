@@ -597,7 +597,8 @@ try {
             'id' => 'inf-app-' . now_ms(),
             'name' => str_cut($body['name'], 200),
             'category' => str_cut($body['category'], 100),
-            'role' => str_cut(($body['role'] ?? '') ?: 'Featured Star Model', 200),
+            // Without a title, the category describes the creator (and files them on the Talent page)
+            'role' => str_cut(($body['role'] ?? '') ?: (trim((string)$body['category']) ?: 'Featured Star Model'), 200),
             'city' => str_cut(($body['city'] ?? '') ?: 'Mumbai', 100),
             'image' => $image,
             'bio' => str_cut(($body['bio'] ?? '') ?: 'Enthusiastic fashion icon looking to make an impact on the high-fashion runway.', 3000),
@@ -626,11 +627,14 @@ try {
             fail(404, 'Influencer application not found.');
         }
         $app = &$db['influencer_applications'][$i];
-        $app['status'] = 'approved';
-        $si = $sectionIndex($app['category']);
+        // The admin chooses the runway section; older applications stored a section id as their category
+        $sectionId = trim((string)($body['sectionId'] ?? '')) ?: (string)$app['category'];
+        $si = $sectionIndex($sectionId);
         if ($si === null) {
-            $store->log('Approved model registration: ' . $app['name'] . ' but target runway section ' . $app['category'] . ' was not found.');
-        } elseif ($creatorIndex($si, $app['name']) !== null) {
+            fail(400, 'Choose the runway section this creator should join.');
+        }
+        $app['status'] = 'approved';
+        if ($creatorIndex($si, $app['name']) !== null) {
             $store->log('Approved model registration: ' . $app['name'] . ' (already exists in runway section)');
         } else {
             $db['creators'][$si]['creators'][] = [

@@ -32,7 +32,7 @@ Because the live site comes from PR #1, this work is built **on top of PR #1**. 
 | WCAG 2.2 AA (axe-core) — 6 pages + 4 dialogs + admin sign-in × 3 screen sizes | 11 failing page/viewport combinations in the first audit (buttons without names; brand-form selects and slider without labels) | **0 violations** |
 | Keyboard access to creator profiles | not possible (mouse-only cards) | every card has a button; dialogs trap focus, close on Esc |
 | Initial JavaScript | 1,178 KB (316 KB gzip) | 525 KB (160 KB gzip) |
-| End-to-end journeys (navigation + all 4 public forms, desktop/tablet/mobile) | — | **132/132 pass** on both PHP and Node builds |
+| End-to-end journeys (navigation + all 4 public forms, desktop/tablet/mobile) | — | **151/151 pass** on both PHP and Node builds |
 
 ---
 
@@ -82,6 +82,8 @@ axe reports **0 colour-contrast violations**. It cannot measure text over photos
 | Creator cards could only be opened with a mouse | Each card has a keyboard-reachable button |
 | Dialogs had no dialog semantics; Esc did nothing; focus stayed behind the overlay | All 5 overlays: `role="dialog"`, labelled, focus moves in and is contained, Esc closes, focus returns |
 | No skip link and no `<main>` landmark | "Skip to main content" is the first Tab stop on every page |
+| Catwalk previous/next arrows and the "Runway stations" list did nothing: the 3D scene immediately reported the old section back | The scene glides to the chosen section and only resumes section tracking once it arrives; scrolling and swiping still work |
+| The admin (lock) button was shown to every visitor | Removed from the public site; the admin workspace is opened directly at `/admin/` |
 
 Verified on desktop, tablet and mobile: every header tab, bottom-bar link, footer link, the logo and browser Back reach the right URL, and each page has one visible `<h1>`.
 
@@ -105,6 +107,7 @@ Verified on desktop, tablet and mobile: every header tab, bottom-bar link, foote
 - Failure handling: when the server fails, an error is shown and everything typed is kept (tested with a simulated outage). No form shows a fake success.
 - Data loss: the 3-step creator registration keeps a draft through reloads and tab switches, cleared after a successful submit. The registration page no longer auto-focuses the form on load, which skipped the intro and opened the phone keyboard.
 - Campaign copy no longer says "Sabyasachi" inside other brands' applications.
+- **Creator categories:** the registration form offered only the 3D runway sections (e.g. "Miss India 2026"). It now lists 24 content categories (Fashion & Style, Beauty & Makeup, Food & Cooking, Gaming, Travel …) plus **"Other (type your own)"**. The admin picks the runway section when approving (older applications default to the section they chose), and a creator without a title is described by their category on the Talent page.
 
 **Persistence verified** on both backends: after the browser tests, each submission was read back through the admin API.
 
@@ -176,7 +179,7 @@ Not done (needs your access):
 |---|---|---|
 | `npm test` | Type-check; brand-filter and validation unit tests; Node ↔ PHP parity | pass |
 | `npm run audit -- <url>` | Status codes, metadata, canonicals, sitemap and robots, 404s, `X-Robots-Tag`, retired word in HTML/bundles/API/rendered DOM, internal links, horizontal overflow, JS errors, axe WCAG 2.2 AA at 375/768/1440 px on all pages, dialogs and admin sign-in, Esc/focus behaviour | 285 checks, 0 failures (PHP build and Node build) |
-| `npm run test:journeys -- <local url>` | Real-browser navigation on 3 screen sizes; every public form: empty/invalid input, server failure, double click, success, draft restore, server-side validation, persistence; security: default-password lock, AI endpoint login, oversized submissions, rate limit, no version leaks | 132/132 (PHP build and Node build) |
+| `npm run test:journeys -- <local url>` | Real-browser navigation on 3 screen sizes; every public form: empty/invalid input, server failure, double click, success, draft restore, server-side validation, persistence; security: default-password lock, AI endpoint login, oversized submissions, rate limit, no version leaks; catwalk arrows; no public admin button; categories incl. "Other"; approval into the chosen section | 151/151 (PHP build and Node build) |
 
 `audit` is read-only and safe to run against the live site. `test:journeys` writes test records (`@example.com` addresses), so it refuses to run against anything but a local build.
 

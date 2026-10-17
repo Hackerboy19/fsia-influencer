@@ -23,6 +23,7 @@ const RUN = Date.now().toString(36);
 const TEST = {
   brand: `QA Test Brand ${RUN}`,
   creator: `QA Test Creator ${RUN}`,
+  creatorCategory: `QA Astrology ${RUN}`,
   campaignApplicant: `QA Campaign Applicant ${RUN}`,
   member: `QA Member ${RUN}`,
   email: `qa+${RUN}@example.com`,
@@ -40,7 +41,7 @@ const browser = await chromium.launch(fs.existsSync("/opt/pw-browsers/chromium")
 
 const h1 = (page) => page.locator("h1").first().innerText().catch(() => "");
 // Polls briefly: React re-renders and focus moves land a frame or two after the click
-async function poll(read, test, ms = 3000) {
+async function poll(read, test, ms = 5000) {
   const end = Date.now() + ms;
   let value = await read();
   while (!test(value) && Date.now() < end) {
@@ -72,6 +73,20 @@ for (const vp of [
   await page.click("#enter-exposition-btn");
   await page.waitForTimeout(1500);
   check(`${vp.name}: "Explore the portal" opens the explore view`, (await page.locator("#main-nav-tabs").count()) === 1);
+  check(`${vp.name}: no admin button in the public header`,
+    (await page.locator('header :is(button, a)').filter({ hasText: /admin/i }).count()) === 0 &&
+    (await page.locator('header [aria-label*="admin" i], header [title*="admin" i]').count()) === 0);
+
+  // Catwalk arrows move between sections and stay there (the 3D scene used to snap back)
+  const sectionLabel = () => page.locator('[aria-live="polite"]').innerText().then((t) => t.replace(/\s+/g, " "));
+  await page.click("#next-section-btn");
+  const afterNext = await poll(sectionLabel, (t) => /2 \/ \d/.test(t), 4000);
+  await page.waitForTimeout(2500);
+  check(`${vp.name}: catwalk "next" arrow moves to section 2 and stays`, /2 \/ \d/.test(afterNext) && /2 \/ \d/.test(await sectionLabel()),
+    `${afterNext} → ${await sectionLabel()}`);
+  await page.click("#prev-section-btn");
+  await page.waitForTimeout(2500);
+  check(`${vp.name}: catwalk "previous" arrow returns to section 1`, /1 \/ \d/.test(await sectionLabel()), await sectionLabel());
 
   const expected = { Talent: "/talent/", Campaigns: "/campaigns/", Membership: "/membership/", "Get Verified": "/join/", FAQs: "/faq/" };
   for (const [label, path] of Object.entries(expected)) {
@@ -164,6 +179,15 @@ async function creatorRegistration(page, label) {
   check(`${label} registration: focus moves to the name field`, await focusIs(page, "reg-name"));
   await page.fill("#reg-name", TEST.creator);
   await page.locator('button[type="submit"]', { hasText: "Continue" }).click();
+  check(`${label} registration: a category is required`, await alertMatches(page, /choose a category/i));
+  check(`${label} registration: the list offers more than 20 categories plus "Other"`,
+    (await page.locator("#reg-category option").count()) > 20 && (await page.locator('#reg-category option[value="__other__"]').count()) === 1);
+  await page.selectOption("#reg-category", "__other__");
+  await page.locator('button[type="submit"]', { hasText: "Continue" }).click();
+  check(`${label} registration: "Other" asks the creator to type their category`, await alertMatches(page, /type your category/i));
+  check(`${label} registration: focus moves to the typed-category field`, await focusIs(page, "reg-category-other"));
+  await page.fill("#reg-category-other", TEST.creatorCategory);
+  await page.locator('button[type="submit"]', { hasText: "Continue" }).click();
   await page.waitForSelector("#reg-reach");
   await page.fill("#reg-reach", "12K");
   await page.locator('button[type="submit"]', { hasText: "Continue" }).click();
@@ -173,7 +197,8 @@ async function creatorRegistration(page, label) {
   await page.fill("#reg-email", TEST.email);
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForSelector("#reg-name");
-  check(`${label} registration: unsent answers survive a reload`, (await page.inputValue("#reg-name")) === TEST.creator);
+  check(`${label} registration: unsent answers survive a reload`, (await page.inputValue("#reg-name")) === TEST.creator &&
+    (await page.inputValue("#reg-category-other")) === TEST.creatorCategory);
   for (let i = 0; i < 2; i++) {
     await page.locator('button[type="submit"]', { hasText: "Continue" }).click();
     await page.waitForTimeout(300);
@@ -279,7 +304,19 @@ if (login.ok) {
   check("Brand enquiries were stored (one per run and viewport)", regs.filter((r) => r.brandName === TEST.brand).length === 2,
     `${regs.filter((r) => r.brandName === TEST.brand).length} found`);
   const apps = await get("/api/influencer-applications");
-  check("Creator applications were stored", apps.filter((a) => a.name === TEST.creator).length === 2);
+  const mine = apps.filter((a) => a.name === TEST.creator);
+  check("Creator applications were stored with the typed category", mine.length === 2 && mine.every((a) => a.category === TEST.creatorCategory),
+    mine.map((a) => a.category).join(", "));
+
+  // Approval: the admin picks the runway section; without a valid one it is refused
+  const sections = await (await fetch(BASE + "/api/creators")).json();
+  const noSection = await post(`/api/influencer-applications/${mine[0].id}/approve`, {}, auth);
+  check("Approval without a runway section is refused (400)", noSection.status === 400, `status ${noSection.status}`);
+  const approved = await post(`/api/influencer-applications/${mine[0].id}/approve`, { sectionId: sections[1].id }, auth);
+  const roster = await (await fetch(BASE + "/api/creators")).json();
+  const placed = roster.find((sec) => sec.id === sections[1].id)?.creators.find((c) => c.name === TEST.creator);
+  check("Approved creator joins the chosen runway section, described by their category", approved.ok && placed?.role === TEST.creatorCategory,
+    `status ${approved.status}, role ${placed?.role}`);
   const enquiries = await get("/api/enquiries");
   check("Campaign applications were stored", enquiries.filter((e) => e.type === "campaign" && e.name === TEST.campaignApplicant).length === 2);
   check("Membership requests were stored", enquiries.filter((e) => e.type === "membership" && e.name === TEST.member).length === 2);
