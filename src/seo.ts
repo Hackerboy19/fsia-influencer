@@ -47,7 +47,7 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "campaigns",
     path: "/campaigns/",
-    title: "Brand Campaigns & Paid Collaborations for Creators | FSIA Influencer",
+    title: "Brand Campaigns & Paid Collaborations | FSIA Influencer",
     description:
       "Discover live paid brand campaigns for creators across fashion, travel, lifestyle and tech. See budgets, requirements and perks, then apply.",
     heading: "Live Brand Campaigns for Creators",
@@ -109,7 +109,7 @@ export function routeForPath(pathname: string): RouteMeta {
 
 export const canonicalUrl = (route: RouteMeta) => SITE_URL + route.path;
 
-const escapeHtml = (value: string) =>
+export const escapeHtml = (value: string) =>
   value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 // JSON-LD blocks: WebSite + Organization everywhere, FAQPage on /faq/

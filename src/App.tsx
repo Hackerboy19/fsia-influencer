@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Volume2,
@@ -20,7 +20,6 @@ import {
   UserPlus
 } from "lucide-react";
 import { gallerySections, Creator } from "./data";
-import ThreeGallery from "./components/ThreeGallery";
 import CreatorDetailPanel from "./components/CreatorDetailPanel";
 import VipCollaborationForm from "./components/VipCollaborationForm";
 import MoodboardModal from "./components/MoodboardModal";
@@ -29,11 +28,23 @@ import CampaignsTab from "./components/CampaignsTab";
 import MembershipTab from "./components/MembershipTab";
 import ModelRegistrationTab from "./components/ModelRegistrationTab";
 import FaqTab from "./components/FaqTab";
-import AdminTab from "./components/AdminTab";
 import CursorParticleTrail from "./components/CursorParticleTrail";
 import SiteFooter from "./components/SiteFooter";
 import { Toaster } from "react-hot-toast";
 import { TabId, routeForPath, routeForTab, applyRouteMeta } from "./seo";
+
+// The 3D scene (Three.js) and the admin workspace are loaded on demand, so the
+// welcome screen and content pages don't wait for code most visitors never run
+const ThreeGallery = lazy(() => import("./components/ThreeGallery"));
+const AdminTab = lazy(() => import("./components/AdminTab"));
+
+const MOBILE_NAV: { id: TabId; label: string; icon: typeof Compass }[] = [
+  { id: "catwalk", label: "Explore", icon: Compass },
+  { id: "directory", label: "Talent", icon: Users },
+  { id: "campaigns", label: "Campaigns", icon: Briefcase },
+  { id: "apply", label: "Join", icon: UserPlus },
+  { id: "membership", label: "Plans", icon: Sparkles }
+];
 
 const ENTERED_KEY = "fsia_entered";
 
@@ -160,9 +171,15 @@ export default function App() {
       window.history.pushState({ tab: activeTab }, "", route.path);
     }
     contentScrollRef.current?.scrollTo({ top: 0 });
-    document
-      .querySelector('#main-nav-tabs [aria-current="page"]')
-      ?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    // Bring the current tab into view in the scrollable tab row. Scrolling the row
+    // itself (not scrollIntoView) keeps the browser's Tab starting point at the top
+    // of the page, so the "Skip to main content" link stays the first Tab stop.
+    const nav = document.getElementById("main-nav-tabs");
+    const current = nav?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (nav && current && nav.scrollWidth > nav.clientWidth) {
+      const left = current.getBoundingClientRect().left - nav.getBoundingClientRect().left + nav.scrollLeft;
+      nav.scrollTo({ left: Math.max(0, left - (nav.clientWidth - current.offsetWidth) / 2) });
+    }
   }, [activeTab]);
 
   useEffect(() => {
@@ -379,13 +396,13 @@ export default function App() {
                   {settings.websiteTitle}
                 </span>
               )}
-              <span className="px-3.5 py-1 rounded-full border border-champagne/30 text-[10px] font-sans text-champagne uppercase font-bold tracking-[0.2em]">
+              <span className="px-3.5 py-1 rounded-full border border-champagne/30 text-[11px] font-sans text-champagne uppercase font-bold tracking-[0.2em]">
                 VIP Tier Access
               </span>
             </div>
 
             {/* Central Invitation Box */}
-            <div className="max-w-3xl mx-auto text-center space-y-10 z-10 px-4">
+            <main className="max-w-3xl mx-auto text-center space-y-10 z-10 px-4">
               <div className="space-y-4">
                 <motion.span
                   initial={{ opacity: 0, y: 10 }}
@@ -423,7 +440,7 @@ export default function App() {
               >
                 <button
                   onClick={() => handleEnterExperience()}
-                  className="inline-flex items-center gap-3 bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[13px] tracking-[0.2em] font-semibold py-4 px-9 rounded-xl uppercase cursor-pointer transition-all shadow-md hover:shadow-xl active:scale-95"
+                  className="inline-flex items-center gap-3 bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[13px] tracking-[0.12em] sm:tracking-[0.2em] font-semibold py-4 px-7 sm:px-9 rounded-xl uppercase whitespace-nowrap cursor-pointer transition-all shadow-md hover:shadow-xl active:scale-95"
                   id="enter-exposition-btn"
                 >
                   {settings.ctaText}
@@ -444,7 +461,7 @@ export default function App() {
                   </button>
                 </div>
               </motion.div>
-            </div>
+            </main>
 
             {/* Footer */}
             <div className="z-10">
@@ -491,17 +508,30 @@ export default function App() {
               </motion.div>
             </div>
 
-            {activeTab === "catwalk" && <h1 className="sr-only">FSIA Creators &amp; Influencer Portal</h1>}
+            <a
+              href="#main-content"
+              className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[70] focus:bg-[#111] focus:text-white focus:px-4 focus:py-2.5 focus:rounded-lg focus:text-sm focus:font-semibold"
+            >
+              Skip to main content
+            </a>
 
-            {/* The 3D Canvas Container */}
-            <div className="absolute inset-0 w-full h-full z-0">
-              <ThreeGallery
-                sections={sections}
-                activeSectionIndex={activeSectionIndex}
-                selectedCreator={selectedCreator}
-                onSelectCreator={setSelectedCreator}
-                onSectionChange={setActiveSectionIndex}
-              />
+            {/* The 3D Canvas Container (the page's main content on the Explore view) */}
+            <div
+              className="absolute inset-0 w-full h-full z-0"
+              role={activeTab === "catwalk" ? "main" : undefined}
+              id={activeTab === "catwalk" ? "main-content" : undefined}
+              tabIndex={activeTab === "catwalk" ? -1 : undefined}
+            >
+              {activeTab === "catwalk" && <h1 className="sr-only">FSIA Creators &amp; Influencer Portal</h1>}
+              <Suspense fallback={null}>
+                <ThreeGallery
+                  sections={sections}
+                  activeSectionIndex={activeSectionIndex}
+                  selectedCreator={selectedCreator}
+                  onSelectCreator={setSelectedCreator}
+                  onSectionChange={setActiveSectionIndex}
+                />
+              </Suspense>
               <CursorParticleTrail active={activeTab === "catwalk"} color={settings.primaryColor || "#E1C699"} />
             </div>
 
@@ -512,7 +542,7 @@ export default function App() {
               <div className="absolute inset-0 flex items-center justify-center">
                  <div className="w-1.5 h-1.5 bg-[#E1C699] rounded-full animate-ping"></div>
               </div>
-              <div className="absolute -top-7 left-0 text-[10px] tracking-[0.4em] uppercase whitespace-nowrap rotate-90 origin-bottom-left text-[#8E8D8A] font-bold">
+              <div className="absolute -top-7 left-0 text-[11px] tracking-[0.4em] uppercase whitespace-nowrap rotate-90 origin-bottom-left text-[#8E8D8A] font-bold">
                 REFRACTIVE INDEX: PURE
               </div>
             </div>
@@ -521,39 +551,43 @@ export default function App() {
             <header className="absolute top-0 inset-x-0 p-2 sm:p-4 md:p-4 xl:p-8 flex flex-col xl:flex-row justify-between items-center gap-2 sm:gap-3 md:gap-4 xl:gap-3 z-20 pointer-events-none select-none border-b border-black/[0.03] bg-white/20 backdrop-blur-xs">
               {/* Top Row on Mobile: Logo & Actions */}
               <div className="flex items-center justify-between w-full xl:w-auto xl:shrink-0 gap-2 sm:gap-4 pointer-events-auto">
-                {/* Logo */}
-                <div 
-                  onDoubleClick={() => {
-                    setActiveTab("admin");
-                    setSelectedCreator(null);
+                {/* Logo: home link */}
+                <a
+                  href="/"
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+                    e.preventDefault();
+                    navigateTo("catwalk");
                     playCrystalChime();
                   }}
-                  title="Double click for Administrative workspace"
-                  className="flex items-center gap-1.5 sm:gap-2.5 bg-white/70 backdrop-blur-md px-2.5 py-1.5 sm:px-5 sm:py-3 rounded-xl border border-black/5 shadow-sm cursor-pointer hover:border-black/10 transition-all select-none"
+                  aria-label="FSIA Influencer — home"
+                  className="flex items-center gap-1.5 sm:gap-2.5 bg-white/85 backdrop-blur-md px-2.5 py-1.5 sm:px-5 sm:py-3 rounded-xl border border-black/10 shadow-sm cursor-pointer hover:border-black/25 transition-all select-none"
                 >
                   <div className="space-y-0.5">
                     <p className="font-serif-display text-[12px] sm:text-sm md:text-base lg:text-lg font-bold tracking-tight text-[#111] leading-none whitespace-nowrap">
                       FSIA INFLUENCER
                     </p>
-                    <p className="font-sans text-[9px] md:text-[10px] tracking-[0.12em] text-[#47453f] uppercase font-bold leading-none whitespace-nowrap max-[350px]:hidden">
+                    <p className="font-sans text-[10px] sm:text-[11px] tracking-[0.1em] text-[#47453f] uppercase font-bold leading-none whitespace-nowrap max-[399px]:hidden">
                       Creators &amp; Influencer Portal
                     </p>
                   </div>
-                </div>
+                </a>
 
-                {/* Buttons: Sound & VIP Register (shown next to logo on mobile/tablet, right-aligned on desktop) */}
+                {/* Buttons: Sound & Brand Enquiry (shown next to logo on mobile/tablet, right-aligned on desktop) */}
                 <div className="flex items-center gap-1.5 sm:gap-2 xl:hidden">
                   {/* Custom Synthesizer Toggle */}
                   <button
                     onClick={toggleAudio}
-                    className="px-2 py-1.5 sm:px-2.5 sm:py-2 rounded-lg backdrop-blur-md border border-black/5 flex items-center justify-center text-[#666] bg-white/70 hover:bg-white cursor-pointer"
+                    className="min-w-8 min-h-8 px-2 py-1.5 sm:px-2.5 sm:py-2 rounded-lg backdrop-blur-md border border-black/10 flex items-center justify-center text-[#2e2c29] bg-white/85 hover:bg-white cursor-pointer"
                     id="toggle-synth-audio-btn-mobile"
                     title="Ambient Sound"
+                    aria-label={audioEnabled ? "Mute ambient sound" : "Play ambient sound"}
+                    aria-pressed={audioEnabled}
                   >
                     {audioEnabled ? (
-                      <Volume2 className="w-3.5 h-3.5 text-champagne" />
+                      <Volume2 className="w-4 h-4 text-champagne" aria-hidden="true" />
                     ) : (
-                      <VolumeX className="w-3.5 h-3.5 text-[#888]" />
+                      <VolumeX className="w-4 h-4" aria-hidden="true" />
                     )}
                   </button>
 
@@ -564,10 +598,11 @@ export default function App() {
                       setSelectedCreator(null);
                       playCrystalChime();
                     }}
-                    className="px-2 py-1.5 sm:px-2.5 sm:py-2 rounded-lg backdrop-blur-md border border-black/5 flex items-center justify-center text-[#8e8d8a] bg-white/70 hover:text-black hover:bg-white cursor-pointer"
+                    className="min-w-8 min-h-8 px-2 py-1.5 sm:px-2.5 sm:py-2 rounded-lg backdrop-blur-md border border-black/10 flex items-center justify-center text-[#2e2c29] bg-white/85 hover:text-black hover:bg-white cursor-pointer"
                     title="Administrative Workspace"
+                    aria-label="Admin sign-in"
                   >
-                    <Lock className="w-3.5 h-3.5" />
+                    <Lock className="w-4 h-4" aria-hidden="true" />
                   </button>
 
                   {/* FSIA Portal Mobile */}
@@ -575,20 +610,22 @@ export default function App() {
                     href="https://www.fsia.in"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-2 py-1.5 sm:px-2.5 sm:py-2 rounded-lg backdrop-blur-md border border-black/10 flex items-center justify-center text-[#111] bg-white hover:bg-stone-50 cursor-pointer"
+                    className="min-w-8 min-h-8 px-2 py-1.5 sm:px-2.5 sm:py-2 rounded-lg backdrop-blur-md border border-black/10 flex items-center justify-center text-[#111] bg-white hover:bg-stone-50 cursor-pointer"
                     title="FSIA Portal"
+                    aria-label="FSIA Portal (opens in a new tab)"
                   >
-                    <ExternalLink className="w-3.5 h-3.5" />
+                    <ExternalLink className="w-4 h-4" aria-hidden="true" />
                   </a>
 
-                  {/* VIP Collaboration Gateway Trigger */}
+                  {/* Brand enquiry (opens the collaboration form) */}
                   <button
                     onClick={() => setIsCollaborationOpen(true)}
-                    className="bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[10px] sm:text-[10px] tracking-[0.1em] font-bold px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg shadow-xs cursor-pointer flex items-center gap-1 uppercase active:scale-95"
+                    className="min-w-8 min-h-8 bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[11px] tracking-[0.08em] font-bold px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg shadow-xs cursor-pointer flex items-center justify-center gap-1 uppercase active:scale-95"
                     id="open-collaboration-form-btn-mobile"
+                    aria-label="Brand enquiry"
                   >
-                    <FileText className="w-3.5 h-3.5 text-champagne" />
-                    <span className="hidden min-[400px]:inline">VIP REGISTER</span>
+                    <FileText className="w-4 h-4 text-champagne" aria-hidden="true" />
+                    <span className="hidden min-[480px]:inline">Brand enquiry</span>
                   </button>
                 </div>
               </div>
@@ -597,7 +634,7 @@ export default function App() {
               <nav
                 aria-label="Main"
                 id="main-nav-tabs"
-                className="pointer-events-auto flex items-center overflow-x-auto scrollbar-none gap-0.5 xl:gap-1 bg-white/70 backdrop-blur-md px-1.5 py-1 rounded-xl border border-black/5 shadow-xs w-full xl:w-auto xl:flex-initial xl:min-w-0 max-w-full justify-start"
+                className="pointer-events-auto flex items-center overflow-x-auto scrollbar-none gap-0.5 xl:gap-1 bg-white/85 backdrop-blur-md px-1.5 py-1 rounded-xl border border-black/5 shadow-xs w-full xl:w-auto xl:flex-initial xl:min-w-0 max-w-full justify-start"
               >
                 {(["catwalk", "directory", "campaigns", "membership", "apply", "faq"] as const).map((tab) => {
                   const isSelected = activeTab === tab;
@@ -620,7 +657,7 @@ export default function App() {
                         setSelectedCreator(null);
                         playCrystalChime();
                       }}
-                      className={`shrink-0 px-2.5 xl:px-3 py-1.5 rounded-lg text-[10px] font-sans font-bold tracking-wider xl:tracking-widest uppercase transition-all cursor-pointer whitespace-nowrap ${
+                      className={`shrink-0 px-2.5 xl:px-3 py-2 rounded-lg text-[11px] font-sans font-bold tracking-wider uppercase transition-all cursor-pointer whitespace-nowrap ${
                         isSelected
                           ? "bg-[#111] text-[#FAF9F6] shadow-xs"
                           : "hover:bg-black/5 text-[#2e2c29]"
@@ -639,7 +676,7 @@ export default function App() {
                   onClick={toggleAudio}
                   title={audioEnabled ? "Ambient sound on — click to mute" : "Ambient sound off — click to play"}
                   aria-label={audioEnabled ? "Mute ambient sound" : "Play ambient sound"}
-                  className={`hud-interactive px-3 py-2.5 2xl:px-4 md:py-3 rounded-xl backdrop-blur-md border border-black/5 flex items-center gap-2 text-[10px] font-sans font-bold tracking-wider uppercase whitespace-nowrap transition-all shadow-sm cursor-pointer ${
+                  className={`hud-interactive px-3 py-2.5 2xl:px-4 md:py-3 rounded-xl backdrop-blur-md border border-black/5 flex items-center gap-2 text-[11px] font-sans font-bold tracking-wider uppercase whitespace-nowrap transition-all shadow-sm cursor-pointer ${
                     audioEnabled
                       ? "bg-champagne/15 border border-champagne text-[#111]"
                       : "bg-white/60 hover:bg-white text-[#666]"
@@ -681,30 +718,31 @@ export default function App() {
                   target="_blank"
                   rel="noopener noreferrer"
                   title="FSIA Portal (fsia.in)"
-                  className="hud-interactive px-3 py-2.5 xl:px-4 md:py-3 rounded-xl backdrop-blur-md border border-black/10 flex items-center justify-center gap-1.5 text-[#111] bg-white hover:bg-stone-50 transition-all shadow-sm cursor-pointer text-[10px] font-sans font-bold tracking-wider uppercase whitespace-nowrap"
+                  className="hud-interactive px-3 py-2.5 xl:px-4 md:py-3 rounded-xl backdrop-blur-md border border-black/10 flex items-center justify-center gap-1.5 text-[#111] bg-white hover:bg-stone-50 transition-all shadow-sm cursor-pointer text-[11px] font-sans font-bold tracking-wider uppercase whitespace-nowrap"
                 >
                   <ExternalLink className="w-4 h-4 xl:hidden" aria-hidden="true" />
                   <span className="hidden xl:inline">FSIA Portal</span>
                   <span className="sr-only xl:hidden">FSIA Portal</span>
+                  <span className="sr-only"> (opens in a new tab)</span>
                 </a>
 
                 {/* VIP Collaboration Gateway Trigger */}
                 <button
                   onClick={() => setIsCollaborationOpen(true)}
-                  className="hud-interactive bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[10px] tracking-[0.12em] font-bold px-4 py-2.5 xl:px-5 md:py-3 rounded-xl shadow-md cursor-pointer flex items-center gap-2 uppercase whitespace-nowrap active:scale-95"
+                  className="hud-interactive bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[11px] tracking-[0.1em] font-bold px-4 py-2.5 xl:px-5 md:py-3 rounded-xl shadow-md cursor-pointer flex items-center gap-2 uppercase whitespace-nowrap active:scale-95"
                   id="open-collaboration-form-btn"
                 >
-                  <FileText className="w-4 h-4 text-champagne" />
-                  VIP REGISTER
+                  <FileText className="w-4 h-4 text-champagne" aria-hidden="true" />
+                  Brand Enquiry
                 </button>
               </div>
             </header>
 
             {/* 2. LEFT PANEL: EDITORIAL INDEX SELECTOR */}
             {activeTab === "catwalk" && (
-              <nav className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 hidden lg:flex flex-col gap-6 z-10 pointer-events-none max-h-[80vh] overflow-y-auto scrollbar-none">
-                <div className="hud-interactive bg-white/45 backdrop-blur-md p-6 rounded-2xl border border-black/5 shadow-sm flex flex-col gap-5 pointer-events-auto pb-8">
-                  <span className="block text-[10px] font-sans tracking-[0.3em] text-[#8E8D8A] uppercase font-bold border-b border-black/5 pb-2">
+              <nav aria-label="Runway categories" className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 hidden lg:flex flex-col gap-6 z-10 pointer-events-none max-h-[80vh] overflow-y-auto scrollbar-none">
+                <div className="hud-interactive bg-white/90 backdrop-blur-md p-6 rounded-2xl border border-black/5 shadow-sm flex flex-col gap-5 pointer-events-auto pb-8">
+                  <span className="block text-[11px] font-sans tracking-[0.3em] text-[#8E8D8A] uppercase font-bold border-b border-black/5 pb-2">
                     RUNWAY STATIONS
                   </span>
                   {sections.map((sec, idx) => {
@@ -717,7 +755,8 @@ export default function App() {
                           setSelectedCreator(null); // release closeup view
                           playCrystalChime();
                         }}
-                        className="group flex items-center gap-4 text-left cursor-pointer focus:outline-none"
+                        aria-current={isActive ? "true" : undefined}
+                        className="group flex items-center gap-4 text-left cursor-pointer"
                       >
                         {/* Active gold dot & indicator */}
                         <div className="relative flex items-center justify-center">
@@ -736,8 +775,8 @@ export default function App() {
                         {/* Section details */}
                         <div>
                           <span
-                            className={`block text-[10px] font-mono tracking-wider transition-colors ${
-                              isActive ? "text-champagne font-bold" : "text-[#999]"
+                            className={`block text-[11px] font-mono tracking-wider transition-colors ${
+                              isActive ? "text-champagne font-bold" : "text-[#57554f]"
                             }`}
                           >
                             0{idx + 1}
@@ -746,7 +785,7 @@ export default function App() {
                             className={`block font-serif-text text-sm transition-colors leading-none mt-0.5 ${
                               isActive
                                 ? "text-[#111] font-bold"
-                                : "text-[#666] group-hover:text-[#222]"
+                                : "text-[#2e2c29] group-hover:text-[#111]"
                             }`}
                           >
                             {sec.title}
@@ -762,7 +801,7 @@ export default function App() {
             {/* Horizontal Runway Category Selector for Mobile/Tablet */}
             {activeTab === "catwalk" && (
               <div className="absolute top-[112px] sm:top-[120px] left-0 right-0 lg:hidden z-20 pointer-events-none flex justify-start px-4">
-                <div className="pointer-events-auto bg-white/70 backdrop-blur-md pl-3 pr-8 py-1.5 rounded-xl border border-black/5 shadow-xs flex gap-2 overflow-x-auto scrollbar-none max-w-full items-center">
+                <div className="pointer-events-auto bg-white/85 backdrop-blur-md pl-3 pr-8 py-1.5 rounded-xl border border-black/10 shadow-xs flex gap-2 overflow-x-auto scrollbar-none max-w-full items-center" role="group" aria-label="Runway categories">
                   {sections.map((sec, idx) => {
                     const isActive = idx === activeSectionIndex;
                     return (
@@ -773,10 +812,11 @@ export default function App() {
                           setSelectedCreator(null);
                           playCrystalChime();
                         }}
-                        className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-sans font-bold tracking-wider uppercase transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                        aria-pressed={isActive}
+                        className={`flex-shrink-0 px-3 py-2 rounded-lg text-[11px] font-sans font-bold tracking-wider uppercase transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
                           isActive
                             ? "bg-[#111] text-[#FAF9F6] shadow-2xs"
-                            : "bg-white/40 hover:bg-white/80 text-[#666]"
+                            : "bg-white/60 hover:bg-white text-[#2e2c29]"
                         }`}
                       >
                         <span 
@@ -796,14 +836,14 @@ export default function App() {
             {/* 3. RIGHT PANEL: VIP DIRECTORY STATUS TICKER */}
             {activeTab === "catwalk" && (
               <aside className="absolute right-6 md:right-8 top-1/2 -translate-y-1/2 hidden lg:flex flex-col gap-4 z-10 pointer-events-none">
-                <div className="hud-interactive bg-white/45 backdrop-blur-md p-6 rounded-2xl border border-black/5 shadow-sm flex flex-col gap-4 pointer-events-auto w-64">
-                  <span className="block text-[10px] font-sans tracking-[0.3em] text-[#8E8D8A] uppercase font-bold border-b border-black/5 pb-2">
+                <div className="hud-interactive bg-white/90 backdrop-blur-md p-6 rounded-2xl border border-black/5 shadow-sm flex flex-col gap-4 pointer-events-auto w-64">
+                  <span className="block text-[11px] font-sans tracking-[0.3em] text-[#8E8D8A] uppercase font-bold border-b border-black/5 pb-2">
                     VIP ROSTER METRICS
                   </span>
 
                   <div className="space-y-3">
                     <div className="space-y-0.5">
-                      <span className="text-[10px] font-sans text-[#888] uppercase tracking-wider block">
+                      <span className="text-[11px] font-sans text-[#888] uppercase tracking-wider block">
                         Combined Roster Reach
                       </span>
                       <div className="flex items-center gap-2">
@@ -815,20 +855,20 @@ export default function App() {
                     </div>
 
                     <div className="space-y-0.5">
-                      <span className="text-[10px] font-sans text-[#888] uppercase tracking-wider block">
+                      <span className="text-[11px] font-sans text-[#888] uppercase tracking-wider block">
                         Escrow Safeguard
                       </span>
-                      <span className="font-serif-text text-xs text-[#222] font-semibold flex items-center gap-1">
+                      <span className="font-serif-text text-sm text-[#222] font-semibold flex items-center gap-1">
                         <Award className="w-3.5 h-3.5 text-champagne inline" />
                         100% Secure Audited Contracts
                       </span>
                     </div>
 
                     <div className="space-y-0.5">
-                      <span className="text-[10px] font-sans text-[#888] uppercase tracking-wider block">
+                      <span className="text-[11px] font-sans text-[#888] uppercase tracking-wider block">
                         Verification Block
                       </span>
-                      <span className="font-mono text-[10px] text-[#555] bg-black/5 px-2 py-0.5 rounded">
+                      <span className="font-mono text-[11px] text-[#555] bg-black/5 px-2 py-0.5 rounded">
                         FSIA-SHA256-ACTIVE
                       </span>
                     </div>
@@ -842,26 +882,27 @@ export default function App() {
               <footer className="absolute bottom-20 lg:bottom-0 inset-x-0 p-4 md:p-8 flex flex-col items-center gap-3 z-10 pointer-events-none">
                 {/* Dynamic scroll indicator banner if no card selected */}
                 {!selectedCreator && (
-                  <div className="bg-white/45 backdrop-blur-md border border-black/5 shadow-sm px-4 py-2 md:px-5 md:py-2.5 rounded-full flex items-center gap-2 text-[10px] md:text-[10px] font-sans text-[#666] tracking-widest uppercase animate-bounce pointer-events-auto">
+                  <div className="bg-white/90 backdrop-blur-md border border-black/5 shadow-sm px-4 py-2 md:px-5 md:py-2.5 rounded-full flex items-center gap-2 text-[11px] font-sans font-semibold text-[#2e2c29] tracking-widest uppercase animate-bounce pointer-events-auto">
                     <Compass className="w-4 h-4 text-champagne animate-spin-slow" />
                     <span className="hidden xs:inline">Scroll / Wheel Drag to</span> Glide Catwalk
                   </div>
                 )}
 
                 {/* Catwalk controls container */}
-                <div className="hud-interactive w-full max-w-4xl bg-white/45 backdrop-blur-md px-4 py-3 md:px-6 md:py-4 rounded-2xl border border-black/5 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3 md:gap-4 pointer-events-auto">
+                <div className="hud-interactive w-full max-w-4xl bg-white/90 backdrop-blur-md px-4 py-3 md:px-6 md:py-4 rounded-2xl border border-black/5 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3 md:gap-4 pointer-events-auto">
                   {/* Arrow navigation triggers */}
                   <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
                     <button
                       onClick={handlePrevSection}
                       disabled={activeSectionIndex === 0}
-                      className="w-10 h-10 rounded-full bg-white/60 hover:bg-white border border-black/5 flex items-center justify-center text-[#222] disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer flex-shrink-0"
+                      aria-label="Previous runway category"
+                      className="w-11 h-11 rounded-full bg-white hover:bg-[#F3F3F1] border border-black/15 flex items-center justify-center text-[#111] disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer flex-shrink-0"
                       id="prev-section-btn"
                     >
-                      <ChevronLeft className="w-5 h-5" />
+                      <ChevronLeft className="w-5 h-5" aria-hidden="true" />
                     </button>
-                    <div className="text-center sm:text-left min-w-[140px] md:min-w-[200px]">
-                      <span className="block text-[10px] font-mono text-[#888] uppercase tracking-widest">
+                    <div className="text-center sm:text-left min-w-[140px] md:min-w-[200px]" aria-live="polite">
+                      <span className="block text-[11px] font-mono text-[#888] uppercase tracking-widest">
                         ACTIVE SECTION — {activeSectionIndex + 1} / {sections.length}
                       </span>
                       <span className="block font-serif-display text-xs md:text-sm font-bold text-[#111] truncate max-w-[180px] md:max-w-none">
@@ -871,16 +912,17 @@ export default function App() {
                     <button
                       onClick={handleNextSection}
                       disabled={activeSectionIndex === sections.length - 1}
-                      className="w-10 h-10 rounded-full bg-white/60 hover:bg-white border border-black/5 flex items-center justify-center text-[#222] disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer flex-shrink-0"
+                      aria-label="Next runway category"
+                      className="w-11 h-11 rounded-full bg-white hover:bg-[#F3F3F1] border border-black/15 flex items-center justify-center text-[#111] disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer flex-shrink-0"
                       id="next-section-btn"
                     >
-                      <ChevronRight className="w-5 h-5" />
+                      <ChevronRight className="w-5 h-5" aria-hidden="true" />
                     </button>
                   </div>
 
                   {/* Elegant Runway Catwalk Progress Slider */}
                   <div className="hidden sm:block flex-1 max-w-sm w-full space-y-1">
-                    <div className="flex justify-between text-[10px] font-sans text-[#888] tracking-widest uppercase font-bold">
+                    <div className="flex justify-between text-[11px] font-sans text-[#888] tracking-widest uppercase font-bold">
                       <span>CATWALK ENTRANCE</span>
                       <span>VIP ARCHIVE</span>
                     </div>
@@ -900,14 +942,16 @@ export default function App() {
             {/* --- CORE TAB CONTENT PAGES FOR NON-CATWALK VIEWS --- */}
             <AnimatePresence mode="wait">
               {activeTab !== "catwalk" && (
-                <motion.div
+                <motion.main
                   key={activeTab}
+                  id="main-content"
+                  tabIndex={-1}
                   ref={contentScrollRef}
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -30 }}
                   transition={{ duration: 0.5, ease: "easeOut" }}
-                  className="absolute inset-0 top-[108px] sm:top-[138px] md:top-[146px] xl:top-[124px] bottom-0 overflow-y-auto px-4 md:px-8 pb-36 sm:pb-28 z-15 pointer-events-auto bg-[#FAF9F6] scrollbar-thin scrollbar-thumb-black/10"
+                  className="absolute inset-0 top-[108px] sm:top-[138px] md:top-[146px] xl:top-[124px] bottom-0 overflow-y-auto px-4 md:px-8 pb-28 lg:pb-8 z-15 pointer-events-auto bg-[#FAF9F6] scrollbar-thin scrollbar-thumb-black/10 outline-none"
                 >
                   {activeTab === "directory" && (
                     <DirectoryTab
@@ -923,7 +967,11 @@ export default function App() {
                   {activeTab === "membership" && <MembershipTab />}
                   {activeTab === "apply" && <ModelRegistrationTab />}
                   {activeTab === "faq" && <FaqTab />}
-                  {activeTab === "admin" && <AdminTab />}
+                  {activeTab === "admin" && (
+                    <Suspense fallback={<p className="py-24 text-center text-sm text-[#47453f]" role="status">Loading the admin workspace…</p>}>
+                      <AdminTab />
+                    </Suspense>
+                  )}
                   {activeTab !== "admin" && (
                     <SiteFooter
                       footerText={settings.footerText}
@@ -932,7 +980,7 @@ export default function App() {
                       onBackToTop={() => contentScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
                     />
                   )}
-                </motion.div>
+                </motion.main>
               )}
             </AnimatePresence>
 
@@ -965,83 +1013,44 @@ export default function App() {
               onClearAll={() => setMoodboardItems([])}
             />
 
-            {/* Back to Catwalk Floating Action Button (FAB) on Mobile when not on catwalk */}
-            <AnimatePresence>
-              {activeTab !== "catwalk" && (
-                <motion.button
-                  key="back-to-catwalk-fab"
-                  initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.8, y: 20 }}
-                  onClick={() => {
-                    setActiveTab("catwalk");
-                    setSelectedCreator(null);
-                  }}
-                  className="fixed bottom-24 right-6 bg-[#111] hover:bg-[#222] text-champagne border border-[#E1C699]/35 px-4 py-3 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.35)] z-50 flex items-center gap-2 font-sans text-[10px] font-bold tracking-widest uppercase lg:hidden pointer-events-auto active:scale-95"
-                >
-                  <Compass className="w-4 h-4 text-champagne animate-spin-slow" />
-                  Back to Catwalk
-                </motion.button>
-              )}
-            </AnimatePresence>
-
-            {/* --- MAJESTIC FLOATING MOBILE BOTTOM NAVIGATION BAR --- */}
-            <div className="fixed bottom-4 inset-x-4 h-16 bg-[#111]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex items-center justify-around px-3 z-50 lg:hidden pointer-events-auto">
-              {[
-                { id: "catwalk", label: "Explore", icon: Compass },
-                { id: "directory", label: "Talent", icon: Users },
-                { id: "campaigns", label: "Campaigns", icon: Briefcase },
-                { id: "apply", label: "Join", icon: UserPlus },
-                { id: "membership", label: "Plans", icon: Sparkles },
-              ].map((item) => {
+            {/* --- MOBILE BOTTOM NAVIGATION (the header tabs stay available for FAQs) --- */}
+            <nav
+              aria-label="Quick links"
+              className="surface-dark fixed bottom-4 inset-x-4 h-16 bg-[#111]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex items-center justify-around px-2 z-50 lg:hidden pointer-events-auto"
+            >
+              {MOBILE_NAV.map((item) => {
                 const isSelected = activeTab === item.id;
                 const Icon = item.icon;
-                
-                // Audio chime feedback wrapper
-                const playCrystalChime = () => {
-                  try {
-                    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.type = "sine";
-                    osc.frequency.setValueAtTime(880, ctx.currentTime);
-                    osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.1);
-                    gain.gain.setValueAtTime(0.01, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.start();
-                    osc.stop(ctx.currentTime + 0.35);
-                  } catch (e) {}
-                };
-
                 return (
-                  <button
+                  <a
                     key={item.id}
-                    onClick={() => {
-                      setActiveTab(item.id as any);
-                      setSelectedCreator(null);
+                    href={routeForTab(item.id).path}
+                    aria-current={isSelected ? "page" : undefined}
+                    onClick={(e) => {
+                      if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+                      e.preventDefault();
+                      navigateTo(item.id);
                       playCrystalChime();
                     }}
-                    className="flex flex-col items-center justify-center flex-1 h-full relative cursor-pointer group"
+                    className="flex flex-col items-center justify-center flex-1 h-full relative cursor-pointer group rounded-xl"
                   >
-                    <div className={`p-1 rounded-xl transition-all duration-300 ${isSelected ? "text-champagne scale-110" : "text-[#8e8d8a] hover:text-white"}`}>
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <span className={`text-[10px] font-sans font-bold tracking-widest uppercase transition-colors duration-300 ${isSelected ? "text-champagne font-extrabold" : "text-[#8e8d8a]"}`}>
+                    <span className={`p-1 rounded-xl transition-all duration-300 ${isSelected ? "text-champagne scale-110" : "text-[#cfcac0] group-hover:text-white"}`}>
+                      <Icon className="w-5 h-5" aria-hidden="true" />
+                    </span>
+                    <span className={`text-[11px] font-sans font-bold tracking-wide uppercase transition-colors duration-300 ${isSelected ? "text-champagne" : "text-[#cfcac0]"}`}>
                       {item.label}
                     </span>
                     {isSelected && (
-                      <motion.div
+                      <motion.span
                         layoutId="activeMobileTabDot"
                         className="absolute bottom-1 w-1 h-1 rounded-full bg-champagne"
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
                       />
                     )}
-                  </button>
+                  </a>
                 );
               })}
-            </div>
+            </nav>
           </motion.div>
         )}
       </AnimatePresence>

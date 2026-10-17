@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap');
+/* Web fonts are requested from index.html <head> (in parallel, not chained behind this file) */
 @import "tailwindcss";
 
 @theme {
@@ -99,4 +99,19 @@ body {
 :focus-visible {
   outline: 2px solid var(--gold-ink);
   outline-offset: 2px;
+}
+/* …and a light ring where the focused control sits on a dark surface */
+.surface-dark :focus-visible,
+.surface-dark:focus-visible {
+  outline-color: var(--color-champagne);
+}
+
+/* Respect the visitor's reduced-motion setting for CSS animations too (bounce, ping, spin) */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

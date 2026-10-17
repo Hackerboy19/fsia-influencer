@@ -321,6 +321,7 @@
   ],
   "enquiries": [],
   "migrations": {
-    "debrand_v1": "seed"
+    "debrand_v1": "seed",
+    "debrand_v2": "seed"
   }
 }

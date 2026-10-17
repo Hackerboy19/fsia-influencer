@@ -805,7 +805,7 @@ export default function AdminTab() {
                 <Shield className="w-8 h-8" />
               </div>
               <div className="space-y-1">
-                <span className="font-sans text-[10px] tracking-[0.3em] text-[#8E8D8A] uppercase font-bold">
+                <span className="font-sans text-[11px] tracking-[0.3em] text-[#8E8D8A] uppercase font-bold">
                   FSIA Secure Portal
                 </span>
                 <h2 className="font-serif-display text-2xl font-bold text-[#111]">
@@ -826,7 +826,7 @@ export default function AdminTab() {
               )}
 
               <div className="space-y-1.5">
-                <label className="block text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                <label className="block text-[11px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
                   Operator Username
                 </label>
                 <div className="relative">
@@ -843,7 +843,7 @@ export default function AdminTab() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                <label className="block text-[11px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
                   Administrative Password
                 </label>
                 <div className="relative">
@@ -886,10 +886,10 @@ export default function AdminTab() {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/70 backdrop-blur-md p-6 rounded-2xl border border-black/5 shadow-xs">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="bg-emerald-50 text-emerald-700 text-[10px] font-sans font-bold px-2 py-0.5 rounded-md border border-emerald-100 flex items-center gap-1">
+                <span className="bg-emerald-50 text-emerald-700 text-[11px] font-sans font-bold px-2 py-0.5 rounded-md border border-emerald-100 flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3 text-emerald-600" /> ACTIVE CONTEXT
                 </span>
-                <span className="font-mono text-[10px] text-[#888]">SIGNED IN AS {currentUser.toUpperCase()}</span>
+                <span className="font-mono text-[11px] text-[#888]">SIGNED IN AS {currentUser.toUpperCase()}</span>
               </div>
               <h2 className="font-serif-display text-2xl font-bold text-[#111] tracking-tight">
                 VIP Editorial Workspace
@@ -914,7 +914,7 @@ export default function AdminTab() {
               </button>
               <button
                 onClick={handleLogout}
-                className="bg-red-50 hover:bg-red-100 text-red-700 font-sans text-[10px] tracking-[0.1em] font-bold px-4 py-2.5 rounded-lg transition-colors cursor-pointer border border-red-100"
+                className="bg-red-50 hover:bg-red-100 text-red-700 font-sans text-[11px] tracking-[0.1em] font-bold px-4 py-2.5 rounded-lg transition-colors cursor-pointer border border-red-100"
               >
                 SECURE SIGN OUT
               </button>
@@ -932,7 +932,7 @@ export default function AdminTab() {
               </div>
               <button
                 onClick={() => setAdminActiveSubTab("security")}
-                className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold tracking-widest uppercase px-4 py-2 rounded-lg cursor-pointer"
+                className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold tracking-widest uppercase px-4 py-2 rounded-lg cursor-pointer"
               >
                 Change password
               </button>
@@ -960,7 +960,7 @@ export default function AdminTab() {
                 <button
                   key={tab.id}
                   onClick={() => setAdminActiveSubTab(tab.id)}
-                  className={`px-2.5 md:px-4 py-2 md:py-2.5 rounded-t-xl text-[10px] md:text-xs font-sans font-bold tracking-widest uppercase transition-all flex items-center gap-1.5 md:gap-2 whitespace-nowrap cursor-pointer ${
+                  className={`px-2.5 md:px-4 py-2 md:py-2.5 rounded-t-xl text-[11px] md:text-xs font-sans font-bold tracking-widest uppercase transition-all flex items-center gap-1.5 md:gap-2 whitespace-nowrap cursor-pointer ${
                     active 
                       ? "bg-white border-t-2 border-champagne text-[#111] shadow-xs" 
                       : "text-[#666] hover:text-black hover:bg-black/[0.02]"
@@ -969,7 +969,7 @@ export default function AdminTab() {
                   <Icon className={`w-3.5 h-3.5 md:w-4 md:h-4 ${active ? "text-champagne" : "text-[#888]"}`} />
                   {tab.label}
                   {!!tab.badge && (
-                    <span className="ml-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-[18px] text-center">
+                    <span className="ml-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[11px] leading-[18px] text-center">
                       {tab.badge}
                     </span>
                   )}
@@ -994,34 +994,34 @@ export default function AdminTab() {
                     <div className="bg-white/60 p-5 rounded-2xl border border-black/5 shadow-xs space-y-1">
                       <Users className="w-5 h-5 text-champagne" />
                       <div className="text-2xl font-serif-display font-bold text-[#111]">{stats.creatorsCount}</div>
-                      <div className="text-[10px] font-sans tracking-wider text-[#666] uppercase font-semibold">Runway Models</div>
+                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">Runway Models</div>
                     </div>
                     <div className="bg-white/60 p-5 rounded-2xl border border-black/5 shadow-xs space-y-1">
                       <Briefcase className="w-5 h-5 text-champagne" />
                       <div className="text-2xl font-serif-display font-bold text-[#111]">{stats.campaignsCount}</div>
-                      <div className="text-[10px] font-sans tracking-wider text-[#666] uppercase font-semibold">Brand Campaigns</div>
+                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">Brand Campaigns</div>
                     </div>
                     <div className="bg-white/60 p-5 rounded-2xl border border-black/5 shadow-xs space-y-1">
                       <FileText className="w-5 h-5 text-champagne" />
                       <div className="text-2xl font-serif-display font-bold text-[#111]">{stats.applicationsCount}</div>
-                      <div className="text-[10px] font-sans tracking-wider text-[#666] uppercase font-semibold">Escrow Applications</div>
+                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">Escrow Applications</div>
                     </div>
                     <div className="bg-white/60 p-5 rounded-2xl border border-black/5 shadow-xs space-y-1">
                       <TrendingUp className="w-5 h-5 text-emerald-600" />
                       <div className="text-2xl font-serif-display font-bold text-[#111]">{stats.estimatedRosterReach}</div>
-                      <div className="text-[10px] font-sans tracking-wider text-[#666] uppercase font-semibold">Total Audited Reach</div>
+                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">Total Audited Reach</div>
                     </div>
                     {/* Prompt logs count card */}
                     <div className="bg-white/60 p-5 rounded-2xl border border-black/5 shadow-xs space-y-1">
                       <Activity className="w-5 h-5 text-blue-500" />
                       <div className="text-2xl font-serif-display font-bold text-[#111]">{stats.totalPromptsCount !== undefined ? stats.totalPromptsCount : 0}</div>
-                      <div className="text-[10px] font-sans tracking-wider text-[#666] uppercase font-semibold">Total Prompt Runs</div>
+                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">Total Prompt Runs</div>
                     </div>
                     {/* API Success rate card */}
                     <div className="bg-white/60 p-5 rounded-2xl border border-black/5 shadow-xs space-y-1">
                       <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                       <div className="text-2xl font-serif-display font-bold text-[#111]">{stats.apiSuccessRate !== undefined ? stats.apiSuccessRate : 100}%</div>
-                      <div className="text-[10px] font-sans tracking-wider text-[#666] uppercase font-semibold">API Success Rate</div>
+                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">API Success Rate</div>
                     </div>
                     <button
                       onClick={() => setAdminActiveSubTab("registrations")}
@@ -1029,7 +1029,7 @@ export default function AdminTab() {
                     >
                       <Mail className="w-5 h-5 text-blue-600" />
                       <div className="text-2xl font-serif-display font-bold text-[#111]">{registrations.filter((r) => (r.status || "new") === "new").length}</div>
-                      <div className="text-[10px] font-sans tracking-wider text-[#666] uppercase font-semibold">New Brand Leads</div>
+                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">New Brand Leads</div>
                     </button>
                     <button
                       onClick={() => setAdminActiveSubTab("influencer_applications")}
@@ -1037,12 +1037,12 @@ export default function AdminTab() {
                     >
                       <UserPlus className="w-5 h-5 text-amber-600" />
                       <div className="text-2xl font-serif-display font-bold text-[#111]">{influencerApplications.filter((a) => a.status === "pending").length}</div>
-                      <div className="text-[10px] font-sans tracking-wider text-[#666] uppercase font-semibold">Applicants Awaiting Review</div>
+                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">Applicants Awaiting Review</div>
                     </button>
                     <div className="bg-white/60 p-5 rounded-2xl border border-black/5 shadow-xs space-y-1">
                       <Layout className="w-5 h-5 text-champagne" />
                       <div className="text-2xl font-serif-display font-bold text-[#111]">{stats.categoriesCount ?? 0}</div>
-                      <div className="text-[10px] font-sans tracking-wider text-[#666] uppercase font-semibold">Runway Categories</div>
+                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">Runway Categories</div>
                     </div>
                   </div>
 
@@ -1072,7 +1072,7 @@ export default function AdminTab() {
                   <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
                     {stats.logs.map((log) => (
                       <div key={log.id} className="text-[11px] border-b border-black/[0.02] pb-2 space-y-1">
-                        <div className="flex justify-between font-mono text-[10px] text-[#888]">
+                        <div className="flex justify-between font-mono text-[11px] text-[#888]">
                           <span>{new Date(log.timestamp).toLocaleTimeString()}</span>
                           <span>IP: {log.ip || "127.0.0.1"}</span>
                         </div>
@@ -1112,7 +1112,7 @@ export default function AdminTab() {
                 <form onSubmit={handleSaveSettings} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Website Brand Title</label>
+                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Website Brand Title</label>
                       <input 
                         type="text" 
                         required
@@ -1123,7 +1123,7 @@ export default function AdminTab() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Logo URL (Optional)</label>
+                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Logo URL (Optional)</label>
                       <input 
                         type="text" 
                         value={settings.logoUrl} 
@@ -1133,7 +1133,7 @@ export default function AdminTab() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Hero Display Title</label>
+                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Hero Display Title</label>
                       <input 
                         type="text" 
                         required
@@ -1143,7 +1143,7 @@ export default function AdminTab() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">CTA Call-To-Action Button Text</label>
+                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">CTA Call-To-Action Button Text</label>
                       <input 
                         type="text" 
                         required
@@ -1155,7 +1155,7 @@ export default function AdminTab() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Hero Subtitle Text</label>
+                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Hero Subtitle Text</label>
                     <textarea 
                       rows={2} 
                       required
@@ -1166,7 +1166,7 @@ export default function AdminTab() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Footer Copyright Notice</label>
+                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Footer Copyright Notice</label>
                     <input 
                       type="text" 
                       required
@@ -1178,7 +1178,7 @@ export default function AdminTab() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-3 border-t border-black/5">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Primary Accent Theme Color</label>
+                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Primary Accent Theme Color</label>
                       <div className="flex gap-3 items-center">
                         <input 
                           type="color" 
@@ -1196,7 +1196,7 @@ export default function AdminTab() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Secondary Theme Color (Backgrounds/Accents)</label>
+                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Secondary Theme Color (Backgrounds/Accents)</label>
                       <div className="flex gap-3 items-center">
                         <input 
                           type="color" 
@@ -1249,7 +1249,7 @@ export default function AdminTab() {
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Category Title</label>
+                        <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Category Title</label>
                         <input
                           type="text"
                           required
@@ -1260,7 +1260,7 @@ export default function AdminTab() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Category Subtitle</label>
+                        <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Category Subtitle</label>
                         <input
                           type="text"
                           placeholder="e.g. Celebrating Youthful Glamour and Poise"
@@ -1273,7 +1273,7 @@ export default function AdminTab() {
 
                     <div className="flex flex-col sm:flex-row items-end sm:items-center justify-between gap-4 pt-2">
                       <div className="space-y-1 w-full sm:w-auto">
-                        <label className="text-[10px] font-sans font-bold text-[#666] uppercase block">Primary Accent Theme Color</label>
+                        <label className="text-[11px] font-sans font-bold text-[#666] uppercase block">Primary Accent Theme Color</label>
                         <div className="flex gap-2 items-center">
                           <input
                             type="color"
@@ -1316,8 +1316,8 @@ export default function AdminTab() {
                                 title={`Theme Color: ${sec.primaryColor}`}
                               />
                             </div>
-                            <p className="text-[10px] text-[#888] truncate">{sec.subtitle || "No Subtitle"}</p>
-                            <div className="flex items-center gap-2 pt-1 font-mono text-[10px] text-[#666]">
+                            <p className="text-[11px] text-[#888] truncate">{sec.subtitle || "No Subtitle"}</p>
+                            <div className="flex items-center gap-2 pt-1 font-mono text-[11px] text-[#666]">
                               <span className="bg-[#FAF9F6] px-1.5 py-0.5 rounded border border-black/5 uppercase">ID: {sec.id}</span>
                               <span className="bg-[#FAF9F6] px-1.5 py-0.5 rounded border border-black/5">{sec.creators?.length || 0} Models</span>
                             </div>
@@ -1355,7 +1355,7 @@ export default function AdminTab() {
 
                 <form onSubmit={handleSaveSettings} className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Secure Gemini API Key</label>
+                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Secure Gemini API Key</label>
                     <input 
                       type="password" 
                       value={settings.geminiApiKey} 
@@ -1363,12 +1363,12 @@ export default function AdminTab() {
                       className="w-full px-4 py-2.5 bg-white border border-black/10 rounded-xl text-xs font-mono" 
                       placeholder="Paste your Gemini API key (routed securely server-side)" 
                     />
-                    <p className="text-[10px] text-[#888] italic">Note: Your API key is safely routed via server endpoints and is never exposed to public browser client sessions.</p>
+                    <p className="text-[11px] text-[#888] italic">Note: Your API key is safely routed via server endpoints and is never exposed to public browser client sessions.</p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Model Selection Selection</label>
+                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Model Selection Selection</label>
                       <select 
                         value={settings.modelSelection || "gemini-3.5-flash"} 
                         onChange={(e) => setSettings(prev => ({ ...prev, modelSelection: e.target.value }))} 
@@ -1381,9 +1381,9 @@ export default function AdminTab() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Model Temperature ({settings.temperature !== undefined ? settings.temperature : 0.7})</label>
+                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Model Temperature ({settings.temperature !== undefined ? settings.temperature : 0.7})</label>
                       <div className="flex gap-4 items-center pt-2">
-                        <span className="text-[10px] font-sans text-[#888]">Precise (0.0)</span>
+                        <span className="text-[11px] font-sans text-[#888]">Precise (0.0)</span>
                         <input 
                           type="range" 
                           min="0.0" 
@@ -1393,13 +1393,13 @@ export default function AdminTab() {
                           onChange={(e) => setSettings(prev => ({ ...prev, temperature: parseFloat(e.target.value) }))} 
                           className="w-full accent-[#E1C699]" 
                         />
-                        <span className="text-[10px] font-sans text-[#888]">Creative (1.0)</span>
+                        <span className="text-[11px] font-sans text-[#888]">Creative (1.0)</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">System Instructions / Master Prompt Guidelines</label>
+                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">System Instructions / Master Prompt Guidelines</label>
                     <textarea 
                       rows={6} 
                       required
@@ -1449,7 +1449,7 @@ export default function AdminTab() {
                   <div className="mt-6 overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="border-b border-black/5 text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase">
+                        <tr className="border-b border-black/5 text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase">
                           <th className="py-3 px-4">Timestamp</th>
                           <th className="py-3 px-4">AI Model</th>
                           <th className="py-3 px-4">Status</th>
@@ -1459,25 +1459,25 @@ export default function AdminTab() {
                       <tbody className="divide-y divide-black/[0.03]">
                         {promptLogs.map((log: any) => (
                           <tr key={log.id} className="text-xs hover:bg-black/[0.01]">
-                            <td className="py-4 px-4 font-mono text-[10px] text-[#888] whitespace-nowrap">
+                            <td className="py-4 px-4 font-mono text-[11px] text-[#888] whitespace-nowrap">
                               {new Date(log.timestamp).toLocaleString("en-IN", { hour12: true })}
                             </td>
                             <td className="py-4 px-4">
-                              <span className="bg-black/5 border border-black/5 px-2 py-0.5 rounded text-[10px] font-mono text-black">{log.modelUsed}</span>
+                              <span className="bg-black/5 border border-black/5 px-2 py-0.5 rounded text-[11px] font-mono text-black">{log.modelUsed}</span>
                             </td>
                             <td className="py-4 px-4">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-sans uppercase font-bold ${log.status === "success" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-red-50 text-red-700 border border-red-100"}`}>
+                              <span className={`px-2 py-0.5 rounded text-[11px] font-sans uppercase font-bold ${log.status === "success" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-red-50 text-red-700 border border-red-100"}`}>
                                 {log.status}
                               </span>
                             </td>
                             <td className="py-4 px-4 max-w-md">
                               <div className="space-y-2">
                                 <div className="p-2.5 bg-black/[0.02] rounded-lg border border-black/[0.03] text-[11px] font-serif-text text-[#555]">
-                                  <strong className="text-[10px] font-sans text-black uppercase font-bold tracking-wider block mb-1">USER PROMPT CONTENT:</strong>
+                                  <strong className="text-[11px] font-sans text-black uppercase font-bold tracking-wider block mb-1">USER PROMPT CONTENT:</strong>
                                   {log.userPrompt}
                                 </div>
                                 <div className="p-2.5 bg-champagne/[0.03] rounded-lg border border-champagne/10 text-[11px] font-serif-text text-black">
-                                  <strong className="text-[10px] font-sans text-champagne uppercase font-bold tracking-wider block mb-1">GENERATED HARMONIC CURATION:</strong>
+                                  <strong className="text-[11px] font-sans text-champagne uppercase font-bold tracking-wider block mb-1">GENERATED HARMONIC CURATION:</strong>
                                   <div className="whitespace-pre-wrap leading-relaxed line-clamp-4 hover:line-clamp-none transition-all">{log.aiResponse}</div>
                                 </div>
                               </div>
@@ -1511,7 +1511,7 @@ export default function AdminTab() {
                   </div>
                   <button
                     onClick={openAddCreator}
-                    className="bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[10px] tracking-widest font-bold py-2 px-4 rounded-lg uppercase flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    className="bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[11px] tracking-widest font-bold py-2 px-4 rounded-lg uppercase flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >
                     <Plus className="w-3.5 h-3.5 text-champagne" /> Catalog Model
                   </button>
@@ -1524,9 +1524,9 @@ export default function AdminTab() {
                       <div className="px-5 py-3.5 bg-[#F4F3F0] border-b border-black/5 flex justify-between items-center">
                         <div>
                           <h4 className="font-serif-display text-sm font-bold text-[#111]">{section.title}</h4>
-                          <span className="text-[10px] text-[#888] tracking-widest uppercase font-mono">{section.subtitle}</span>
+                          <span className="text-[11px] text-[#888] tracking-widest uppercase font-mono">{section.subtitle}</span>
                         </div>
-                        <span className="text-[10px] font-mono text-[#888] bg-white border border-black/5 px-2.5 py-1 rounded-full">
+                        <span className="text-[11px] font-mono text-[#888] bg-white border border-black/5 px-2.5 py-1 rounded-full">
                           Z_OFFSET: {section.zOffset}m
                         </span>
                       </div>
@@ -1540,7 +1540,7 @@ export default function AdminTab() {
                                 <div className="flex items-center gap-2">
                                   <h5 className="font-serif-display text-sm font-bold text-[#111]">{c.name}</h5>
                                   {c.stats.verified && (
-                                    <span className="text-[10px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded font-sans uppercase font-bold">Verified</span>
+                                    <span className="text-[11px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded font-sans uppercase font-bold">Verified</span>
                                   )}
                                 </div>
                                 <p className="text-[11px] font-sans text-[#666]">{c.role} — <span className="italic">{c.city}</span></p>
@@ -1550,7 +1550,7 @@ export default function AdminTab() {
                             <div className="flex items-center gap-6">
                               <div className="text-right hidden md:block">
                                 <div className="text-xs font-mono font-bold">{c.stats.reach}</div>
-                                <div className="text-[10px] text-[#888] tracking-wider uppercase font-semibold">Reach / {c.stats.engagement} ER</div>
+                                <div className="text-[11px] text-[#888] tracking-wider uppercase font-semibold">Reach / {c.stats.engagement} ER</div>
                               </div>
 
                               <div className="flex items-center gap-1.5">
@@ -1598,7 +1598,7 @@ export default function AdminTab() {
                   </div>
                   <button
                     onClick={openAddCampaign}
-                    className="bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[10px] tracking-widest font-bold py-2 px-4 rounded-lg uppercase flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    className="bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[11px] tracking-widest font-bold py-2 px-4 rounded-lg uppercase flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >
                     <Plus className="w-3.5 h-3.5 text-champagne" /> Draft Campaign
                   </button>
@@ -1610,10 +1610,10 @@ export default function AdminTab() {
                       <div className="space-y-2">
                         <div className="flex justify-between items-start">
                           <div>
-                            <span className="text-[10px] font-sans text-champagne font-bold tracking-widest uppercase block">{camp.brand}</span>
+                            <span className="text-[11px] font-sans text-champagne font-bold tracking-widest uppercase block">{camp.brand}</span>
                             <h4 className="font-serif-display text-sm font-bold text-[#111] mt-0.5">{camp.title}</h4>
                           </div>
-                          <span className="bg-white border border-black/5 text-[#111] text-[10px] font-sans font-bold px-2.5 py-1 rounded">
+                          <span className="bg-white border border-black/5 text-[#111] text-[11px] font-sans font-bold px-2.5 py-1 rounded">
                             {camp.budget}
                           </span>
                         </div>
@@ -1621,7 +1621,7 @@ export default function AdminTab() {
                       </div>
 
                       <div className="pt-3 border-t border-black/5 flex justify-between items-center">
-                        <span className="text-[10px] font-mono text-[#888] uppercase">DURATION: {camp.duration}</span>
+                        <span className="text-[11px] font-mono text-[#888] uppercase">DURATION: {camp.duration}</span>
                         <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => openEditCampaign(camp)}
@@ -1654,9 +1654,9 @@ export default function AdminTab() {
                   <div className="px-5 py-4 bg-[#F4F3F0] border-b border-black/5 flex items-center justify-between">
                     <div>
                       <h4 className="font-serif-display text-sm font-bold text-[#111]">VIP Escrow Curation Applications</h4>
-                      <p className="text-[10px] text-[#888] uppercase tracking-wider font-mono">Secured applications arriving via Client Charter gateways</p>
+                      <p className="text-[11px] text-[#888] uppercase tracking-wider font-mono">Secured applications arriving via Client Charter gateways</p>
                     </div>
-                    <span className="bg-champagne/15 text-champagne border border-champagne text-[10px] font-sans font-bold px-3 py-1 rounded-full">
+                    <span className="bg-champagne/15 text-champagne border border-champagne text-[11px] font-sans font-bold px-3 py-1 rounded-full">
                       {registrations.length} APPLICATIONS
                     </span>
                   </div>
@@ -1684,7 +1684,7 @@ export default function AdminTab() {
                     <button
                       onClick={() => downloadCsv(`fsia-brand-leads-${new Date().toISOString().slice(0, 10)}.csv`, filteredRegistrations as unknown as Record<string, unknown>[])}
                       disabled={filteredRegistrations.length === 0}
-                      className="px-3 py-2 bg-[#111] text-white rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40"
+                      className="px-3 py-2 bg-[#111] text-white rounded-lg text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40"
                     >
                       <Download className="w-3.5 h-3.5" /> Export CSV
                     </button>
@@ -1700,7 +1700,7 @@ export default function AdminTab() {
                               <select
                                 value={reg.status || "new"}
                                 onChange={(e) => updateRegistration(reg.id, { status: e.target.value as LeadStatus })}
-                                className={`text-[10px] font-sans font-bold uppercase px-2 py-0.5 rounded border cursor-pointer focus:outline-none ${
+                                className={`text-[11px] font-sans font-bold uppercase px-2 py-0.5 rounded border cursor-pointer focus:outline-none ${
                                   (LEAD_STATUSES.find((st) => st.id === (reg.status || "new")) || LEAD_STATUSES[0]).className
                                 }`}
                                 title="Lead status"
@@ -1714,7 +1714,7 @@ export default function AdminTab() {
                           </div>
                           
                           <div className="flex items-start gap-3">
-                            <div className="text-left md:text-right font-mono text-[10px] text-[#666]">
+                            <div className="text-left md:text-right font-mono text-[11px] text-[#666]">
                               <div>Budget: <strong className="text-black font-semibold">{reg.budget}</strong></div>
                               <div>Applied: {reg.timestamp}</div>
                             </div>
@@ -1731,14 +1731,14 @@ export default function AdminTab() {
                         {/* Submission Metadata details */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white/45 p-3.5 rounded-xl border border-black/[0.03] text-xs font-serif-text">
                           <div className="space-y-1">
-                            <span className="text-[10px] font-sans font-bold tracking-wider text-[#888] uppercase block">TARGET CREATOR</span>
+                            <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">TARGET CREATOR</span>
                             <div className="flex items-center gap-1.5 font-sans font-semibold text-black">
                               <Users className="w-3.5 h-3.5 text-champagne" />
                               {reg.creatorName}
                             </div>
                           </div>
                           <div className="space-y-1">
-                            <span className="text-[10px] font-sans font-bold tracking-wider text-[#888] uppercase block">CONTACT CHANNELS</span>
+                            <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">CONTACT CHANNELS</span>
                             <div className="space-y-0.5">
                               <a href={`mailto:${reg.contactEmail}`} className="flex items-center gap-1.5 text-black hover:underline">
                                 <Mail className="w-3.5 h-3.5 text-[#888]" /> {reg.contactEmail}
@@ -1749,19 +1749,19 @@ export default function AdminTab() {
                             </div>
                           </div>
                           <div className="space-y-1">
-                            <span className="text-[10px] font-sans font-bold tracking-wider text-[#888] uppercase block">CURRENCY & LOCATION</span>
+                            <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">CURRENCY & LOCATION</span>
                             <div>
                               <div className="flex items-center gap-1.5 text-black">
                                 <MapPin className="w-3.5 h-3.5 text-[#888]" /> {reg.clientCity}
                               </div>
                               {reg.gstin && (
-                                <div className="text-[10px] text-[#888] font-mono">GSTIN: {reg.gstin}</div>
+                                <div className="text-[11px] text-[#888] font-mono">GSTIN: {reg.gstin}</div>
                               )}
                             </div>
                           </div>
                         </div>
 
-                        <div className="flex justify-between items-center font-mono text-[10px] text-[#888]">
+                        <div className="flex justify-between items-center font-mono text-[11px] text-[#888]">
                           <span>VERIFICATION HASH: <code className="text-[#444] bg-white px-1.5 py-0.5 rounded border border-black/5">{reg.verificationHash}</code></span>
                           {reg.scope && (
                             <span className="font-serif-text italic text-[#666]">Scope: {reg.scope} ({reg.duration || "3 Months"})</span>
@@ -1800,23 +1800,23 @@ export default function AdminTab() {
                 {/* Metrics bar */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-white/60 p-4 rounded-xl border border-black/5 shadow-xs">
-                    <span className="text-[10px] text-[#888] uppercase tracking-wider font-sans font-bold block">Total Applications</span>
+                    <span className="text-[11px] text-[#888] uppercase tracking-wider font-sans font-bold block">Total Applications</span>
                     <strong className="text-xl font-bold text-[#111]">{influencerApplications.length}</strong>
                   </div>
                   <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100/50 shadow-xs">
-                    <span className="text-[10px] text-amber-700 uppercase tracking-wider font-sans font-bold block">Pending Audit</span>
+                    <span className="text-[11px] text-amber-700 uppercase tracking-wider font-sans font-bold block">Pending Audit</span>
                     <strong className="text-xl font-bold text-amber-700">
                       {influencerApplications.filter(a => a.status === "pending").length}
                     </strong>
                   </div>
                   <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100/50 shadow-xs">
-                    <span className="text-[10px] text-emerald-700 uppercase tracking-wider font-sans font-bold block">Approved & Rostered</span>
+                    <span className="text-[11px] text-emerald-700 uppercase tracking-wider font-sans font-bold block">Approved & Rostered</span>
                     <strong className="text-xl font-bold text-emerald-700">
                       {influencerApplications.filter(a => a.status === "approved").length}
                     </strong>
                   </div>
                   <div className="bg-red-50/50 p-4 rounded-xl border border-red-100/50 shadow-xs">
-                    <span className="text-[10px] text-red-700 uppercase tracking-wider font-sans font-bold block">Declined</span>
+                    <span className="text-[11px] text-red-700 uppercase tracking-wider font-sans font-bold block">Declined</span>
                     <strong className="text-xl font-bold text-red-700">
                       {influencerApplications.filter(a => a.status === "declined").length}
                     </strong>
@@ -1827,7 +1827,7 @@ export default function AdminTab() {
                   <div className="px-5 py-4 bg-[#F4F3F0] border-b border-black/5 flex items-center justify-between flex-wrap gap-3">
                     <div>
                       <h4 className="font-serif-display text-sm font-bold text-[#111]">Runway Model Applicants</h4>
-                      <p className="text-[10px] text-[#888] uppercase tracking-wider font-mono">Approve submitted registrations to directly deploy them into the 3D catwalk and directory roster</p>
+                      <p className="text-[11px] text-[#888] uppercase tracking-wider font-mono">Approve submitted registrations to directly deploy them into the 3D catwalk and directory roster</p>
                     </div>
                   </div>
 
@@ -1854,7 +1854,7 @@ export default function AdminTab() {
                     <button
                       onClick={() => downloadCsv(`fsia-creator-applicants-${new Date().toISOString().slice(0, 10)}.csv`, filteredApplications as unknown as Record<string, unknown>[])}
                       disabled={filteredApplications.length === 0}
-                      className="px-3 py-2 bg-[#111] text-white rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40"
+                      className="px-3 py-2 bg-[#111] text-white rounded-lg text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40"
                     >
                       <Download className="w-3.5 h-3.5" /> Export CSV
                     </button>
@@ -1871,7 +1871,7 @@ export default function AdminTab() {
                             <div className="space-y-0.5">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <h5 className="font-serif-display text-base font-bold text-black">{app.name}</h5>
-                                <span className={`text-[10px] font-sans font-bold px-2 py-0.5 rounded border uppercase ${
+                                <span className={`text-[11px] font-sans font-bold px-2 py-0.5 rounded border uppercase ${
                                   app.status === "approved" 
                                     ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
                                     : app.status === "declined"
@@ -1889,7 +1889,7 @@ export default function AdminTab() {
 
                           <div className="flex items-center gap-4">
                             <div className="text-left md:text-right">
-                              <span className="text-[10px] font-sans font-bold text-[#888] uppercase block">AUDITED METRICS</span>
+                              <span className="text-[11px] font-sans font-bold text-[#888] uppercase block">AUDITED METRICS</span>
                               <div className="text-xs font-mono font-bold text-black">
                                 {app.reach} Followers / {app.engagement} ER
                               </div>
@@ -1899,14 +1899,14 @@ export default function AdminTab() {
                               <div className="flex items-center gap-1.5">
                                 <button
                                   onClick={() => approveInfluencerApplication(app.id)}
-                                  className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-sans text-[10px] font-bold uppercase rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+                                  className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-sans text-[11px] font-bold uppercase rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
                                   title="Approve and publish to 3D Runway"
                                 >
                                   <Check className="w-3.5 h-3.5" /> APPROVE
                                 </button>
                                 <button
                                   onClick={() => declineInfluencerApplication(app.id)}
-                                  className="px-3 py-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 font-sans text-[10px] font-bold uppercase rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+                                  className="px-3 py-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 font-sans text-[11px] font-bold uppercase rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
                                   title="Decline request"
                                 >
                                   <X className="w-3.5 h-3.5" /> DECLINE
@@ -1927,7 +1927,7 @@ export default function AdminTab() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#FAF9F6] p-4 rounded-xl border border-black/[0.02]">
                           <div className="space-y-2">
                             <div>
-                              <span className="text-[10px] font-sans font-bold tracking-wider text-[#888] uppercase block">BIOGRAPHY & PITCH</span>
+                              <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">BIOGRAPHY & PITCH</span>
                               <p className="text-xs text-[#555] font-serif-text leading-relaxed mt-0.5">{app.bio}</p>
                             </div>
                             {app.quote && (
@@ -1940,13 +1940,13 @@ export default function AdminTab() {
                           <div className="space-y-3 font-serif-text text-xs">
                             <div className="grid grid-cols-2 gap-2">
                               <div>
-                                <span className="text-[10px] font-sans font-bold tracking-wider text-[#888] uppercase block">EMAIL CONTACT</span>
+                                <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">EMAIL CONTACT</span>
                                 <a href={`mailto:${app.email}`} className="text-black hover:underline flex items-center gap-1 font-sans font-semibold mt-0.5">
                                   <Mail className="w-3.5 h-3.5 text-[#888]" /> {app.email}
                                 </a>
                               </div>
                               <div>
-                                <span className="text-[10px] font-sans font-bold tracking-wider text-[#888] uppercase block">PHONE CONTACT</span>
+                                <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">PHONE CONTACT</span>
                                 <a href={`tel:${app.phone}`} className="text-black hover:underline flex items-center gap-1 font-sans font-semibold mt-0.5">
                                   <Phone className="w-3.5 h-3.5 text-[#888]" /> {app.phone}
                                 </a>
@@ -1955,7 +1955,7 @@ export default function AdminTab() {
 
                             {app.portfolio && app.portfolio.length > 0 && (
                               <div>
-                                <span className="text-[10px] font-sans font-bold tracking-wider text-[#888] uppercase block mb-1">SUBMITTED PORTFOLIO</span>
+                                <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block mb-1">SUBMITTED PORTFOLIO</span>
                                 <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
                                   {app.portfolio.map((img, i) => (
                                     <a key={i} href={/^https?:\/\//i.test(img) ? img : undefined} target="_blank" rel="noopener noreferrer" className="relative w-12 h-16 rounded overflow-hidden border border-black/5 bg-gray-50 flex-shrink-0 group">
@@ -1971,7 +1971,7 @@ export default function AdminTab() {
                           </div>
                         </div>
 
-                        <div className="text-[10px] font-mono text-[#888] text-right">
+                        <div className="text-[11px] font-mono text-[#888] text-right">
                           RECEIVED VIA PUBLIC PORTAL: {app.timestamp}
                         </div>
                       </div>
@@ -2041,7 +2041,7 @@ export default function AdminTab() {
               <form onSubmit={saveCreator} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Target Category</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Target Category</label>
                     <select
                       value={creatorForm.sectionId}
                       disabled={!!editingCreator}
@@ -2052,7 +2052,7 @@ export default function AdminTab() {
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Full Legal Name</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Full Legal Name</label>
                     <input
                       type="text"
                       required
@@ -2066,7 +2066,7 @@ export default function AdminTab() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Official Runway Role</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Official Runway Role</label>
                     <input
                       type="text"
                       required
@@ -2077,7 +2077,7 @@ export default function AdminTab() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Couture Base City</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Couture Base City</label>
                     <input
                       type="text"
                       placeholder="e.g., Mumbai"
@@ -2089,7 +2089,7 @@ export default function AdminTab() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-sans font-bold text-[#666] uppercase">High Resolution Image URL</label>
+                  <label className="text-[11px] font-sans font-bold text-[#666] uppercase">High Resolution Image URL</label>
                   <input
                     type="url"
                     required
@@ -2101,7 +2101,7 @@ export default function AdminTab() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Couture Lookbook Portfolio Image URLs (Comma Separated)</label>
+                  <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Couture Lookbook Portfolio Image URLs (Comma Separated)</label>
                   <textarea
                     rows={2}
                     placeholder="e.g. https://images.unsplash.com/photo-1, https://images.unsplash.com/photo-2"
@@ -2109,14 +2109,14 @@ export default function AdminTab() {
                     onChange={(e) => setCreatorForm(prev => ({ ...prev, portfolioUrls: e.target.value }))}
                     className="w-full px-3 py-2 bg-white border border-black/10 rounded-lg text-xs focus:outline-none focus:border-champagne font-mono"
                   />
-                  <p className="text-[10px] text-[#8e8d8a] leading-none mt-0.5">
+                  <p className="text-[11px] text-[#8e8d8a] leading-none mt-0.5">
                     Paste multiple high-res image URLs separated by commas to populate the lookbook sliding reels on the Catwalk 3D tab detail panel.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Audited Reach</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Audited Reach</label>
                     <input
                       type="text"
                       placeholder="e.g., 1.5M"
@@ -2126,7 +2126,7 @@ export default function AdminTab() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Engagement Rate</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Engagement Rate</label>
                     <input
                       type="text"
                       placeholder="e.g., 6.8%"
@@ -2143,13 +2143,13 @@ export default function AdminTab() {
                         onChange={(e) => setCreatorForm(prev => ({ ...prev, verified: e.target.checked }))}
                         className="rounded accent-[#E1C699]"
                       />
-                      <span className="text-[10px] font-sans font-bold text-[#444] uppercase">VERIFIED</span>
+                      <span className="text-[11px] font-sans font-bold text-[#444] uppercase">VERIFIED</span>
                     </label>
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Biography Curation Narrative</label>
+                  <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Biography Curation Narrative</label>
                   <textarea
                     rows={3}
                     required
@@ -2161,7 +2161,7 @@ export default function AdminTab() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Signature Editorial Quote</label>
+                  <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Signature Editorial Quote</label>
                   <input
                     type="text"
                     placeholder="Signature design quote or professional ethos..."
@@ -2219,7 +2219,7 @@ export default function AdminTab() {
               <form onSubmit={saveCampaign} className="space-y-4 text-left">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Brand Partner</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Brand Partner</label>
                     <input
                       type="text"
                       required
@@ -2230,7 +2230,7 @@ export default function AdminTab() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Campaign Headline</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Campaign Headline</label>
                     <input
                       type="text"
                       required
@@ -2244,7 +2244,7 @@ export default function AdminTab() {
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Budget Bracket</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Budget Bracket</label>
                     <input
                       type="text"
                       placeholder="e.g., ₹4,00,000"
@@ -2254,7 +2254,7 @@ export default function AdminTab() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Duration</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Duration</label>
                     <input
                       type="text"
                       placeholder="e.g., 3 Weeks"
@@ -2264,7 +2264,7 @@ export default function AdminTab() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Location</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Location</label>
                     <input
                       type="text"
                       placeholder="e.g., Mumbai"
@@ -2277,7 +2277,7 @@ export default function AdminTab() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Niche Focus</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Niche Focus</label>
                     <input
                       type="text"
                       placeholder="e.g., Royal Couture"
@@ -2287,7 +2287,7 @@ export default function AdminTab() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Minimum Audience Requirement</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Minimum Audience Requirement</label>
                     <input
                       type="text"
                       placeholder="e.g., 100K+ Reach"
@@ -2299,7 +2299,7 @@ export default function AdminTab() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Campaign Outline Brief</label>
+                  <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Campaign Outline Brief</label>
                   <textarea
                     rows={3}
                     required
@@ -2311,7 +2311,7 @@ export default function AdminTab() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-sans font-bold text-[#666] uppercase block">VIP Compensation Perks (Up to 3)</label>
+                  <label className="text-[11px] font-sans font-bold text-[#666] uppercase block">VIP Compensation Perks (Up to 3)</label>
                   <input
                     type="text"
                     placeholder="Perk 1: e.g. Keep custom bespoke couture"

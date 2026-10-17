@@ -1,0 +1,78 @@
+// Unit checks for brand removal and contact validation, plus Node ↔ PHP parity.
+//   npx tsx scripts/test-unit.ts        (PHP checks are skipped when php is not installed)
+import { execFileSync } from "child_process";
+import path from "path";
+import { debrandText } from "../server/db";
+import { isValidEmail, isValidPhone } from "../server/validation";
+
+let failures = 0;
+const check = (name: string, ok: boolean, detail = "") => {
+  if (!ok) failures++;
+  console.log(`${ok ? "PASS" : "FAIL"}  ${name}${ok || !detail ? "" : `\n      ${detail}`}`);
+};
+
+const DEBRAND_CASES: [string, string][] = [
+  ["FSIA — Forever Star India Awards", "FSIA Creators & Influencer Portal"],
+  ["FOREVER STAR INDIA", "FSIA INFLUENCER"],
+  ["Welcome to Forever Star India Association (FSIA)", "Welcome to FSIA Influencer"],
+  ["Forever Free plan", "Always Free plan"],
+  ["Stay forever young", "Stay always young"],
+  ["The Forever Gala", "The Gala"],
+  ["FOREVER Elite", "Elite"],
+  ["fOrEvEr Icons", "Icons"],
+  ["Diamonds are Forever", "Diamonds are"],
+  ["Foreverstar fashion week", "star fashion week"],
+  ["Nothing to change here", "Nothing to change here"]
+];
+
+for (const [input, expected] of DEBRAND_CASES) {
+  const out = debrandText(input);
+  check(`debrandText(${JSON.stringify(input)})`, out === expected, `got ${JSON.stringify(out)}, expected ${JSON.stringify(expected)}`);
+  check(`debrandText(${JSON.stringify(input)}) has no retired word`, !/forever/i.test(out));
+}
+
+// Must match isValidPhone() in server.ts and valid_phone() in helpers.php
+const PHONE_CASES: [string, boolean][] = [
+  ["+91 98765 43210", true],
+  ["9876543210", true],
+  ["(022) 2345-6789", true],
+  ["022 2345 6789 0", true],
+  ["12345", false],
+  ["call me maybe", false],
+  ["+91 98765 43210 ext 5", false],
+  ["1234567890123456", false]
+];
+
+let php = true;
+try {
+  execFileSync("php", ["-v"], { stdio: "ignore" });
+} catch {
+  php = false;
+  console.log("SKIP  PHP parity checks (php not installed)");
+}
+
+if (php) {
+  const helpers = path.join(process.cwd(), "php-backend/api/lib/helpers.php");
+  const runPhp = (code: string, input: unknown) =>
+    execFileSync("php", ["-r", `require ${JSON.stringify(helpers)}; $in = json_decode(stream_get_contents(STDIN), true); ${code}`], {
+      input: JSON.stringify(input)
+    }).toString();
+
+  const phpDebrand = JSON.parse(runPhp("echo json_encode(array_map('debrand_text', $in), JSON_UNESCAPED_UNICODE);", DEBRAND_CASES.map((c) => c[0])));
+  DEBRAND_CASES.forEach(([input], i) =>
+    check(`PHP debrand_text matches Node for ${JSON.stringify(input)}`, phpDebrand[i] === debrandText(input), `PHP: ${JSON.stringify(phpDebrand[i])}`)
+  );
+
+  const phpPhones = JSON.parse(runPhp("echo json_encode(array_map('valid_phone', $in));", PHONE_CASES.map((c) => c[0])));
+  PHONE_CASES.forEach(([input, expected], i) =>
+    check(`PHP valid_phone(${JSON.stringify(input)}) is ${expected}`, phpPhones[i] === expected, `got ${phpPhones[i]}`)
+  );
+}
+
+PHONE_CASES.forEach(([input, expected]) => check(`isValidPhone(${JSON.stringify(input)}) is ${expected}`, isValidPhone(input) === expected));
+for (const [input, expected] of [["creator@example.com", true], [" brand@example.in ", true], ["no-at-sign.com", false], ["a@b", false]] as const) {
+  check(`isValidEmail(${JSON.stringify(input)}) is ${expected}`, isValidEmail(input) === expected);
+}
+
+console.log(failures ? `\n${failures} check(s) failed.` : "\nAll unit checks passed.");
+process.exit(failures ? 1 : 0);

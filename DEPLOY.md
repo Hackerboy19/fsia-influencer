@@ -50,6 +50,10 @@ Settings**, keep the default "nginx as proxy to Apache" so `.htaccess` is honour
 2. Upload and extract the new zip over the existing files and allow overwrite.
    Your data lives in `storage/db.json`, which the zip never contains, so it is kept.
 3. Hard-refresh the site (Ctrl + F5).
+4. Check the release (read-only, safe to run against the live site) from a computer with the
+   project checked out: `npm run audit -- https://influencer.fsia.in`. It checks every page's status
+   code, metadata, sitemap, 404 handling, retired branding and WCAG 2.2 AA accessibility, and
+   prints anything that fails.
 
 ## Google Search Console (indexing)
 
@@ -77,6 +81,13 @@ plus `/robots.txt` and `/sitemap.xml`. Each section has its own URL:
 
 Check any time: `https://influencer.fsia.in/robots.txt` and `https://influencer.fsia.in/sitemap.xml`.
 
+5. **After each release:** Search Console → *Pages* (Indexing) shows why any URL is not indexed.
+   Mistyped or retired URLs now return a real **404 Not Found** page instead of the home page,
+   so they drop out of the index instead of being reported as *Soft 404*. Use *Validate fix* on
+   any older *Soft 404* or *Duplicate without user-selected canonical* entries.
+6. Indexing is decided by Google and can take days to weeks; Search Console's URL Inspection
+   (*URL is on Google*) is the only reliable confirmation for a given page.
+
 ## Optional configuration
 
 Copy `api/config.sample.php` to `api/config.php` and edit it to:
@@ -94,7 +105,10 @@ Copy `api/config.sample.php` to `api/config.php` and edit it to:
 | Plesk "default page" or old site still shows | The files were extracted into the wrong folder or into a sub-folder; `index.html` must sit directly in the subdomain's document root. Clear the browser cache. |
 | Blank white page | Open the browser console: if `assets/…` files return 404, the `assets/` folder was not uploaded next to `index.html`. |
 | Admin login works but every action says "Unauthorized" | Your host strips the `Authorization` header; the app already sends a fallback header, so make sure the bundled `.htaccess` was uploaded. |
-| Pages other than the home page show 404 | `.htaccess` is missing or `mod_rewrite` is disabled. |
+| Section pages (`/talent/`, `/faq/` …) show "Page not found" | Their folders (`talent/`, `campaigns/`, `join/`, `membership/`, `faq/`, `admin/`) were not uploaded next to `index.html`. |
+| A mistyped address shows "Page not found" | Intended: unknown URLs return a real 404 status (`404.html`) so search engines never index them as duplicates of the home page. |
+| A Plesk-branded "404 Not Found" page appears instead of the site's own | Harmless (the status is still 404). To show the site's page, untick *Custom error documents* in the subdomain's **Hosting Settings**. |
+| API calls return 404 / the admin panel cannot load data | `.htaccess` is missing or `mod_rewrite` is disabled (it routes `/api/…` to `api/index.php`). |
 | "Storage directory is not writable" | Set `storage/` permissions to 755 (or 775). |
 | Uploading a creator photo fails | Raise `post_max_size` / `upload_max_filesize` to at least 8M in cPanel → *Select PHP Version* → *Options*. |
 | Want to start over | Delete `storage/db.json`; it is re-created with the starter content on the next visit. |

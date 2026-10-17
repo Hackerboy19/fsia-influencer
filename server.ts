@@ -3,7 +3,8 @@ import path from "path";
 import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
-import { getDb, saveDb, logAction, hashPassword, verifyPassword, needsRehash, createDefaultDb, GallerySection, Creator, Campaign, Registration } from "./server/db";
+import { getDb, saveDb, logAction, hashPassword, verifyPassword, needsRehash, createDefaultDb, debrandValue, GallerySection, Creator, Campaign, Registration } from "./server/db";
+import { isValidEmail, isValidPhone, PHONE_ERROR } from "./server/validation";
 
 // Initialize express app
 const app = express();
@@ -11,6 +12,12 @@ const PORT = Number(process.env.PORT) || 3000;
 
 app.set("trust proxy", true);
 app.use(express.json({ limit: "5mb" }));
+
+// API responses are data for the app, not pages: keep them out of search results
+app.use("/api", (req, res, next) => {
+  res.setHeader("X-Robots-Tag", "noindex, nofollow");
+  next();
+});
 
 // ----------------------------------------------------
 // SESSION MANAGEMENT
@@ -213,7 +220,7 @@ app.delete("/api/admin/users/:username", authenticateAdmin, (req, res) => {
 app.get("/api/creators", (req, res) => {
   try {
     const db = getDb();
-    res.json(db.creators);
+    res.json(debrandValue(db.creators));
   } catch (error: any) {
     res.status(500).json({ error: "Failed to retrieve runway roster: " + error.message });
   }
@@ -331,7 +338,7 @@ app.delete("/api/creators/:sectionId/:name", authenticateAdmin, (req, res) => {
 app.get(["/api/sections", "/api/creators/categories"], (req, res) => {
   try {
     const db = getDb();
-    res.json(db.creators);
+    res.json(debrandValue(db.creators));
   } catch (error: any) {
     res.status(500).json({ error: "Failed to retrieve runway sections: " + error.message });
   }
@@ -431,7 +438,7 @@ app.put(["/api/sections/:id", "/api/creators/categories/:id"], authenticateAdmin
 app.get("/api/membership-plans", (req, res) => {
   try {
     const db = getDb();
-    res.json(db.membership_plans || []);
+    res.json(debrandValue(db.membership_plans || []));
   } catch (error: any) {
     res.status(500).json({ error: "Failed to fetch membership plans: " + error.message });
   }
@@ -509,7 +516,7 @@ app.delete("/api/membership-plans/:id", authenticateAdmin, (req, res) => {
 app.get("/api/campaigns", (req, res) => {
   try {
     const db = getDb();
-    res.json(db.campaigns);
+    res.json(debrandValue(db.campaigns));
   } catch (error: any) {
     res.status(500).json({ error: "Failed to fetch campaigns: " + error.message });
   }
@@ -597,8 +604,11 @@ app.post("/api/registrations", (req, res) => {
     if (!brandName || !contactEmail || !contactPhone) {
       return res.status(400).json({ error: "Brand Name, email, and phone contact are mandatory." });
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(contactEmail))) {
+    if (!isValidEmail(contactEmail)) {
       return res.status(400).json({ error: "Please provide a valid contact email address." });
+    }
+    if (!isValidPhone(contactPhone)) {
+      return res.status(400).json({ error: PHONE_ERROR });
     }
 
     const db = getDb();
@@ -695,8 +705,11 @@ app.post("/api/influencer-applications", (req, res) => {
     if (!name || !email || !phone || !category) {
       return res.status(400).json({ error: "Full Name, Email, Phone Contact, and Runway Category are required." });
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email))) {
+    if (!isValidEmail(email)) {
       return res.status(400).json({ error: "Please provide a valid email address." });
+    }
+    if (!isValidPhone(phone)) {
+      return res.status(400).json({ error: PHONE_ERROR });
     }
 
     const db = getDb();
@@ -844,7 +857,7 @@ app.get("/api/settings", (req, res) => {
   try {
     const db = getDb();
     const { geminiApiKey, aiSystemPrompt, modelSelection, temperature, topK, ...publicSettings } = db.system_settings;
-    res.json(publicSettings);
+    res.json(debrandValue(publicSettings));
   } catch (error: any) {
     res.status(500).json({ error: "Failed to load system settings: " + error.message });
   }
@@ -973,7 +986,7 @@ app.post("/api/gemini/optimize", async (req, res) => {
     }
     saveDb(db);
 
-    res.json({ success: true, optimizedPitch: optimizedResult });
+    res.json({ success: true, optimizedPitch: debrandValue(optimizedResult) });
 
   } catch (error: any) {
     console.error("Gemini optimization error:", error);
@@ -1050,8 +1063,11 @@ app.post("/api/enquiries", (req, res) => {
   if (!clip(body.name, 200) || !clip(body.email, 200) || !clip(body.phone, 50)) {
     return res.status(400).json({ error: "Name, email and phone are required." });
   }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clip(body.email, 200))) {
+  if (!isValidEmail(clip(body.email, 200))) {
     return res.status(400).json({ error: "Please provide a valid email address." });
+  }
+  if (!isValidPhone(clip(body.phone, 50))) {
+    return res.status(400).json({ error: PHONE_ERROR });
   }
   const details: Record<string, string> = {};
   if (body.details && typeof body.details === "object") {
@@ -1161,10 +1177,12 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
+    // Every public route is a prerendered folder (dist/talent/index.html …), so static
+    // serving covers them and redirects /talent → /talent/. Anything else is a real 404.
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+    app.use((req, res) => {
+      res.status(404).sendFile(path.join(distPath, "404.html"));
     });
   }
 

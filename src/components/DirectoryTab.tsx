@@ -250,11 +250,11 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
           <span className="font-sans text-xs tracking-[0.35em] text-[#C9A227] uppercase font-bold block">
             FSIA ELITE TALENT AGENCY
           </span>
-          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-medium tracking-tight text-stone-900 leading-tight">
+          <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-medium tracking-tight text-stone-900 leading-tight">
             Discover India's Top Verified Influencers
-          </h2>
+          </h1>
           <div className="w-16 h-[1px] bg-[#C9A227] mx-auto my-3" />
-          <p className="font-serif italic text-stone-500 text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
+          <p className="font-serif italic text-[#2e2c29] text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
             Bridging luxury couture, organic cosmetics advocates, and digital innovators with India's most prestigious editorial campaigns.
           </p>
         </header>
@@ -330,7 +330,7 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
                 <span>{showAdvanced ? "Hide Fine Filters" : "More Filters"}</span>
               </button>
 
-              <div className="text-[10px] md:text-xs font-sans text-stone-500 bg-stone-100/50 px-3 py-2 rounded-full font-medium">
+              <div className="text-[11px] md:text-xs font-sans text-stone-500 bg-stone-100/50 px-3 py-2 rounded-full font-medium">
                 Showing <strong className="text-stone-900">{filteredCreators.length}</strong> profiles
               </div>
             </div>
@@ -349,7 +349,7 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl mx-auto">
                   {/* City Selector */}
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-stone-500 uppercase tracking-wider block">Target City</label>
+                    <label className="text-[11px] font-bold text-stone-500 uppercase tracking-wider block">Target City</label>
                     <div className="relative">
                       <select
                         value={selectedCity}
@@ -367,7 +367,7 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
 
                   {/* Reach Tier Selector */}
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-stone-500 uppercase tracking-wider block">Audience Reach</label>
+                    <label className="text-[11px] font-bold text-stone-500 uppercase tracking-wider block">Audience Reach</label>
                     <div className="relative">
                       <select
                         value={selectedReachTier}
@@ -411,13 +411,14 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
                   {/* Dynamic Creator Portrait Image with forced lazy loading */}
                   <img
                     src={creator.image}
-                    alt={`Top ${currentCategory} Influencer in India - ${creator.name} represented by FSIA Talent`}
+                    alt={`${creator.name}, ${currentCategory} creator${creator.city ? ` from ${creator.city}` : ""}`}
                     loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover transition-all duration-500 ease-out group-hover:scale-105"
                   />
 
                   {/* Floating Gold FSIA Verified Shield Badge */}
-                  <div className="absolute top-2 right-2 md:top-3 md:right-3 z-10 bg-stone-900/90 text-[#F0D9A8] border border-[#C9A227]/50 backdrop-blur-xs px-2.5 py-1 rounded-full text-[10px] md:text-[10px] font-bold tracking-wider flex items-center gap-1 shadow-md">
+                  <div className="absolute top-2 right-2 md:top-3 md:right-3 z-10 bg-stone-900/90 text-[#F0D9A8] border border-[#C9A227]/50 backdrop-blur-xs px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wider flex items-center gap-1 shadow-md">
                     <ShieldCheck className="w-3 h-3 text-[#F0D9A8] shrink-0" />
                     <span>FSIA VERIFIED</span>
                   </div>
@@ -429,24 +430,35 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
                       {/* Name, Handle, Niche */}
                       <div className="space-y-0.5">
                         <h3 className="font-serif text-stone-900 font-bold text-xs sm:text-sm md:text-base leading-tight tracking-tight truncate">
-                          {creator.name}
+                          {/* Keyboard and screen-reader access to the profile (the whole card is clickable with a mouse) */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSelectCreator(creator);
+                            }}
+                            aria-label={`View ${creator.name}'s profile`}
+                            className="max-w-full truncate text-left cursor-pointer rounded-sm"
+                          >
+                            {creator.name}
+                          </button>
                         </h3>
-                        <span className="text-[10px] md:text-xs text-[#C9A227] block font-mono">
+                        <span className="text-[11px] md:text-xs text-[#C9A227] block font-mono">
                           {formattedHandle}
                         </span>
-                        <span className="text-[10px] md:text-[10px] text-stone-500 font-semibold block uppercase tracking-wider">
+                        <span className="text-[11px] text-stone-500 font-semibold block uppercase tracking-wider">
                           {currentCategory}
                         </span>
                       </div>
 
                       {/* Stats Row */}
-                      <div className="flex items-center justify-between text-[10px] md:text-[10px] text-zinc-500 font-semibold pt-1.5 mt-1.5 border-t border-stone-100">
+                      <div className="flex items-center justify-between gap-2 text-[11px] text-zinc-500 font-semibold pt-1.5 mt-1.5 border-t border-stone-100">
                         <div>
-                          <span className="block text-[10px] text-stone-400 uppercase font-bold tracking-wider">Followers</span>
+                          <span className="block text-[11px] text-stone-400 uppercase font-bold">Followers</span>
                           <span className="text-stone-800 font-bold">{creator.stats.reach || "500K"}</span>
                         </div>
                         <div className="text-right">
-                          <span className="block text-[10px] text-stone-400 uppercase font-bold tracking-wider">Engagement</span>
+                          <span className="block text-[11px] text-stone-400 uppercase font-bold">Engagement</span>
                           <span className="text-stone-800 font-bold">{creator.stats.engagement || "4.8%"}</span>
                         </div>
                       </div>
@@ -458,7 +470,9 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
                             e.stopPropagation();
                             onSelectCreator(creator);
                           }}
-                          className="w-full bg-stone-900 hover:bg-stone-800 text-white text-[10px] tracking-widest uppercase font-bold py-2 rounded-md flex items-center justify-center gap-1 transition-all cursor-pointer min-h-[40px]"
+                          tabIndex={-1}
+                          aria-hidden="true"
+                          className="w-full bg-stone-900 hover:bg-stone-800 text-white text-[11px] tracking-widest uppercase font-bold py-2 rounded-md flex items-center justify-center gap-1 transition-all cursor-pointer min-h-[40px]"
                         >
                           <span>View Media Kit</span>
                           <span>→</span>
@@ -502,7 +516,7 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
             <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-[#E1C699]/5 rounded-full blur-3xl pointer-events-none" />
 
             <div className="relative z-10 max-w-2xl mx-auto space-y-4">
-              <span className="text-[10px] tracking-[0.35em] text-[#C9A227] font-bold uppercase block">
+              <span className="text-[11px] tracking-[0.35em] text-[#C9A227] font-bold uppercase block">
                 BECOME AN FSIA VERIFIED STAR
               </span>
               <h3 className="font-serif text-2xl sm:text-3xl md:text-4xl text-stone-100 font-medium tracking-tight">

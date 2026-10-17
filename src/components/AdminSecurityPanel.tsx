@@ -26,7 +26,7 @@ interface Props {
 
 const inputClass =
   "w-full px-3.5 py-2.5 bg-white border border-black/10 rounded-xl text-sm focus:outline-none focus:border-champagne";
-const labelClass = "text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block";
+const labelClass = "text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block";
 const cardClass = "bg-white/70 backdrop-blur-md p-6 rounded-2xl border border-black/5 space-y-4";
 
 const formatDate = (value: string | null) => (value ? new Date(value).toLocaleString() : "—");
@@ -212,10 +212,10 @@ export default function AdminSecurityPanel({ token, currentUser, onPasswordChang
                 <div className="text-sm font-semibold text-black truncate flex items-center gap-1.5">
                   {op.username}
                   {op.username === currentUser && (
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded">YOU</span>
+                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded">YOU</span>
                   )}
                 </div>
-                <div className="text-[10px] font-mono text-[#888]">Last login: {formatDate(op.lastLogin)}</div>
+                <div className="text-[11px] font-mono text-[#888]">Last login: {formatDate(op.lastLogin)}</div>
               </div>
               {op.username !== currentUser && (
                 <button onClick={() => removeOperator(op.username)} title="Remove operator"
@@ -280,7 +280,7 @@ export default function AdminSecurityPanel({ token, currentUser, onPasswordChang
             <h3 className="font-serif-display text-lg font-bold text-[#111]">Audit Log</h3>
           </div>
           <button onClick={() => downloadCsv("fsia-audit-log.csv", logs as unknown as Record<string, unknown>[])}
-            className="text-[10px] font-bold uppercase tracking-wider text-[#444] hover:text-black flex items-center gap-1 cursor-pointer">
+            className="text-[11px] font-bold uppercase tracking-wider text-[#444] hover:text-black flex items-center gap-1 cursor-pointer">
             <Download className="w-3.5 h-3.5" /> CSV
           </button>
         </div>
@@ -292,7 +292,7 @@ export default function AdminSecurityPanel({ token, currentUser, onPasswordChang
         <div className="max-h-[320px] overflow-y-auto space-y-2 pr-1">
           {filteredLogs.map((log) => (
             <div key={log.id} className="text-[11px] border-b border-black/[0.04] pb-2">
-              <div className="flex justify-between font-mono text-[10px] text-[#888]">
+              <div className="flex justify-between font-mono text-[11px] text-[#888]">
                 <span>{new Date(log.timestamp).toLocaleString()}</span>
                 <span>{log.ip || ""}</span>
               </div>

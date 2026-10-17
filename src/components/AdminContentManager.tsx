@@ -447,14 +447,14 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
           <Layout className="w-5 h-5 text-champagne" />
           <div>
             <h4 className="font-serif-display text-sm font-bold text-black">Enterprise Content Studio</h4>
-            <p className="text-[10px] text-[#666] font-mono">DYNAMIC PROPAGATION AND CRUD PANEL FOR SECTIONS, BRANDS AND VIP TIERS</p>
+            <p className="text-[11px] text-[#666] font-mono">DYNAMIC PROPAGATION AND CRUD PANEL FOR SECTIONS, BRANDS AND VIP TIERS</p>
           </div>
         </div>
 
         <div className="flex bg-[#F4F3F0] p-1 rounded-xl border border-black/5 gap-1 self-stretch md:self-auto overflow-x-auto scrollbar-none">
           <button
             onClick={() => { setActiveSubTab("sections"); handleResetForms(); }}
-            className={`px-3 py-1.5 rounded-lg text-[10px] font-sans font-bold uppercase transition-all whitespace-nowrap cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-sans font-bold uppercase transition-all whitespace-nowrap cursor-pointer ${
               activeSubTab === "sections" ? "bg-white text-black shadow-xs" : "text-[#777] hover:text-black"
             }`}
           >
@@ -462,7 +462,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
           </button>
           <button
             onClick={() => { setActiveSubTab("campaigns"); handleResetForms(); }}
-            className={`px-3 py-1.5 rounded-lg text-[10px] font-sans font-bold uppercase transition-all whitespace-nowrap cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-sans font-bold uppercase transition-all whitespace-nowrap cursor-pointer ${
               activeSubTab === "campaigns" ? "bg-white text-black shadow-xs" : "text-[#777] hover:text-black"
             }`}
           >
@@ -470,7 +470,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
           </button>
           <button
             onClick={() => { setActiveSubTab("plans"); handleResetForms(); }}
-            className={`px-3 py-1.5 rounded-lg text-[10px] font-sans font-bold uppercase transition-all whitespace-nowrap cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-sans font-bold uppercase transition-all whitespace-nowrap cursor-pointer ${
               activeSubTab === "plans" ? "bg-white text-black shadow-xs" : "text-[#777] hover:text-black"
             }`}
           >
@@ -513,7 +513,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                 {isEditing ? <Edit2 className="w-4 h-4 text-champagne" /> : <Plus className="w-4 h-4 text-champagne" />}
                 {isEditing ? "Modify Record" : "Add New Record"}
               </h5>
-              <p className="text-[10px] text-[#777] font-sans uppercase">
+              <p className="text-[11px] text-[#777] font-sans uppercase">
                 {activeSubTab === "sections" ? "Catwalk Category Configuration" : activeSubTab === "campaigns" ? "Brand Campaign Retainer Draft" : "Prestige Membership Tier & Perks"}
               </p>
             </div>
@@ -522,7 +522,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
             {activeSubTab === "sections" && (
               <form onSubmit={handleSectionSubmit} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Section Runway Title</label>
+                  <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Section Runway Title</label>
                   <input
                     type="text"
                     required
@@ -533,7 +533,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Runway Subtitle / Theme</label>
+                  <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Runway Subtitle / Theme</label>
                   <input
                     type="text"
                     required
@@ -544,7 +544,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Brand/Section Accent Color</label>
+                  <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Brand/Section Accent Color</label>
                   <div className="flex gap-2">
                     <input
                       type="color"
@@ -567,7 +567,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 py-2 bg-black hover:bg-neutral-800 text-white font-sans text-[10px] font-bold uppercase rounded-xl tracking-wider cursor-pointer transition-colors"
+                    className="flex-1 py-2 bg-black hover:bg-neutral-800 text-white font-sans text-[11px] font-bold uppercase rounded-xl tracking-wider cursor-pointer transition-colors"
                   >
                     {isEditing ? "Save Section" : "Create Section"}
                   </button>
@@ -575,7 +575,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                     <button
                       type="button"
                       onClick={handleResetForms}
-                      className="px-3 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-sans text-[10px] font-bold uppercase rounded-xl cursor-pointer"
+                      className="px-3 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-sans text-[11px] font-bold uppercase rounded-xl cursor-pointer"
                     >
                       Cancel
                     </button>
@@ -589,7 +589,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
               <form onSubmit={handleCampaignSubmit} className="space-y-3.5">
                 <div className="grid grid-cols-2 gap-2.5">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Brand Name</label>
+                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Brand Name</label>
                     <input
                       type="text"
                       required
@@ -600,7 +600,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Campaign Title</label>
+                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Campaign Title</label>
                     <input
                       type="text"
                       required
@@ -614,7 +614,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
 
                 <div className="grid grid-cols-2 gap-2.5">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Roster Niche</label>
+                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Roster Niche</label>
                     <input
                       type="text"
                       required
@@ -625,7 +625,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Retainer Budget</label>
+                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Retainer Budget</label>
                     <input
                       type="text"
                       required
@@ -639,7 +639,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
 
                 <div className="grid grid-cols-2 gap-2.5">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Contract Duration</label>
+                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Contract Duration</label>
                     <input
                       type="text"
                       required
@@ -650,7 +650,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Location Location</label>
+                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Location Location</label>
                     <input
                       type="text"
                       required
@@ -663,7 +663,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Campaign Description</label>
+                  <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Campaign Description</label>
                   <textarea
                     required
                     rows={2}
@@ -675,7 +675,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Model Requirements Summary</label>
+                  <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Model Requirements Summary</label>
                   <input
                     type="text"
                     required
@@ -687,7 +687,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Premium Perks (Comma Separated)</label>
+                  <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Premium Perks (Comma Separated)</label>
                   <input
                     type="text"
                     value={campaignForm.perksString}
@@ -695,14 +695,14 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                     className="w-full px-3 py-2 bg-white border border-black/10 rounded-xl text-xs font-serif-text"
                     placeholder="Sabyasachi cover photo shoot, retainer fees"
                   />
-                  <p className="text-[10px] text-[#888] italic">Separate contract deliverables using commas.</p>
+                  <p className="text-[11px] text-[#888] italic">Separate contract deliverables using commas.</p>
                 </div>
 
                 <div className="flex gap-2 pt-1">
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 py-2 bg-black hover:bg-neutral-800 text-white font-sans text-[10px] font-bold uppercase rounded-xl tracking-wider cursor-pointer transition-colors"
+                    className="flex-1 py-2 bg-black hover:bg-neutral-800 text-white font-sans text-[11px] font-bold uppercase rounded-xl tracking-wider cursor-pointer transition-colors"
                   >
                     {isEditing ? "Save Campaign" : "Draft Campaign"}
                   </button>
@@ -710,7 +710,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                     <button
                       type="button"
                       onClick={handleResetForms}
-                      className="px-3 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-sans text-[10px] font-bold uppercase rounded-xl cursor-pointer"
+                      className="px-3 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-sans text-[11px] font-bold uppercase rounded-xl cursor-pointer"
                     >
                       Cancel
                     </button>
@@ -724,7 +724,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
               <form onSubmit={handlePlanSubmit} className="space-y-3.5">
                 <div className="grid grid-cols-2 gap-2.5">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Tier Name</label>
+                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Tier Name</label>
                     <input
                       type="text"
                       required
@@ -735,7 +735,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Sub Badge Title</label>
+                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Sub Badge Title</label>
                     <input
                       type="text"
                       required
@@ -749,7 +749,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
 
                 <div className="grid grid-cols-2 gap-2.5">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Price String</label>
+                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Price String</label>
                     <input
                       type="text"
                       required
@@ -760,7 +760,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Billing Period</label>
+                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Billing Period</label>
                     <input
                       type="text"
                       required
@@ -774,7 +774,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
 
                 <div className="grid grid-cols-2 gap-2.5">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Display Icon</label>
+                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Display Icon</label>
                     <select
                       value={planForm.icon}
                       onChange={(e) => setPlanForm(prev => ({ ...prev, icon: e.target.value }))}
@@ -786,7 +786,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Border Color Hex</label>
+                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Border Color Hex</label>
                     <div className="flex gap-2">
                       <input
                         type="color"
@@ -806,7 +806,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Dynamic Perks (Comma Separated)</label>
+                  <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Dynamic Perks (Comma Separated)</label>
                   <textarea
                     required
                     rows={3}
@@ -815,7 +815,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                     className="w-full px-3 py-2 bg-white border border-black/10 rounded-xl text-xs resize-none"
                     placeholder="Bespoke obsidian badges, Dedicated personal talent manager, Front-row national Brand Campaign passes"
                   />
-                  <p className="text-[10px] text-[#888] italic">Separate premium inclusions using commas.</p>
+                  <p className="text-[11px] text-[#888] italic">Separate premium inclusions using commas.</p>
                 </div>
 
                 <div className="flex items-center gap-2 py-1 bg-[#FAF9F6] p-2.5 rounded-xl border border-black/[0.02]">
@@ -826,7 +826,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                     onChange={(e) => setPlanForm(prev => ({ ...prev, popular: e.target.checked }))}
                     className="w-4 h-4 text-champagne rounded border-black/10 accent-champagne cursor-pointer"
                   />
-                  <label htmlFor="popular-checkbox" className="text-[10px] font-sans font-bold text-neutral-700 uppercase cursor-pointer select-none">
+                  <label htmlFor="popular-checkbox" className="text-[11px] font-sans font-bold text-neutral-700 uppercase cursor-pointer select-none">
                     Highlight Tier as "Popular / Best Value"
                   </label>
                 </div>
@@ -835,7 +835,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 py-2 bg-black hover:bg-neutral-800 text-white font-sans text-[10px] font-bold uppercase rounded-xl tracking-wider cursor-pointer transition-colors"
+                    className="flex-1 py-2 bg-black hover:bg-neutral-800 text-white font-sans text-[11px] font-bold uppercase rounded-xl tracking-wider cursor-pointer transition-colors"
                   >
                     {isEditing ? "Save Plan" : "Publish Plan"}
                   </button>
@@ -843,7 +843,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                     <button
                       type="button"
                       onClick={handleResetForms}
-                      className="px-3 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-sans text-[10px] font-bold uppercase rounded-xl cursor-pointer"
+                      className="px-3 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-sans text-[11px] font-bold uppercase rounded-xl cursor-pointer"
                     >
                       Cancel
                     </button>
@@ -860,12 +860,12 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
           
           <div className="bg-white/60 rounded-2xl border border-black/5 overflow-hidden">
             <div className="px-4 py-3 bg-[#FAF9F6] border-b border-black/5 flex items-center justify-between">
-              <span className="text-[10px] font-sans font-bold text-neutral-800 uppercase tracking-widest">
+              <span className="text-[11px] font-sans font-bold text-neutral-800 uppercase tracking-widest">
                 Active {activeSubTab === "sections" ? "Catwalk Sections" : activeSubTab === "campaigns" ? "Brand Campaign Retainers" : "Prestige Roster Club Tiers"} ({
                   activeSubTab === "sections" ? sections.length : activeSubTab === "campaigns" ? campaigns.length : plans.length
                 })
               </span>
-              {loading && <span className="text-[10px] font-mono font-semibold text-champagne animate-pulse uppercase">Syncing...</span>}
+              {loading && <span className="text-[11px] font-mono font-semibold text-champagne animate-pulse uppercase">Syncing...</span>}
             </div>
 
             <div className="divide-y divide-black/5 max-h-[580px] overflow-y-auto">
@@ -879,7 +879,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                       <h6 className="font-serif-display text-sm font-bold text-black">{sec.title}</h6>
                     </div>
                     <p className="text-[11px] text-[#666] font-serif-text italic">{sec.subtitle}</p>
-                    <span className="text-[10px] font-mono text-[#888] bg-black/[0.03] px-1.5 py-0.5 rounded uppercase">ROUTE KEY: {sec.id}</span>
+                    <span className="text-[11px] font-mono text-[#888] bg-black/[0.03] px-1.5 py-0.5 rounded uppercase">ROUTE KEY: {sec.id}</span>
                   </div>
 
                   <div className="flex gap-1">
@@ -906,7 +906,7 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                 <div key={camp.id} className="p-4 space-y-2 hover:bg-white/30 transition-all">
                   <div className="flex justify-between items-start gap-4">
                     <div>
-                      <span className="text-[10px] font-sans font-bold text-[#888] uppercase bg-black/[0.03] px-1.5 py-0.5 rounded">
+                      <span className="text-[11px] font-sans font-bold text-[#888] uppercase bg-black/[0.03] px-1.5 py-0.5 rounded">
                         {camp.niche} • {camp.location}
                       </span>
                       <h6 className="font-serif-display text-sm font-bold text-black mt-1">{camp.brand} — <span className="font-sans font-normal text-[#555]">{camp.title}</span></h6>
@@ -932,26 +932,26 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
 
                   <p className="text-[11px] text-[#666] font-serif-text leading-relaxed">{camp.description}</p>
                   
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-[10px] bg-black/[0.01] p-2 rounded-xl border border-black/[0.02]">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-[11px] bg-black/[0.01] p-2 rounded-xl border border-black/[0.02]">
                     <div>
-                      <span className="text-[10px] font-sans font-bold text-[#999] uppercase block">Budget Retainer</span>
+                      <span className="text-[11px] font-sans font-bold text-[#999] uppercase block">Budget Retainer</span>
                       <strong className="text-black">{camp.budget}</strong>
                     </div>
                     <div>
-                      <span className="text-[10px] font-sans font-bold text-[#999] uppercase block">Contract Duration</span>
+                      <span className="text-[11px] font-sans font-bold text-[#999] uppercase block">Contract Duration</span>
                       <strong className="text-black">{camp.duration}</strong>
                     </div>
                     <div className="col-span-2 md:col-span-1">
-                      <span className="text-[10px] font-sans font-bold text-[#999] uppercase block">Requirement Index</span>
-                      <p className="text-[10px] text-[#555] truncate font-serif-text" title={camp.requirements}>{camp.requirements}</p>
+                      <span className="text-[11px] font-sans font-bold text-[#999] uppercase block">Requirement Index</span>
+                      <p className="text-[11px] text-[#555] truncate font-serif-text" title={camp.requirements}>{camp.requirements}</p>
                     </div>
                   </div>
 
                   {camp.perks && camp.perks.length > 0 && (
                     <div className="flex flex-wrap gap-1 items-center">
-                      <span className="text-[10px] font-sans font-bold text-[#888] uppercase tracking-wider">Perks:</span>
+                      <span className="text-[11px] font-sans font-bold text-[#888] uppercase tracking-wider">Perks:</span>
                       {camp.perks.map((p, i) => (
-                        <span key={i} className="text-[10px] font-sans font-semibold bg-champagne/10 border border-champagne/20 text-champagne px-1.5 py-0.5 rounded">
+                        <span key={i} className="text-[11px] font-sans font-semibold bg-champagne/10 border border-champagne/20 text-champagne px-1.5 py-0.5 rounded">
                           {p}
                         </span>
                       ))}
@@ -970,17 +970,17 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
                           {renderIconComponent(plan.icon)}
                         </span>
                         <h6 className="font-serif-display text-sm font-bold text-black">{plan.name}</h6>
-                        <span className="text-[10px] font-sans font-bold px-1.5 py-0.5 bg-[#FAF9F6] border border-black/5 rounded text-neutral-600 uppercase">
+                        <span className="text-[11px] font-sans font-bold px-1.5 py-0.5 bg-[#FAF9F6] border border-black/5 rounded text-neutral-600 uppercase">
                           {plan.badge}
                         </span>
                         {plan.popular && (
-                          <span className="text-[10px] font-sans font-bold px-1.5 py-0.5 bg-champagne text-black rounded uppercase tracking-wider">
+                          <span className="text-[11px] font-sans font-bold px-1.5 py-0.5 bg-champagne text-black rounded uppercase tracking-wider">
                             BEST VALUE
                           </span>
                         )}
                       </div>
                       <div className="text-[11px] font-mono text-neutral-800">
-                        {plan.price} / <span className="text-[#666] text-[10px]">{plan.period}</span>
+                        {plan.price} / <span className="text-[#666] text-[11px]">{plan.period}</span>
                       </div>
                     </div>
 
@@ -1004,10 +1004,10 @@ export default function AdminContentManager({ token, onRefresh }: AdminContentMa
 
                   {plan.perks && plan.perks.length > 0 && (
                     <div className="space-y-1 bg-black/[0.01] p-3 rounded-xl border border-black/[0.02]">
-                      <span className="text-[10px] font-sans font-bold text-[#888] uppercase block tracking-wider">PREMIUM DELIVERABLES & INCLUSIONS</span>
+                      <span className="text-[11px] font-sans font-bold text-[#888] uppercase block tracking-wider">PREMIUM DELIVERABLES & INCLUSIONS</span>
                       <ul className="grid grid-cols-1 md:grid-cols-2 gap-1">
                         {plan.perks.map((perk, idx) => (
-                          <li key={idx} className="text-[10px] font-serif-text text-neutral-600 flex items-start gap-1">
+                          <li key={idx} className="text-[11px] font-serif-text text-neutral-600 flex items-start gap-1">
                             <span className="text-champagne shrink-0 mt-0.5 font-bold">✓</span>
                             <span>{perk}</span>
                           </li>

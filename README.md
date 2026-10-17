@@ -22,6 +22,18 @@ npm run lint         # TypeScript type-check
 
 Default admin login: `admin` / `admin123` (the panel forces you to change it).
 
+## Tests and audit
+
+```bash
+npm test                                   # type-check + unit tests (brand filter, validation, Node ↔ PHP parity)
+npm run audit -- http://127.0.0.1:8080     # SEO, status codes, 404s, branding, links, WCAG 2.2 AA (axe) at 3 screen sizes
+npm run test:journeys -- http://127.0.0.1:8080   # navigation + every public form, end to end, in a real browser
+```
+
+`audit` is read-only and can also be pointed at the live site. `test:journeys` submits test
+enquiries (example.com addresses), so it refuses to run against anything but a local build.
+Both use Playwright's Chromium (`npx playwright install chromium` once if it is missing).
+
 ## Build the live-site bundle
 
 ```bash
@@ -42,7 +54,8 @@ php -S localhost:8080 -t release/fsia-influencer-live php-backend/dev-router.php
 `src/seo.ts` is the single source for page URLs, titles, descriptions and structured data.
 `scripts/prerender-seo.ts` runs after `vite build` and writes one HTML file per route
 (`dist/talent/index.html`, …) with complete meta tags and crawlable fallback content,
-plus `robots.txt` and `sitemap.xml`. In the browser the same data keeps `<head>` in sync
+plus `robots.txt`, `sitemap.xml` and a `noindex` `404.html` that both servers return with a
+real 404 status for unknown URLs (no soft 404s). In the browser the same data keeps `<head>` in sync
 as visitors move between sections.
 
 ## Admin panel

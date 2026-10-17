@@ -511,7 +511,7 @@ export function createDefaultDb(): DatabaseSchema {
     influencer_applications: [],
     membership_plans: INITIAL_PLANS,
     enquiries: [],
-    migrations: { debrand_v1: "seed" }
+    migrations: { debrand_v1: "seed", debrand_v2: "seed" }
   }));
 }
 
@@ -542,17 +542,22 @@ export function needsRehash(stored: string): boolean {
 }
 
 // ----------------------------------------------------
-// BRAND DECOUPLING — strip "Forever" branding from stored content (one-time migration)
+// BRAND DECOUPLING — the retired "Forever" brand word must never be published.
+// Applied to stored content (migrations below) and to every public API response,
+// so text typed in later by admins or applicants is covered too.
 // Keep in sync with debrand_text() in php-backend/api/lib/helpers.php
 // ----------------------------------------------------
 // A null replacement keeps the first capture group
 const DEBRAND_RULES: [RegExp, string | null][] = [
-  [/FSIA\s*[—-]\s*Forever Star India Awards/g, "FSIA Creators & Influencer Portal"],
+  [/FSIA\s*[—-]\s*Forever Star India Awards/gi, "FSIA Creators & Influencer Portal"],
   [/Forever Star India(?: Awards| Association)?(?: \(FSIA\))?/gi, "FSIA Influencer"],
   [/\bForever Free\b/gi, "Always Free"],
-  // Brand prefix only (capitalised); ordinary prose such as "forever young" is left alone
-  [/\b(?:Forever|FOREVER)\s+/g, ""],
-  [/\s*\b(?:Forever|FOREVER)\b/g, ""],
+  // Lower-case prose ("stay forever young") keeps its meaning with "always"
+  [/\bforever\b/g, "always"],
+  // Any other spelling is the old brand prefix or suffix: drop it
+  [/\bforever\s+/gi, ""],
+  [/\s*\bforever\b/gi, ""],
+  [/forever/gi, ""],
   [/\b(FSIA Influencer) Influencer\b/gi, null]
 ];
 
@@ -567,7 +572,7 @@ export function debrandText(text: string): string {
   );
 }
 
-function debrandValue<T>(value: T): T {
+export function debrandValue<T>(value: T): T {
   if (typeof value === "string") {
     return (/^(https?:|data:)/i.test(value) ? value : debrandText(value)) as T;
   }
@@ -634,6 +639,15 @@ export function getDb(): DatabaseSchema {
       parsed.membership_plans = debrandValue(parsed.membership_plans);
       parsed.system_settings = debrandValue(parsed.system_settings);
       parsed.migrations = { ...parsed.migrations, debrand_v1: new Date().toISOString() };
+      saveDb(parsed);
+    }
+    if (!parsed.migrations?.debrand_v2) {
+      // v2 rules are case-insensitive (v1 only matched capitalised spellings)
+      parsed.creators = debrandValue(parsed.creators);
+      parsed.campaigns = debrandValue(parsed.campaigns);
+      parsed.membership_plans = debrandValue(parsed.membership_plans);
+      parsed.system_settings = debrandValue(parsed.system_settings);
+      parsed.migrations = { ...parsed.migrations, debrand_v2: new Date().toISOString() };
       saveDb(parsed);
     }
     return parsed;

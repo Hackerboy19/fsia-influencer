@@ -1,6 +1,9 @@
 # FSIA Influencer — Apache / LiteSpeed configuration
 Options -Indexes
 DirectoryIndex index.html
+# Unknown URLs get a real 404 status (not the home page) so search engines never
+# index soft 404s. /talent → /talent/ is redirected by mod_dir (DirectorySlash).
+ErrorDocument 404 /404.html
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
@@ -19,10 +22,8 @@ DirectoryIndex index.html
     RewriteCond %{REQUEST_URI} !^/api/index\.php
     RewriteRule ^api(/.*)?$ api/index.php [QSA,L]
 
-    # Single-page app fallback
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^ index.html [L]
+    # No single-page-app fallback: every public page is a prerendered folder
+    # (talent/index.html, campaigns/index.html …), so anything else is a 404.
 </IfModule>
 
 <IfModule mod_headers.c>
@@ -32,8 +33,11 @@ DirectoryIndex index.html
     <FilesMatch "\.(js|css|woff2?|png|jpe?g|svg|webp)$">
         Header set Cache-Control "public, max-age=31536000, immutable"
     </FilesMatch>
-    <FilesMatch "index\.html$">
+    <FilesMatch "(index|404)\.html$">
         Header set Cache-Control "no-cache"
+    </FilesMatch>
+    <FilesMatch "^404\.html$">
+        Header set X-Robots-Tag "noindex"
     </FilesMatch>
 </IfModule>
 

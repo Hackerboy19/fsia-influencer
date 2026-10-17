@@ -14,6 +14,8 @@ require __DIR__ . '/lib/Store.php';
 header('Content-Type: application/json; charset=UTF-8');
 header('X-Content-Type-Options: nosniff');
 header('Cache-Control: no-store');
+// API responses are data for the app, not pages: keep them out of search results
+header('X-Robots-Tag: noindex, nofollow');
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 if ($method === 'OPTIONS') {
@@ -220,7 +222,7 @@ try {
     };
 
     if ($is('GET', 'sections') || $is('GET', 'creators/categories') || $is('GET', 'creators')) {
-        respond($db['creators']);
+        respond(debrand_value($db['creators']));
     }
 
     if ($is('POST', 'sections') || $is('POST', 'creators/categories')) {
@@ -388,7 +390,7 @@ try {
     };
 
     if ($is('GET', 'membership-plans')) {
-        respond($db['membership_plans']);
+        respond(debrand_value($db['membership_plans']));
     }
 
     if ($is('POST', 'membership-plans')) {
@@ -431,7 +433,7 @@ try {
     }
 
     if ($is('GET', 'campaigns')) {
-        respond($db['campaigns']);
+        respond(debrand_value($db['campaigns']));
     }
 
     if ($is('POST', 'campaigns')) {
@@ -487,6 +489,9 @@ try {
         }
         if (!valid_email($body['contactEmail'])) {
             fail(400, 'Please provide a valid contact email address.');
+        }
+        if (!valid_phone($body['contactPhone'])) {
+            fail(400, PHONE_ERROR);
         }
         $registration = [
             'id' => 'reg-' . now_ms(),
@@ -557,6 +562,9 @@ try {
         }
         if (!valid_email($body['email'])) {
             fail(400, 'Please provide a valid email address.');
+        }
+        if (!valid_phone($body['phone'])) {
+            fail(400, PHONE_ERROR);
         }
         $portfolio = $body['portfolio'] ?? [];
         if (is_string($portfolio)) {
@@ -654,6 +662,9 @@ try {
         if (!valid_email(trim((string)$body['email']))) {
             fail(400, 'Please provide a valid email address.');
         }
+        if (!valid_phone($body['phone'])) {
+            fail(400, PHONE_ERROR);
+        }
         $details = [];
         if (is_array($body['details'] ?? null)) {
             foreach (array_slice($body['details'], 0, 12, true) as $k => $v) {
@@ -724,7 +735,7 @@ try {
         foreach (['geminiApiKey', 'aiSystemPrompt', 'modelSelection', 'temperature', 'topK'] as $private) {
             unset($public[$private]);
         }
-        respond($public);
+        respond(debrand_value($public));
     }
 
     if ($is('GET', 'admin/settings')) {
@@ -819,7 +830,7 @@ try {
         }
         $logEntry($text, 'success');
         $store->save();
-        respond(['success' => true, 'optimizedPitch' => $text]);
+        respond(['success' => true, 'optimizedPitch' => debrand_text($text)]);
     }
 
     // ------------------------------------------------

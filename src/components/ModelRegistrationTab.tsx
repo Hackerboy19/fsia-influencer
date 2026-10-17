@@ -1,5 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { resizeImageFile } from "../lib/image";
+import {
+  inputClass, labelClass, helpClass, optionalClass, errorBoxClass,
+  isValidEmail, isValidPhone, EMAIL_ERROR, PHONE_ERROR, focusField
+} from "../lib/forms";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -54,10 +58,18 @@ const STEPS = [
   { title: "Contact & submit", hint: "How we reach you" }
 ];
 
-const inputClass =
-  "w-full px-4 py-3 bg-white border border-stone-300 rounded-xl text-[15px] text-[#111] focus:outline-none focus:border-[#111] focus:ring-2 focus:ring-[#E1C699]/60";
-const labelClass = "block text-sm font-semibold text-[#111] mb-1.5";
-const helpClass = "text-[13px] text-[#47453f] mt-1";
+// Unsent answers survive a reload or an accidental tab switch (cleared after a successful submit)
+const DRAFT_KEY = "fsia_registration_draft";
+const DRAFT_FIELDS = ["name", "category", "role", "city", "bio", "reach", "engagement", "quote", "email", "phone", "portfolioUrls"] as const;
+type Draft = Partial<Record<(typeof DRAFT_FIELDS)[number], string>>;
+
+function readDraft(): Draft {
+  try {
+    return JSON.parse(sessionStorage.getItem(DRAFT_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
 
 function navigateTo(tab: string) {
   window.dispatchEvent(new CustomEvent("change-tab", { detail: tab }));
@@ -71,29 +83,50 @@ export default function ModelRegistrationTab() {
   const [categories, setCategories] = useState<RunwayCategory[]>([]);
   const [loadingCats, setLoadingCats] = useState(true);
   const [step, setStep] = useState(0);
+  const draft = useRef(readDraft()).current;
 
   // Form state
-  const [name, setName] = useState("");
-  const [category, setCategory] = useState("");
-  const [role, setRole] = useState("");
-  const [city, setCity] = useState("Mumbai");
+  const [name, setName] = useState(draft.name || "");
+  const [category, setCategory] = useState(draft.category || "");
+  const [role, setRole] = useState(draft.role || "");
+  const [city, setCity] = useState(draft.city || "Mumbai");
   const [imageType, setImageType] = useState<"upload" | "preset" | "custom">("upload");
   const [presetImage, setPresetImage] = useState(PRESET_PORTRAITS[0].url);
   const [customImage, setCustomImage] = useState("");
   const [uploadedFileName, setUploadedFileName] = useState("");
   const [isDragActive, setIsDragActive] = useState(false);
-  const [bio, setBio] = useState("");
-  const [reach, setReach] = useState("");
-  const [engagement, setEngagement] = useState("");
-  const [quote, setQuote] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [portfolioUrls, setPortfolioUrls] = useState("");
+  const [bio, setBio] = useState(draft.bio || "");
+  const [reach, setReach] = useState(draft.reach || "");
+  const [engagement, setEngagement] = useState(draft.engagement || "");
+  const [quote, setQuote] = useState(draft.quote || "");
+  const [email, setEmail] = useState(draft.email || "");
+  const [phone, setPhone] = useState(draft.phone || "");
+  const [portfolioUrls, setPortfolioUrls] = useState(draft.portfolioUrls || "");
 
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successData, setSuccessData] = useState<any | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const [invalidField, setInvalidField] = useState("");
+  const invalid = (id: string) => (invalidField === id ? true : undefined);
+
+  useEffect(() => {
+    const values: Draft = { name, category, role, city, bio, reach, engagement, quote, email, phone, portfolioUrls };
+    try {
+      if (successData) sessionStorage.removeItem(DRAFT_KEY);
+      else sessionStorage.setItem(DRAFT_KEY, JSON.stringify(values));
+    } catch {}
+  }, [name, category, role, city, bio, reach, engagement, quote, email, phone, portfolioUrls, successData]);
+
+  // Moving between steps puts keyboard focus on the first field of the new step
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    focusField(["reg-name", "reg-reach", "reg-email"][step]);
+  }, [step]);
 
   useEffect(() => {
     fetch("/api/creators")
@@ -104,7 +137,8 @@ export default function ModelRegistrationTab() {
       .then((data) => {
         const cats = data.map((sec: any) => ({ id: sec.id, title: sec.title }));
         setCategories(cats);
-        if (cats.length > 0) setCategory(cats[0].id);
+        // Keep a category restored from the draft if it still exists
+        if (cats.length > 0) setCategory((current) => (cats.some((c: RunwayCategory) => c.id === current) ? current : cats[0].id));
       })
       .catch(() => setErrorMsg("We couldn't load categories. Please refresh the page."))
       .finally(() => setLoadingCats(false));
@@ -123,42 +157,52 @@ export default function ModelRegistrationTab() {
   const finalImage =
     imageType === "preset" ? presetImage : customImage || (imageType === "upload" ? "" : "");
 
-  // Per-step validation keeps errors next to the fields that caused them
-  const validateStep = (index: number): string => {
+  // Per-step validation: the message names the problem and focus moves to the field
+  type Problem = { field: string; message: string } | null;
+  const validateStep = (index: number): Problem => {
     if (index === 0) {
-      if (!name.trim()) return "Please enter your full name.";
-      if (!category) return "Please choose a category.";
-    }
-    if (index === 2) {
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return "Please enter a valid email address.";
-      if (phone.replace(/\D/g, "").length < 10) return "Please enter a valid mobile number (at least 10 digits).";
+      if (!name.trim()) return { field: "reg-name", message: "Please enter your full name." };
+      if (!category) return { field: "reg-category", message: "Please choose a category." };
     }
     if (index === 1 && imageType === "custom" && customImage && !/^https?:\/\//i.test(customImage)) {
-      return "The image link must start with http:// or https://";
+      return { field: "reg-image-link", message: "The image link must start with http:// or https://" };
     }
-    return "";
+    if (index === 2) {
+      if (!isValidEmail(email)) return { field: "reg-email", message: EMAIL_ERROR };
+      if (!isValidPhone(phone)) return { field: "reg-phone", message: PHONE_ERROR };
+    }
+    return null;
+  };
+
+  const showProblem = (problem: Problem) => {
+    setInvalidField(problem?.field || "");
+    setErrorMsg(problem?.message || "");
+    if (problem) focusField(problem.field);
   };
 
   const goNext = () => {
-    const error = validateStep(step);
-    setErrorMsg(error);
-    if (!error) setStep((s) => Math.min(s + 1, STEPS.length - 1));
+    const problem = validateStep(step);
+    showProblem(problem);
+    if (!problem) setStep((s) => Math.min(s + 1, STEPS.length - 1));
   };
 
   const goBack = () => {
-    setErrorMsg("");
+    showProblem(null);
     setStep((s) => Math.max(s - 1, 0));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (step < STEPS.length - 1) {
       goNext();
       return;
     }
-    const error = validateStep(0) || validateStep(1) || validateStep(2);
-    if (error) {
-      setErrorMsg(error);
+    const problem = validateStep(0) || validateStep(1) || validateStep(2);
+    if (problem) {
+      const problemStep = ["reg-name", "reg-category"].includes(problem.field) ? 0 : problem.field === "reg-image-link" ? 1 : 2;
+      setStep(problemStep);
+      showProblem(problem);
       return;
     }
 
@@ -220,6 +264,7 @@ export default function ModelRegistrationTab() {
     setPhone("");
     setPortfolioUrls("");
     setErrorMsg("");
+    setInvalidField("");
     setSuccessData(null);
   };
 
@@ -294,14 +339,14 @@ export default function ModelRegistrationTab() {
                   <>
                     <div>
                       <label htmlFor="reg-name" className={labelClass}>Full name *</label>
-                      <input id="reg-name" type="text" autoComplete="name" autoFocus placeholder="e.g. Priya Sharma"
-                        value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
+                      <input id="reg-name" type="text" autoComplete="name" placeholder="e.g. Priya Sharma" aria-required="true"
+                        aria-invalid={invalid("reg-name")} value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <div>
                         <label htmlFor="reg-category" className={labelClass}>Category *</label>
                         <select id="reg-category" value={category} onChange={(e) => setCategory(e.target.value)}
-                          className={inputClass} disabled={loadingCats}>
+                          aria-required="true" aria-invalid={invalid("reg-category")} className={inputClass} disabled={loadingCats}>
                           {loadingCats && <option>Loading…</option>}
                           {categories.map((cat) => (
                             <option key={cat.id} value={cat.id}>{cat.title}</option>
@@ -318,7 +363,7 @@ export default function ModelRegistrationTab() {
                       </div>
                     </div>
                     <div>
-                      <label htmlFor="reg-role" className={labelClass}>Title or achievement <span className="font-normal text-[#47453f]">(optional)</span></label>
+                      <label htmlFor="reg-role" className={labelClass}>Title or achievement <span className={optionalClass}>(optional)</span></label>
                       <input id="reg-role" type="text" placeholder="e.g. Fashion creator, Winner Miss India 2026"
                         value={role} onChange={(e) => setRole(e.target.value)} className={inputClass} />
                     </div>
@@ -382,7 +427,8 @@ export default function ModelRegistrationTab() {
 
                       {imageType === "custom" && (
                         <div>
-                          <input type="url" placeholder="https://…" value={customImage}
+                          <input id="reg-image-link" type="url" placeholder="https://…" value={customImage}
+                            aria-invalid={invalid("reg-image-link")}
                             onChange={(e) => setCustomImage(e.target.value)} className={inputClass} aria-label="Image link" />
                           <p className={helpClass}>Use a public link that starts with https://</p>
                         </div>
@@ -405,7 +451,7 @@ export default function ModelRegistrationTab() {
                     </div>
 
                     <div>
-                      <label htmlFor="reg-bio" className={labelClass}>Short bio <span className="font-normal text-[#47453f]">(optional)</span></label>
+                      <label htmlFor="reg-bio" className={labelClass}>Short bio <span className={optionalClass}>(optional)</span></label>
                       <textarea id="reg-bio" rows={3} placeholder="Your niche, style and the brands you'd love to work with."
                         value={bio} onChange={(e) => setBio(e.target.value)} className={inputClass} />
                     </div>
@@ -427,6 +473,7 @@ export default function ModelRegistrationTab() {
                         <div className="relative">
                           <Mail className="w-4 h-4 text-[#47453f] absolute left-3.5 top-1/2 -translate-y-1/2" />
                           <input id="reg-email" type="email" autoComplete="email" inputMode="email" placeholder="you@example.com"
+                            aria-required="true" aria-invalid={invalid("reg-email")}
                             value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass + " pl-10"} />
                         </div>
                       </div>
@@ -435,13 +482,14 @@ export default function ModelRegistrationTab() {
                         <div className="relative">
                           <Phone className="w-4 h-4 text-[#47453f] absolute left-3.5 top-1/2 -translate-y-1/2" />
                           <input id="reg-phone" type="tel" autoComplete="tel" inputMode="tel" placeholder="+91 98765 43210"
+                            aria-required="true" aria-invalid={invalid("reg-phone")}
                             value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass + " pl-10"} />
                         </div>
                       </div>
                     </div>
 
                     <div>
-                      <label htmlFor="reg-quote" className={labelClass}>Your motto <span className="font-normal text-[#47453f]">(optional)</span></label>
+                      <label htmlFor="reg-quote" className={labelClass}>Your motto <span className={optionalClass}>(optional)</span></label>
                       <input id="reg-quote" type="text" placeholder="A line that sums up your style"
                         value={quote} onChange={(e) => setQuote(e.target.value)} className={inputClass} />
                     </div>
@@ -464,7 +512,7 @@ export default function ModelRegistrationTab() {
                 )}
 
                 {errorMsg && (
-                  <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-800 text-sm rounded-lg font-medium">
+                  <div role="alert" className={errorBoxClass}>
                     {errorMsg}
                   </div>
                 )}
@@ -476,7 +524,7 @@ export default function ModelRegistrationTab() {
                       <ArrowLeft className="w-4 h-4" /> Back
                     </button>
                   ) : <span />}
-                  <button type="submit" disabled={isSubmitting || loadingCats}
+                  <button type="submit" disabled={isSubmitting || loadingCats} aria-busy={isSubmitting}
                     className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#111] hover:bg-[#222] text-white font-semibold text-sm cursor-pointer disabled:opacity-60">
                     {isSubmitting ? (
                       <>

@@ -88,8 +88,18 @@ function display_date(): string
 
 function valid_email($email): bool
 {
-    return (bool)preg_match('/^[^\s@]+@[^\s@]+\.[^\s@]+$/', (string)$email);
+    return (bool)preg_match('/^[^\s@]+@[^\s@]+\.[^\s@]+$/', trim((string)$email));
 }
+
+// 10–15 digits; spaces, dashes, dots, brackets and a leading + allowed (keep in sync with isValidPhone() in server.ts)
+function valid_phone($phone): bool
+{
+    $phone = trim((string)$phone);
+    $digits = strlen(preg_replace('/\D/', '', $phone));
+    return (bool)preg_match('/^\+?[\d\s().-]+$/', $phone) && $digits >= 10 && $digits <= 15;
+}
+
+const PHONE_ERROR = 'Please provide a valid phone number (10 to 15 digits, e.g. +91 98765 43210).';
 
 // Accept only http(s) URLs or embedded raster images up to ~1.5 MB
 function safe_image($value, string $fallback): string
@@ -194,18 +204,23 @@ function require_admin(Store $store): string
 }
 
 // ----------------------------------------------------
-// BRAND DECOUPLING — strip "Forever" branding from stored content (one-time migration)
+// BRAND DECOUPLING — the retired "Forever" brand word must never be published.
+// Applied to stored content (migrations in Store.php) and to every public API
+// response, so text typed in later by admins or applicants is covered too.
 // Keep in sync with debrandText() in server/db.ts
 // ----------------------------------------------------
 function debrand_text(string $text): string
 {
     $rules = [
-        ['/FSIA\s*[—-]\s*Forever Star India Awards/u', 'FSIA Creators & Influencer Portal'],
+        ['/FSIA\s*[—-]\s*Forever Star India Awards/iu', 'FSIA Creators & Influencer Portal'],
         ['/Forever Star India(?: Awards| Association)?(?: \(FSIA\))?/iu', 'FSIA Influencer'],
         ['/\bForever Free\b/iu', 'Always Free'],
-        // Brand prefix only (capitalised); ordinary prose such as "forever young" is left alone
-        ['/\b(?:Forever|FOREVER)\s+/u', ''],
-        ['/\s*\b(?:Forever|FOREVER)\b/u', ''],
+        // Lower-case prose ("stay forever young") keeps its meaning with "always"
+        ['/\bforever\b/u', 'always'],
+        // Any other spelling is the old brand prefix or suffix: drop it
+        ['/\bforever\s+/iu', ''],
+        ['/\s*\bforever\b/iu', ''],
+        ['/forever/iu', ''],
         ['/\b(FSIA Influencer) Influencer\b/iu', null],
     ];
     foreach ($rules as [$pattern, $replacement]) {

@@ -24,16 +24,16 @@ export default function FaqTab() {
         <span className="font-sans text-xs tracking-[0.3em] text-[#8E8D8A] uppercase font-bold block">
           FSIA Information Desk
         </span>
-        <h2 className="font-serif-display text-3xl md:text-5xl font-bold tracking-tight text-[#111]">
+        <h1 className="font-serif-display text-3xl md:text-5xl font-bold tracking-tight text-[#111]">
           Guidelines & Frequently Asked Questions
-        </h2>
-        <p className="font-serif-text italic text-[#666] text-sm md:text-base max-w-2xl">
+        </h1>
+        <p className="font-serif-text italic text-[#2e2c29] text-base md:text-lg leading-relaxed max-w-2xl">
           Everything you need to know about our elite influencer ecosystem, verified credentials, secure escrows, and runway opportunities.
         </p>
       </div>
 
       {/* Category Pills */}
-      <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none border-b border-black/5 pb-4">
+      <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none border-b border-black/5 pb-4" role="group" aria-label="Filter questions by topic">
         {categories.map((cat) => (
           <button
             key={cat}
@@ -41,10 +41,11 @@ export default function FaqTab() {
               setSelectedCategory(cat as any);
               setOpenIndex(null);
             }}
-            className={`px-4 py-1.5 rounded-full text-xs font-sans tracking-wide transition-all cursor-pointer ${
+            aria-pressed={selectedCategory === cat}
+            className={`px-4 py-2 rounded-full text-[13px] font-sans font-semibold tracking-wide transition-all cursor-pointer border ${
               selectedCategory === cat
-                ? "bg-champagne text-[#111] font-semibold"
-                : "bg-white hover:bg-[#F3F3F1] border border-black/5 text-[#555]"
+                ? "bg-[#111] border-[#111] text-white"
+                : "bg-white hover:bg-[#F3F3F1] border-black/15 text-[#2e2c29]"
             }`}
           >
             {cat}
@@ -61,9 +62,13 @@ export default function FaqTab() {
               key={idx}
               className="bg-white/60 border border-black/5 rounded-2xl overflow-hidden transition-all shadow-sm"
             >
+              <h2 className="m-0">
               <button
                 onClick={() => toggleOpen(idx)}
-                className="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-white/40 transition-colors focus:outline-none"
+                aria-expanded={isOpen}
+                aria-controls={`faq-answer-${idx}`}
+                id={`faq-question-${idx}`}
+                className="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-white/40 transition-colors"
               >
                 <div className="flex items-center gap-3.5">
                   <div className="w-8 h-8 rounded-lg bg-[#FAF9F6] border border-black/5 flex items-center justify-center text-champagne shrink-0">
@@ -81,22 +86,26 @@ export default function FaqTab() {
                   transition={{ duration: 0.2 }}
                   className="text-[#8E8D8A]"
                 >
-                  <ChevronDown className="w-5 h-5" />
+                  <ChevronDown className="w-5 h-5" aria-hidden="true" />
                 </motion.div>
               </button>
+              </h2>
 
               <AnimatePresence initial={false}>
                 {isOpen && (
                   <motion.div
+                    id={`faq-answer-${idx}`}
+                    role="region"
+                    aria-labelledby={`faq-question-${idx}`}
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
                     transition={{ duration: 0.3 }}
                     className="border-t border-black/5 bg-white/30"
                   >
-                    <div className="p-5 text-xs md:text-sm text-[#555] font-serif-text leading-relaxed space-y-3">
+                    <div className="p-5 text-base md:text-lg text-[#2e2c29] font-serif-text leading-relaxed space-y-3">
                       <p>{faq.answer}</p>
-                      <div className="flex items-center gap-2 text-[10px] font-sans font-bold tracking-widest text-[#8E8D8A] uppercase">
+                      <div className="flex items-center gap-2 text-[11px] font-sans font-bold tracking-widest text-[#8E8D8A] uppercase">
                         <span>CATEGORY: {faq.category}</span>
                         <span>•</span>
                         <span>AUDITED: YES</span>
@@ -113,10 +122,10 @@ export default function FaqTab() {
       {/* Support Box */}
       <div className="p-6 bg-white/80 border border-black/5 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="space-y-1.5 text-center md:text-left">
-          <h4 className="font-serif-display text-lg font-bold text-[#111]">
+          <h2 className="font-serif-display text-lg font-bold text-[#111]">
             Have custom business enquiries or corporate proposals?
-          </h4>
-          <p className="font-serif-text text-xs text-[#555] max-w-xl">
+          </h2>
+          <p className="text-sm text-[#2e2c29] leading-relaxed max-w-xl">
             Our luxury brand liaison desk is ready to organize custom agreements, Joint Runway Brand Campaign sponsorships, and legal brand integrations.
           </p>
         </div>

@@ -91,6 +91,15 @@ class Store
             $this->data = $data;
             $this->save();
         }
+        if (empty($data['migrations']['debrand_v2'])) {
+            // v2 rules are case-insensitive (v1 only matched capitalised spellings)
+            foreach (['creators', 'campaigns', 'membership_plans', 'system_settings'] as $key) {
+                $data[$key] = debrand_value($data[$key]);
+            }
+            $data['migrations']['debrand_v2'] = gmdate('c');
+            $this->data = $data;
+            $this->save();
+        }
         return $data;
     }
 
