@@ -3,14 +3,20 @@ import path from "path";
 import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
-import { getDb, saveDb, logAction, hashPassword, verifyPassword, needsRehash, createDefaultDb, debrandValue, GallerySection, Creator, Campaign, Registration } from "./server/db";
+import fs from "fs";
+import { getDb, saveDb, logAction, hashPassword, verifyPassword, needsRehash, createDefaultDb, debrandValue, DB_PATH, GallerySection, Creator, Campaign, Registration } from "./server/db";
 import { isValidEmail, isValidPhone, PHONE_ERROR } from "./server/validation";
 
 // Initialize express app
 const app = express();
+app.disable("x-powered-by");
 const PORT = Number(process.env.PORT) || 3000;
 
-app.set("trust proxy", true);
+// Which proxies may report the visitor's IP (X-Forwarded-For). Default: only a proxy on
+// this machine. Behind a hosting platform's proxy set TRUST_PROXY=1. Trusting every
+// proxy would let visitors spoof their IP and dodge the login and submission limits.
+const trustProxy = process.env.TRUST_PROXY || "loopback";
+app.set("trust proxy", /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy);
 app.use(express.json({ limit: "5mb" }));
 
 // API responses are data for the app, not pages: keep them out of search results
@@ -24,7 +30,10 @@ app.use("/api", (req, res, next) => {
 // Random per-login bearer tokens held in memory with a sliding expiry.
 // ----------------------------------------------------
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
-const sessions = new Map<string, { username: string; expires: number }>();
+// Sessions slide while in use, but never outlive this absolute limit
+const SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+// restricted: signed in with the default password, which is public knowledge
+const sessions = new Map<string, { username: string; expires: number; created: number; restricted: boolean }>();
 
 function readToken(req: express.Request): string {
   const header = req.headers.authorization || "";
@@ -33,26 +42,31 @@ function readToken(req: express.Request): string {
   return typeof alt === "string" ? alt.trim() : "";
 }
 
-function adminUser(req: express.Request): string | null {
+function adminSession(req: express.Request) {
   const token = readToken(req);
   const session = token ? sessions.get(token) : undefined;
   if (!session) return null;
-  if (session.expires < Date.now()) {
+  if (session.expires < Date.now() || Date.now() - session.created > SESSION_MAX_AGE_MS) {
     sessions.delete(token);
     return null;
   }
   session.expires = Date.now() + SESSION_TTL_MS;
-  return session.username;
+  return session;
 }
 
+// Until the default password is changed, a session may only read its status and change it
+const DEFAULT_PASSWORD_ROUTES = ["/api/auth/me", "/api/auth/change-password"];
+
 const authenticateAdmin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-  const username = adminUser(req);
-  if (username) {
-    res.locals.adminUser = username;
-    next();
-  } else {
-    res.status(401).json({ error: "Unauthorized access. Authentication token is invalid or expired." });
+  const session = adminSession(req);
+  if (!session) {
+    return res.status(401).json({ error: "Unauthorized access. Authentication token is invalid or expired." });
   }
+  if (session.restricted && !DEFAULT_PASSWORD_ROUTES.includes(req.path)) {
+    return res.status(403).json({ error: "Change the default admin password first (Admin → Security & Data)." });
+  }
+  res.locals.adminUser = session.username;
+  next();
 };
 
 // Simple per-IP brute-force throttle for the login endpoint
@@ -70,6 +84,51 @@ function isThrottled(ip: string): boolean {
   return entry.count >= MAX_LOGIN_ATTEMPTS;
 }
 
+// Public form limits (keep in sync with enforce_submission_limit() in php-backend/api/lib/helpers.php):
+// every submission is stored, so spam must not be able to grow the database without bound
+const MAX_PUBLIC_BODY_BYTES = 1_500_000;
+const SUBMISSION_LIMIT = 12;
+const SUBMISSION_WINDOW_MS = 10 * 60 * 1000;
+const submissions = new Map<string, { count: number; first: number }>();
+
+const MAX_DB_BYTES = 25_000_000;
+
+// IPv6 visitors control a whole /64, so count it as one address
+const visitorKey = (ip = "unknown") => (ip.includes(":") && !ip.startsWith("::ffff:") ? ip.split(":").slice(0, 4).join(":") + "::/64" : ip);
+
+const limitSubmissions = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  // Measured after parsing too, so chunked uploads without Content-Length are covered
+  if (Number(req.headers["content-length"] || 0) > MAX_PUBLIC_BODY_BYTES || JSON.stringify(req.body || {}).length > MAX_PUBLIC_BODY_BYTES) {
+    return res.status(413).json({ error: "This submission is too large. Please use a smaller photo." });
+  }
+  // Form fields are plain values; only the portfolio list and enquiry details are nested
+  for (const [key, value] of Object.entries(req.body || {})) {
+    const nestedOk = (key === "portfolio" && Array.isArray(value)) || (key === "details" && value && typeof value === "object" && !Array.isArray(value));
+    if (value !== null && typeof value === "object" && !nestedOk) {
+      return res.status(400).json({ error: `Invalid value for ${key}.` });
+    }
+  }
+  // Hard ceiling on the database size: past it, the forms pause instead of the whole site failing
+  try {
+    if (fs.statSync(DB_PATH).size > MAX_DB_BYTES) {
+      console.error(`db.json is over ${MAX_DB_BYTES} bytes; public submissions are paused.`);
+      return res.status(503).json({ error: "We are not accepting new submissions right now. Please try again later or email partner@fsia.in." });
+    }
+  } catch {}
+  const now = Date.now();
+  for (const [ip, entry] of submissions) if (now - entry.first > SUBMISSION_WINDOW_MS) submissions.delete(ip);
+  const ip = visitorKey(req.ip);
+  const entry = submissions.get(ip) || { count: 0, first: now };
+  if (entry.count >= SUBMISSION_LIMIT) {
+    return res.status(429).json({ error: "Too many submissions from your connection. Please wait a few minutes and try again." });
+  }
+  // Counted once the request is stored successfully
+  res.on("finish", () => {
+    if (res.statusCode === 201) submissions.set(ip, { count: entry.count + 1, first: entry.first });
+  });
+  next();
+};
+
 function recordFailedLogin(ip: string) {
   const entry = loginAttempts.get(ip);
   if (!entry || Date.now() - entry.first > LOGIN_WINDOW_MS) {
@@ -80,6 +139,8 @@ function recordFailedLogin(ip: string) {
 }
 
 const isDefaultPassword = (hash: string) => verifyPassword("admin123", hash);
+// Checked when a username does not exist, so a failed login takes the same time either way
+const DUMMY_PASSWORD_HASH = hashPassword(crypto.randomBytes(16).toString("hex"));
 
 // ----------------------------------------------------
 // 1. AUTHENTICATION CONTROLLER
@@ -98,6 +159,7 @@ app.post("/api/auth/login", (req, res) => {
 
     const db = getDb();
     const user = db.admin_users.find((u) => u.username === username);
+    if (!user) verifyPassword(String(password), DUMMY_PASSWORD_HASH);
 
     if (!user || !verifyPassword(String(password), user.passwordHash)) {
       recordFailedLogin(ip);
@@ -114,7 +176,7 @@ app.post("/api/auth/login", (req, res) => {
     saveDb(db);
 
     const token = crypto.randomBytes(32).toString("hex");
-    sessions.set(token, { username: user.username, expires: Date.now() + SESSION_TTL_MS });
+    sessions.set(token, { username: user.username, expires: Date.now() + SESSION_TTL_MS, created: Date.now(), restricted: mustChangePassword });
     logAction(`Successful administrative login: ${username}`, ip);
     return res.json({
       success: true,
@@ -152,6 +214,9 @@ app.post("/api/auth/change-password", authenticateAdmin, (req, res) => {
   if (String(newPassword).length < 8) {
     return res.status(400).json({ error: "New password must be at least 8 characters long." });
   }
+  if (String(newPassword) === "admin123") {
+    return res.status(400).json({ error: "Choose a password other than the default one." });
+  }
   const db = getDb();
   const user = db.admin_users.find((u) => u.username === res.locals.adminUser);
   if (!user || !verifyPassword(String(currentPassword), user.passwordHash)) {
@@ -164,6 +229,8 @@ app.post("/api/auth/change-password", authenticateAdmin, (req, res) => {
   for (const [token, session] of sessions) {
     if (session.username === user.username && token !== current) sessions.delete(token);
   }
+  const own = sessions.get(current);
+  if (own) own.restricted = false;
   logAction(`Password changed for operator: ${user.username}`, req.ip);
   res.json({ success: true, message: "Password updated successfully." });
 });
@@ -598,7 +665,7 @@ app.get("/api/registrations", authenticateAdmin, (req, res) => {
   }
 });
 
-app.post("/api/registrations", (req, res) => {
+app.post("/api/registrations", limitSubmissions, (req, res) => {
   try {
     const { brandName, creatorName, budget, clientCity, contactEmail, contactPhone, gstin, scope, duration } = req.body;
     if (!brandName || !contactEmail || !contactPhone) {
@@ -679,11 +746,14 @@ app.delete("/api/registrations/:id", authenticateAdmin, (req, res) => {
   res.json({ success: true });
 });
 
-// Accept only http(s) URLs or embedded raster images up to ~1.5 MB
-function safeImage(value: unknown, fallback: string): string {
+// Largest embedded photo accepted from the public form (the browser resizes uploads well below this)
+const MAX_DATA_IMAGE_BYTES = 700_000;
+
+// Accept only http(s) URLs or embedded raster images
+function safeImage(value: unknown, fallback: string, allowData = true): string {
   const v = typeof value === "string" ? value.trim() : "";
   if (/^https?:\/\//i.test(v) && v.length <= 2000) return v;
-  if (/^data:image\/(png|jpe?g|webp|gif);base64,/i.test(v) && v.length <= 1_500_000) return v;
+  if (allowData && /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(v) && v.length <= MAX_DATA_IMAGE_BYTES) return v;
   return fallback;
 }
 
@@ -699,7 +769,7 @@ app.get("/api/influencer-applications", authenticateAdmin, (req, res) => {
   }
 });
 
-app.post("/api/influencer-applications", (req, res) => {
+app.post("/api/influencer-applications", limitSubmissions, (req, res) => {
   try {
     const { name, category, role, city, image, bio, reach, engagement, portfolio, quote, email, phone } = req.body;
     if (!name || !email || !phone || !category) {
@@ -713,12 +783,14 @@ app.post("/api/influencer-applications", (req, res) => {
     }
 
     const db = getDb();
+    const profileImage = safeImage(image, "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format");
+    // Portfolio entries are links; an embedded photo is only kept when it is the profile photo itself
     const portfolioArray = (Array.isArray(portfolio)
       ? portfolio
       : typeof portfolio === "string"
         ? portfolio.split(",").map(p => p.trim()).filter(Boolean)
         : []
-    ).slice(0, 12).map((u: unknown) => safeImage(u, "")).filter(Boolean);
+    ).slice(0, 12).map((u: unknown) => (u === profileImage ? profileImage : safeImage(u, "", false))).filter(Boolean);
 
     const newApplication = {
       id: "inf-app-" + Date.now(),
@@ -726,7 +798,7 @@ app.post("/api/influencer-applications", (req, res) => {
       category,
       role: role || "Featured Star Model",
       city: city || "Mumbai",
-      image: safeImage(image, "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format"),
+      image: profileImage,
       bio: bio || "Enthusiastic fashion icon looking to make an impact on the high-fashion runway.",
       reach: reach || "100K",
       engagement: engagement || "5.0%",
@@ -902,7 +974,8 @@ app.get("/api/prompt-logs", authenticateAdmin, (req, res) => {
   }
 });
 
-app.post("/api/gemini/optimize", async (req, res) => {
+// Admin only: each call spends the site's Gemini API key
+app.post("/api/gemini/optimize", authenticateAdmin, async (req, res) => {
   const db = getDb();
   const settings = db.system_settings;
   const { prompt, campaignTitle, brandName } = req.body;
@@ -1055,7 +1128,7 @@ app.get("/api/admin/stats", authenticateAdmin, (req, res) => {
 const ENQUIRY_TYPES = ["campaign", "membership"];
 const clip = (value: unknown, max: number) => String(value ?? "").trim().slice(0, max);
 
-app.post("/api/enquiries", (req, res) => {
+app.post("/api/enquiries", limitSubmissions, (req, res) => {
   const body = req.body || {};
   if (!ENQUIRY_TYPES.includes(body.type)) {
     return res.status(400).json({ error: "Unknown enquiry type." });

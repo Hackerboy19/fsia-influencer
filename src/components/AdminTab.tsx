@@ -268,7 +268,9 @@ export default function AdminTab() {
         setCurrentUser(data.username);
         setMustChangePassword(!!data.mustChangePassword);
         setIsLoggedIn(true);
-        fetchAdminData(savedToken);
+        // The server allows nothing else until the default password is changed
+        if (data.mustChangePassword) setAdminActiveSubTab("security");
+        else fetchAdminData(savedToken);
       })
       .catch(() => localStorage.removeItem(ADMIN_TOKEN_KEY));
   }, []);
@@ -309,7 +311,9 @@ export default function AdminTab() {
         setMustChangePassword(!!data.mustChangePassword);
         setPassword("");
         setIsLoggedIn(true);
-        fetchAdminData(data.token);
+        // The server allows nothing else until the default password is changed
+        if (data.mustChangePassword) setAdminActiveSubTab("security");
+        else fetchAdminData(data.token);
       } else {
         setLoginError(data.error || "Invalid administrative credentials.");
       }
@@ -926,8 +930,8 @@ export default function AdminTab() {
               <div className="flex items-start gap-2.5 text-amber-800">
                 <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
                 <p className="text-xs font-sans leading-relaxed">
-                  <strong>You are using the default password.</strong> Anyone who knows it can control this website.
-                  Change it now before going live.
+                  <strong>You are using the default password.</strong> Anyone who knows it can control this website,
+                  so the admin panel stays locked until you change it below.
                 </p>
               </div>
               <button
@@ -960,7 +964,9 @@ export default function AdminTab() {
                 <button
                   key={tab.id}
                   onClick={() => setAdminActiveSubTab(tab.id)}
-                  className={`px-2.5 md:px-4 py-2 md:py-2.5 rounded-t-xl text-[11px] md:text-xs font-sans font-bold tracking-widest uppercase transition-all flex items-center gap-1.5 md:gap-2 whitespace-nowrap cursor-pointer ${
+                  disabled={mustChangePassword && tab.id !== "security"}
+                  title={mustChangePassword && tab.id !== "security" ? "Change the default password first" : undefined}
+                  className={`px-2.5 md:px-4 py-2 md:py-2.5 rounded-t-xl text-[11px] md:text-xs font-sans font-bold tracking-widest uppercase transition-all flex items-center gap-1.5 md:gap-2 whitespace-nowrap cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                     active 
                       ? "bg-white border-t-2 border-champagne text-[#111] shadow-xs" 
                       : "text-[#666] hover:text-black hover:bg-black/[0.02]"
@@ -1995,7 +2001,10 @@ export default function AdminTab() {
               <AdminSecurityPanel
                 token={token}
                 currentUser={currentUser}
-                onPasswordChanged={() => setMustChangePassword(false)}
+                onPasswordChanged={() => {
+                  setMustChangePassword(false);
+                  fetchAdminData(token);
+                }}
                 onDataRestored={() => fetchAdminData(token)}
               />
             )}

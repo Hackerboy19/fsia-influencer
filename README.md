@@ -31,7 +31,8 @@ npm run test:journeys -- http://127.0.0.1:8080   # navigation + every public for
 ```
 
 `audit` is read-only and can also be pointed at the live site. `test:journeys` submits test
-enquiries (example.com addresses), so it refuses to run against anything but a local build.
+enquiries (example.com addresses), so it refuses to run against anything but a local build
+with a fresh database (it ends by triggering the 12-per-10-minutes submission limit).
 Both use Playwright's Chromium (`npx playwright install chromium` once if it is missing).
 
 ## Build the live-site bundle

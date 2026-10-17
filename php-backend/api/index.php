@@ -14,6 +14,7 @@ require __DIR__ . '/lib/Store.php';
 header('Content-Type: application/json; charset=UTF-8');
 header('X-Content-Type-Options: nosniff');
 header('Cache-Control: no-store');
+header_remove('X-Powered-By');
 // API responses are data for the app, not pages: keep them out of search results
 header('X-Robots-Tag: noindex, nofollow');
 
@@ -58,6 +59,11 @@ try {
         }
 
         $ip = client_ip();
+        foreach ($db['login_attempts'] ?? [] as $key => $entry) {
+            if (time() - ($entry['first'] ?? 0) > 900) {
+                unset($db['login_attempts'][$key]);
+            }
+        }
         $attempts = $db['login_attempts'][$ip] ?? null;
         if ($attempts && time() - $attempts['first'] > 900) {
             $attempts = null;
@@ -71,6 +77,9 @@ try {
             if ($u['username'] === $username) {
                 $userIndex = $i;
             }
+        }
+        if ($userIndex === null) {
+            password_verify($password, DUMMY_PASSWORD_HASH);
         }
         if ($userIndex === null || !verify_password($password, $db['admin_users'][$userIndex]['passwordHash'])) {
             $db['login_attempts'][$ip] = $attempts
@@ -93,7 +102,9 @@ try {
         $db['sessions'][] = [
             'tokenHash' => hash('sha256', $token),
             'username' => $user['username'],
+            'created' => time(),
             'expires' => time() + (int)$config['session_ttl'],
+            'mustChangePassword' => $mustChange,
         ];
         $db['sessions'] = array_slice($db['sessions'], -50);
         $store->log('Successful administrative login: ' . $username);
@@ -109,7 +120,7 @@ try {
     }
 
     if ($is('GET', 'auth/me')) {
-        $admin = require_admin($store);
+        $admin = require_admin($store, true);
         $mustChange = false;
         foreach ($db['admin_users'] as $u) {
             if ($u['username'] === $admin) {
@@ -129,7 +140,7 @@ try {
     }
 
     if ($is('POST', 'auth/change-password')) {
-        $admin = require_admin($store);
+        $admin = require_admin($store, true);
         $current = (string)($body['currentPassword'] ?? '');
         $new = (string)($body['newPassword'] ?? '');
         if ($current === '' || $new === '') {
@@ -137,6 +148,9 @@ try {
         }
         if (strlen($new) < 8) {
             fail(400, 'New password must be at least 8 characters long.');
+        }
+        if ($new === 'admin123') {
+            fail(400, 'Choose a password other than the default one.');
         }
         foreach ($db['admin_users'] as &$u) {
             if ($u['username'] === $admin) {
@@ -152,6 +166,12 @@ try {
         $db['sessions'] = array_values(array_filter($db['sessions'], function ($s) use ($admin, $keep) {
             return $s['username'] !== $admin || hash_equals($s['tokenHash'], $keep);
         }));
+        foreach ($db['sessions'] as &$s) {
+            if (hash_equals($s['tokenHash'], $keep)) {
+                $s['mustChangePassword'] = false;
+            }
+        }
+        unset($s);
         $store->log('Password changed for operator: ' . $admin);
         $store->save();
         respond(['success' => true, 'message' => 'Password updated successfully.']);
@@ -493,6 +513,7 @@ try {
         if (!valid_phone($body['contactPhone'])) {
             fail(400, PHONE_ERROR);
         }
+        enforce_submission_limit($db);
         $registration = [
             'id' => 'reg-' . now_ms(),
             'bookingId' => 'FSIA-VIP-' . random_int(100000, 999999),
@@ -566,21 +587,26 @@ try {
         if (!valid_phone($body['phone'])) {
             fail(400, PHONE_ERROR);
         }
+        enforce_submission_limit($db);
         $portfolio = $body['portfolio'] ?? [];
         if (is_string($portfolio)) {
             $portfolio = array_values(array_filter(array_map('trim', explode(',', $portfolio))));
         }
+        $image = safe_image($body['image'] ?? '', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format');
         $application = [
             'id' => 'inf-app-' . now_ms(),
             'name' => str_cut($body['name'], 200),
             'category' => str_cut($body['category'], 100),
             'role' => str_cut(($body['role'] ?? '') ?: 'Featured Star Model', 200),
             'city' => str_cut(($body['city'] ?? '') ?: 'Mumbai', 100),
-            'image' => safe_image($body['image'] ?? '', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format'),
+            'image' => $image,
             'bio' => str_cut(($body['bio'] ?? '') ?: 'Enthusiastic fashion icon looking to make an impact on the high-fashion runway.', 3000),
             'reach' => str_cut(($body['reach'] ?? '') ?: '100K', 20),
             'engagement' => str_cut(($body['engagement'] ?? '') ?: '5.0%', 20),
-            'portfolio' => is_array($portfolio) ? array_values(array_filter(array_map(function ($u) { return safe_image($u, ''); }, array_slice($portfolio, 0, 12)))) : [],
+            // Portfolio entries are links; an embedded photo is only kept when it is the profile photo itself
+            'portfolio' => is_array($portfolio) ? array_values(array_filter(array_map(function ($u) use ($image) {
+                return $u === $image ? $image : safe_image($u, '', false);
+            }, array_slice($portfolio, 0, 12)))) : [],
             'quote' => str_cut(($body['quote'] ?? '') ?: 'Elegance is standard.', 500),
             'email' => str_cut($body['email'], 200),
             'phone' => str_cut($body['phone'], 50),
@@ -665,6 +691,7 @@ try {
         if (!valid_phone($body['phone'])) {
             fail(400, PHONE_ERROR);
         }
+        enforce_submission_limit($db);
         $details = [];
         if (is_array($body['details'] ?? null)) {
             foreach (array_slice($body['details'], 0, 12, true) as $k => $v) {
@@ -761,13 +788,15 @@ try {
     }
 
     if ($is('POST', 'gemini/optimize')) {
+        // Admin only: each call spends the site's Gemini API key
+        require_admin($store);
         $prompt = trim((string)($body['prompt'] ?? ''));
         if ($prompt === '') {
             fail(400, 'Application concept prompt is empty.');
         }
         $settings = $db['system_settings'];
-        $brand = (string)($body['brandName'] ?? '');
-        $campaign = (string)($body['campaignTitle'] ?? '');
+        $brand = str_cut($body['brandName'] ?? '', 200);
+        $campaign = str_cut($body['campaignTitle'] ?? '', 200);
         $model = preg_replace('/[^a-zA-Z0-9.\-]/', '', (string)(($settings['modelSelection'] ?? '') ?: 'gemini-2.5-flash'));
         $apiKey = (string)(($settings['geminiApiKey'] ?? '') ?: $config['gemini_api_key']);
         $logEntry = function (string $response, string $status) use (&$db, $brand, $campaign, $prompt, $model) {
@@ -874,7 +903,7 @@ try {
     if ($is('GET', 'admin/backup')) {
         require_admin($store);
         $export = $db;
-        unset($export['admin_users'], $export['sessions'], $export['login_attempts']);
+        unset($export['admin_users'], $export['sessions'], $export['login_attempts'], $export['submission_log']);
         unset($export['system_settings']['geminiApiKey']);
         $export['exportedAt'] = gmdate('c');
         $store->log('Downloaded full database backup');
@@ -907,13 +936,14 @@ try {
     }
 
     if ($is('GET', 'health')) {
-        respond(['ok' => true, 'backend' => 'php', 'php' => PHP_VERSION]);
+        respond(['ok' => true, 'backend' => 'php']);
     }
 
     fail(404, 'Endpoint not implemented: ' . $route);
 } catch (HttpError $e) {
     respond(['error' => $e->getMessage()], $e->status);
 } catch (Throwable $e) {
-    error_log('FSIA API error: ' . $e->getMessage());
-    respond(['error' => 'Server error: ' . $e->getMessage()], 500);
+    // Details go to the server error log only, never to the visitor
+    error_log('FSIA API error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    respond(['error' => 'Something went wrong on our side. Please try again in a moment.'], 500);
 }

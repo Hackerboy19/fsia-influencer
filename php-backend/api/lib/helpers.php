@@ -101,17 +101,60 @@ function valid_phone($phone): bool
 
 const PHONE_ERROR = 'Please provide a valid phone number (10 to 15 digits, e.g. +91 98765 43210).';
 
-// Accept only http(s) URLs or embedded raster images up to ~1.5 MB
-function safe_image($value, string $fallback): string
+// Largest embedded photo accepted from the public form. The browser resizes uploads
+// to ~100–350 KB, so this only stops oversized payloads that would bloat db.json.
+const MAX_DATA_IMAGE_BYTES = 700000;
+
+// Accept only http(s) URLs or embedded raster images
+function safe_image($value, string $fallback, bool $allowData = true): string
 {
     $value = trim((string)$value);
     if (preg_match('#^https?://#i', $value) && strlen($value) <= 2000) {
         return $value;
     }
-    if (preg_match('#^data:image/(png|jpe?g|webp|gif);base64,#i', $value) && strlen($value) <= 1500000) {
+    if ($allowData && preg_match('#^data:image/(png|jpe?g|webp|gif);base64,#i', $value) && strlen($value) <= MAX_DATA_IMAGE_BYTES) {
         return $value;
     }
     return $fallback;
+}
+
+// ----------------------------------------------------
+// PUBLIC FORM LIMITS — every public submission is stored in db.json, which is
+// loaded on every request, so spam must not be able to grow it without bound.
+// ----------------------------------------------------
+const MAX_PUBLIC_BODY_BYTES = 1500000;
+const SUBMISSION_LIMIT = 12;          // stored submissions per IP …
+const SUBMISSION_WINDOW = 600;        // … per 10 minutes
+const MAX_DB_BYTES = 25000000;        // db.json size at which public submissions pause
+
+function enforce_submission_limit(array &$db): void
+{
+    if (strlen((string)file_get_contents('php://input')) > MAX_PUBLIC_BODY_BYTES) {
+        fail(413, 'This submission is too large. Please use a smaller photo.');
+    }
+    $now = time();
+    $ip = client_ip();
+    // IPv6 visitors control a whole /64, so count it as one address
+    $packed = @inet_pton($ip);
+    if ($packed !== false && strlen($packed) === 16) {
+        $ip = bin2hex(substr($packed, 0, 8)) . '::/64';
+    }
+    foreach ($db['submission_log'] ?? [] as $key => $entry) {
+        if ($now - ($entry['first'] ?? 0) > SUBMISSION_WINDOW) {
+            unset($db['submission_log'][$key]);
+        }
+    }
+    // Hard ceiling on the database size: past it, the forms pause instead of the whole site failing
+    $dbFile = rtrim(fsia_config()['storage_dir'], '/') . '/db.json';
+    if (is_file($dbFile) && filesize($dbFile) > MAX_DB_BYTES) {
+        error_log('FSIA API: db.json is over ' . MAX_DB_BYTES . ' bytes; public submissions are paused.');
+        fail(503, 'We are not accepting new submissions right now. Please try again later or email partner@fsia.in.');
+    }
+    $entry = $db['submission_log'][$ip] ?? ['count' => 0, 'first' => $now];
+    if ($entry['count'] >= SUBMISSION_LIMIT) {
+        fail(429, 'Too many submissions from your connection. Please wait a few minutes and try again.');
+    }
+    $db['submission_log'][$ip] = ['count' => $entry['count'] + 1, 'first' => $entry['first']];
 }
 
 function mask_key(string $key): string
@@ -141,6 +184,9 @@ function is_default_password(string $stored): bool
     return verify_password('admin123', $stored);
 }
 
+// Checked when a username does not exist, so a failed login takes the same time either way
+const DUMMY_PASSWORD_HASH = '$2y$10$mbxJy9aNBBl7G0GWQ/TYke/nhjaom2/4XlxLelWY1d0ZGMCqCfoky';
+
 // ----------------------------------------------------
 // SESSIONS — random bearer tokens, stored hashed
 // ----------------------------------------------------
@@ -160,7 +206,11 @@ function read_token(): string
     return trim($_SERVER['HTTP_X_ADMIN_TOKEN'] ?? '');
 }
 
-function current_admin(Store $store): ?string
+// Sessions slide while in use, but never outlive this absolute limit
+const SESSION_MAX_AGE = 7 * 86400;
+
+/** The signed-in admin for this request: ['username' => …, 'restricted' => still on the default password]. */
+function current_admin(Store $store): ?array
 {
     $token = read_token();
     if ($token === '') {
@@ -172,13 +222,27 @@ function current_admin(Store $store): ?string
     $found = null;
     $dirty = false;
     foreach ($data['sessions'] as $i => &$session) {
-        if ($session['expires'] < $now) {
+        if (!isset($session['created'])) {
+            // Sessions from before the absolute limit existed start counting now
+            $session['created'] = $now;
+            $dirty = true;
+        }
+        if ($session['expires'] < $now || $now - $session['created'] > SESSION_MAX_AGE) {
             unset($data['sessions'][$i]);
             $dirty = true;
             continue;
         }
         if (hash_equals($session['tokenHash'], $hash)) {
-            $found = $session['username'];
+            if (!array_key_exists('mustChangePassword', $session)) {
+                $session['mustChangePassword'] = false;
+                foreach ($data['admin_users'] as $u) {
+                    if ($u['username'] === $session['username']) {
+                        $session['mustChangePassword'] = is_default_password($u['passwordHash']);
+                    }
+                }
+                $dirty = true;
+            }
+            $found = ['username' => $session['username'], 'restricted' => (bool)$session['mustChangePassword']];
             // Sliding expiry, refreshed at most once a minute to limit writes
             if ($session['expires'] - $now < fsia_config()['session_ttl'] - 60) {
                 $session['expires'] = $now + fsia_config()['session_ttl'];
@@ -194,13 +258,18 @@ function current_admin(Store $store): ?string
     return $found;
 }
 
-function require_admin(Store $store): string
+// Until the default password is changed, a session may only read its own status,
+// change the password and sign out: the default login is public knowledge.
+function require_admin(Store $store, bool $allowDefaultPassword = false): string
 {
-    $user = current_admin($store);
-    if ($user === null) {
+    $session = current_admin($store);
+    if ($session === null) {
         fail(401, 'Unauthorized access. Authentication token is invalid or expired.');
     }
-    return $user;
+    if ($session['restricted'] && !$allowDefaultPassword) {
+        fail(403, 'Change the default admin password first (Admin → Security & Data).');
+    }
+    return $session['username'];
 }
 
 // ----------------------------------------------------

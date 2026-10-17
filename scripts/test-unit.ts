@@ -4,6 +4,7 @@ import { execFileSync } from "child_process";
 import path from "path";
 import { debrandText } from "../server/db";
 import { isValidEmail, isValidPhone } from "../server/validation";
+import { csvCell } from "../src/lib/adminSession";
 
 let failures = 0;
 const check = (name: string, ok: boolean, detail = "") => {
@@ -72,6 +73,18 @@ if (php) {
 PHONE_CASES.forEach(([input, expected]) => check(`isValidPhone(${JSON.stringify(input)}) is ${expected}`, isValidPhone(input) === expected));
 for (const [input, expected] of [["creator@example.com", true], [" brand@example.in ", true], ["no-at-sign.com", false], ["a@b", false]] as const) {
   check(`isValidEmail(${JSON.stringify(input)}) is ${expected}`, isValidEmail(input) === expected);
+}
+
+// Admin CSV exports must not let form input run as a spreadsheet formula
+for (const [input, expected] of [
+  ['=HYPERLINK("http://evil.example","x")', `"'=HYPERLINK(""http://evil.example"",""x"")"`],
+  ["+91 98765 43210", "'+91 98765 43210"],
+  ["@SUM(A1)", "'@SUM(A1)"],
+  ["-2+3", "'-2+3"],
+  ["Plain, text", '"Plain, text"'],
+  ["Priya Sharma", "Priya Sharma"]
+] as const) {
+  check(`csvCell(${JSON.stringify(input)}) is safe`, csvCell(input) === expected, `got ${csvCell(input)}`);
 }
 
 console.log(failures ? `\n${failures} check(s) failed.` : "\nAll unit checks passed.");

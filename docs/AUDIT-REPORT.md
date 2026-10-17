@@ -32,7 +32,7 @@ Because the live site comes from PR #1, this work is built **on top of PR #1**. 
 | WCAG 2.2 AA (axe-core) — 6 pages + 4 dialogs + admin sign-in × 3 screen sizes | 11 failing page/viewport combinations in the first audit (buttons without names; brand-form selects and slider without labels) | **0 violations** |
 | Keyboard access to creator profiles | not possible (mouse-only cards) | every card has a button; dialogs trap focus, close on Esc |
 | Initial JavaScript | 1,178 KB (316 KB gzip) | 525 KB (160 KB gzip) |
-| End-to-end journeys (navigation + all 4 public forms, desktop/tablet/mobile) | — | **125/125 pass** on both PHP and Node builds |
+| End-to-end journeys (navigation + all 4 public forms, desktop/tablet/mobile) | — | **132/132 pass** on both PHP and Node builds |
 
 ---
 
@@ -129,19 +129,60 @@ Not done (needs your access):
 
 ---
 
-## 8. Automated tests and how to rerun them
+## 8. Security review
+
+**Scope:** the PHP API that runs the live site, the Node API, the frontend and the release bundle. Two independent reviews were done, one by a separate reviewer working only from the code, plus read-only checks against the live server.
+
+**Already sound:**
+- The database, seed, config and PHP library files return 403 on the live server.
+- Every admin API route requires a session. Sessions are 256-bit random tokens stored hashed; passwords use bcrypt.
+- No cross-site scripting paths: React escapes all output and there is no raw HTML; image URLs are limited to http(s) or embedded raster images.
+- No CORS headers, and the public API responses contain no personal data or secrets.
+
+**Fixed:**
+
+| Severity | Problem | Fix |
+|---|---|---|
+| High | `/DEPLOY.md` was publicly readable on the live site and lists the default admin login. The GitHub repository is public too. | No longer shipped; `.htaccess` blocks `.md` files. **The old copy must be deleted by hand** (see below). |
+| High | The default `admin` / `admin123` login worked for every admin API call; only a banner suggested changing it. | The server refuses every admin action until the password is changed, and `admin123` can't be re-used. The panel opens straight on the password form. |
+| High | Anyone could bloat `db.json` until PHP ran out of memory, and then the whole API failed, including admin login. Applications took 1.5 MB photos ×13, there were no rate limits, and the AI log was unbounded. The independent reviewer reproduced it with about 14 requests. | Request cap of 1.5 MB, photo cap of 700 KB, portfolio entries must be links, and 12 submissions per 10 minutes per visitor (IPv6 counted per /64). Past 25 MB the forms pause instead of the site failing. |
+| Medium | The public AI endpoint spent the site's Gemini API key for anyone. The site itself never calls it. | Admin only. |
+| Medium | CSV formula injection in admin exports, e.g. `=HYPERLINK(…)` in a brand name or an enquiry field name. | Cells and headers are neutralised; enquiry detail columns are prefixed. |
+| Low | Server errors returned internal messages; the PHP version was exposed; login timing revealed which usernames exist; sessions could slide forever; failed-login records were never pruned. | Generic errors, versions hidden, equal-time login, 7-day maximum session age, pruning. |
+| Low (Node only, not live) | Spoofable `X-Forwarded-For`, unchecked nested form fields, and the dev server could serve `server/db.json`. | `TRUST_PROXY` (default: local proxy only), field type checks, dev-server deny list. |
+
+**Verified on the PHP build:**
+- The default password returns 403 for admin data, can't be re-used, and changing it unlocks the session.
+- An unknown username and a wrong password take the same time to reject.
+- A session older than 7 days is refused.
+- With `db.json` over 25 MB, the forms answer 503 while the public pages keep working.
+- Oversized submissions get 413, the AI endpoint without login gets 401, and the 13th submission in 10 minutes gets 429.
+
+**Needs you (can't be done from the code):**
+1. Delete `DEPLOY.md` from the server; extracting a new zip doesn't remove it.
+2. Sign in to the admin. If it asks, change the default password **immediately after uploading**: the login is public knowledge.
+3. Add the security headers to Plesk's nginx settings (exact lines in `DEPLOY.md` → *Security checklist*). The live HTML pages currently send none.
+4. Check that the admin audit log records real visitor IPs, not the server's own.
+5. **An old copy of the site is still live at https://fsia-influencer.vercel.app** with the retired branding ("FOREVER STAR INDIA", "Forever Free"). Delete that Vercel project or redirect it to influencer.fsia.in; it also competes with the real site in Google.
+6. Optional: move the database outside the website folder (`api/config.php` → `storage_dir`), and consider making the GitHub repository private.
+
+**Not changed:** a Content-Security-Policy would add defence in depth, but it needs careful testing with Google Analytics, Google Fonts and the 3D image textures, so it's left as a follow-up. The admin token lives in the browser's localStorage, which is usual for this kind of app.
+
+---
+
+## 9. Automated tests and how to rerun them
 
 | Command | What it covers | Result on this branch |
 |---|---|---|
 | `npm test` | Type-check; brand-filter and validation unit tests; Node ↔ PHP parity | pass |
 | `npm run audit -- <url>` | Status codes, metadata, canonicals, sitemap and robots, 404s, `X-Robots-Tag`, retired word in HTML/bundles/API/rendered DOM, internal links, horizontal overflow, JS errors, axe WCAG 2.2 AA at 375/768/1440 px on all pages, dialogs and admin sign-in, Esc/focus behaviour | 285 checks, 0 failures (PHP build and Node build) |
-| `npm run test:journeys -- <local url>` | Real-browser navigation on 3 screen sizes; every public form: empty/invalid input, server failure, double click, success, draft restore, server-side validation, persistence | 125/125 (PHP build and Node build) |
+| `npm run test:journeys -- <local url>` | Real-browser navigation on 3 screen sizes; every public form: empty/invalid input, server failure, double click, success, draft restore, server-side validation, persistence; security: default-password lock, AI endpoint login, oversized submissions, rate limit, no version leaks | 132/132 (PHP build and Node build) |
 
 `audit` is read-only and safe to run against the live site. `test:journeys` writes test records (`@example.com` addresses), so it refuses to run against anything but a local build.
 
 ---
 
-## 9. Deploying
+## 10. Deploying
 
 1. `npm run package` → `release/fsia-influencer-live.zip`.
 2. Follow [`DEPLOY.md` → Updating to a new version](../DEPLOY.md#updating-to-a-new-version): back up first, extract over the existing files (data in `storage/` is kept), hard-refresh.
@@ -149,11 +190,11 @@ Not done (needs your access):
 
 ---
 
-## 10. Decisions for you (found, deliberately not changed)
+## 11. Decisions for you (found, deliberately not changed)
 
 1. **The "FSIA Portal" header button links to www.fsia.in, which prominently shows the retired branding** ("FOREVER STAR INDIA", "Forever Achievers", …). Nothing on this site shows it, but the link sends visitors straight to it. Remove the button, or keep it as an intentional parent-site link?
 2. **Pre-ticked consent box** on the campaign application ("I agree to the escrow arbitration protocols…"). It is ticked by default and not stored. Consent under India's DPDP Act should be an affirmative action; I recommend unticked, required, and stored.
 3. **No privacy notice** anywhere, although the forms collect names, emails, phone numbers, PAN and GSTIN. I recommend adding a privacy policy page and linking it from the footer and forms.
 4. **Unsubstantiated claims in existing copy** (not introduced by this work): "100% secure escrow", "full payment within 24 hours", "contact within 4 business hours", "Premium cover photography in Vogue India", the hard-coded "8.83 Million" roster reach, "India's leading…" in the FAQ. Confirm they are accurate, or let us soften them.
 5. The brand form's **"Connect on WhatsApp"** checkbox is not saved anywhere. Store it, or remove it?
-6. Make sure the live admin password is **not** the default `admin123` (the admin panel warns while it is).
+6. See §8: delete the old `DEPLOY.md` on the server, change the default admin password if it is still in use, and take down the old Vercel copy.

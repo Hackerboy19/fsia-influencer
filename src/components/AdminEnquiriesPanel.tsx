@@ -95,7 +95,11 @@ export default function AdminEnquiriesPanel({ token, onChange }: { token: string
       (!q || [e.name, e.email, e.phone, e.subject, e.id].some((f) => (f || "").toLowerCase().includes(q)))
   );
 
-  const exportRows = filtered.map(({ details, ...rest }) => ({ ...rest, ...details }));
+  // Detail keys come from the visitor's request: prefix them so they can never replace the real columns
+  const exportRows = filtered.map(({ details, ...rest }) => ({
+    ...rest,
+    ...Object.fromEntries(Object.entries(details || {}).map(([key, value]) => [`detail_${key}`, value]))
+  }));
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white/70 rounded-2xl border border-black/10 overflow-hidden">

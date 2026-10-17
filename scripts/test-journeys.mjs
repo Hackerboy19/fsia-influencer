@@ -6,6 +6,8 @@
 // localhost) with a throwaway database — never against the live site. Uses
 // clearly fake contact details (example.com addresses, 90000 phone numbers) and,
 // with the default local admin login, checks each submission was stored.
+// Start from a fresh database (delete storage/db.json or server/db.json, restart
+// the Node server): the run ends by using up the 10-minute submission limit.
 import fs from "fs";
 
 const args = process.argv.slice(2);
@@ -248,10 +250,30 @@ check("API rejects an enquiry with an invalid email (400)", badEmail.status === 
 const badApp = await post("/api/influencer-applications", { name: "QA", category: "x", email: TEST.email, phone: "phone" });
 check("API rejects a creator application with an invalid phone (400)", badApp.status === 400);
 
+const ai = await post("/api/gemini/optimize", { prompt: "test" });
+check("AI endpoint requires an admin session (401)", ai.status === 401, `status ${ai.status}`);
+const huge = await post("/api/influencer-applications", {
+  name: "QA", category: "x", email: TEST.email, phone: TEST.phone, image: "data:image/jpeg;base64," + "A".repeat(1_600_000)
+});
+check("API rejects an oversized submission (413)", huge.status === 413, `status ${huge.status}`);
+const health = await fetch(BASE + "/api/health");
+check("API does not reveal server software versions",
+  !/\/\d|"php"\s*:\s*"\d/i.test((health.headers.get("x-powered-by") || "") + (await health.text())) && !health.headers.get("x-powered-by"));
+
 const login = await post("/api/auth/login", { username: ADMIN_USER, password: ADMIN_PASS });
 if (login.ok) {
-  const { token } = await login.json();
+  const { token, mustChangePassword } = await login.json();
   const auth = { Authorization: `Bearer ${token}`, "X-Admin-Token": token };
+  if (mustChangePassword) {
+    // The default login is public knowledge: nothing else works until it is changed
+    const locked = await fetch(BASE + "/api/registrations", { headers: auth });
+    check("Default password: admin data stays locked until it is changed (403)", locked.status === 403, `status ${locked.status}`);
+    const same = await post("/api/auth/change-password", { currentPassword: ADMIN_PASS, newPassword: "admin123" }, auth);
+    check("Default password cannot be re-used as the new password", same.status === 400, `status ${same.status}`);
+    const changed = await post("/api/auth/change-password", { currentPassword: ADMIN_PASS, newPassword: `qa-local-${RUN}` }, auth);
+    check("Changing the default password unlocks the session", changed.ok, `status ${changed.status}`);
+    console.log(`NOTE  local admin password is now qa-local-${RUN}`);
+  }
   const get = async (path) => (await fetch(BASE + path, { headers: auth })).json();
   const regs = await get("/api/registrations");
   check("Brand enquiries were stored (one per run and viewport)", regs.filter((r) => r.brandName === TEST.brand).length === 2,
@@ -264,6 +286,14 @@ if (login.ok) {
 } else {
   console.log(`SKIP  persistence checks (admin login failed with ${login.status}; pass --admin=user:password)`);
 }
+
+// Last, because it uses up this IP's submission allowance for the next 10 minutes
+let limited = false;
+for (let i = 0; i < 14 && !limited; i++) {
+  const r = await post("/api/enquiries", { type: "campaign", subject: "QA rate limit", name: `QA Rate ${RUN}`, email: TEST.email, phone: TEST.phone });
+  limited = r.status === 429;
+}
+check("Public forms are rate limited per visitor (429)", limited);
 
 console.log(failures ? `\n${failures} check(s) failed.` : "\nAll journey checks passed.");
 process.exit(failures ? 1 : 0);

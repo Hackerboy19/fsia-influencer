@@ -26,7 +26,14 @@ ErrorDocument 404 /404.html
     # (talent/index.html, campaigns/index.html …), so anything else is a 404.
 </IfModule>
 
+# Project notes and lock/log files are never public
+<FilesMatch "\.(md|lock|log|map)$">
+    Require all denied
+</FilesMatch>
+
 <IfModule mod_headers.c>
+    Header always set Strict-Transport-Security "max-age=15552000"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
     Header always set X-Content-Type-Options "nosniff"
     Header always set X-Frame-Options "SAMEORIGIN"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"

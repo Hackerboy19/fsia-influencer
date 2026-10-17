@@ -50,14 +50,18 @@ export function installAdminFetch() {
   };
 }
 
+// One CSV cell. Values come from public forms: a leading = + - @ would run as a
+// spreadsheet formula (e.g. =HYPERLINK(...)) when the export is opened in Excel.
+export function csvCell(value: unknown): string {
+  let text = Array.isArray(value) ? value.join(" | ") : value == null ? "" : String(value);
+  if (/^[=+\-@\t\r]/.test(text)) text = "'" + text;
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
 export function downloadCsv(filename: string, rows: Record<string, unknown>[]) {
   if (rows.length === 0) return;
   const columns = Array.from(new Set(rows.flatMap((r) => Object.keys(r))));
-  const escape = (value: unknown) => {
-    const text = Array.isArray(value) ? value.join(" | ") : value == null ? "" : String(value);
-    return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-  };
-  const csv = [columns.join(","), ...rows.map((r) => columns.map((c) => escape(r[c])).join(","))].join("\n");
+  const csv = [columns.map(csvCell).join(","), ...rows.map((r) => columns.map((c) => csvCell(r[c])).join(","))].join("\n");
   // BOM so Excel opens UTF-8 (₹, names) correctly
   downloadBlob(filename, new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
 }

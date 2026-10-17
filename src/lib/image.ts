@@ -18,7 +18,14 @@ export function resizeImageFile(file: File, maxSize = 900, quality = 0.85): Prom
           return;
         }
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", quality));
+        // Stay under the server's 700 KB limit for embedded photos, even for very detailed images
+        let q = quality;
+        let dataUrl = canvas.toDataURL("image/jpeg", q);
+        while (dataUrl.length > 650000 && q > 0.4) {
+          q -= 0.15;
+          dataUrl = canvas.toDataURL("image/jpeg", q);
+        }
+        resolve(dataUrl);
       };
       img.src = reader.result as string;
     };

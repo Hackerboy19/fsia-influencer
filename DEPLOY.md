@@ -41,8 +41,8 @@ Settings**, keep the default "nginx as proxy to Apache" so `.htaccess` is honour
 
 1. Open `https://influencer.fsia.in/api/health` — it should show `{"ok":true,...}`.
 2. Open `https://influencer.fsia.in`, go to the **Admin** tab (lock icon) and sign in with
-   **admin / admin123**. A yellow banner asks you to change this password — do it
-   immediately in **Security & Data**.
+   **admin / admin123**. The panel stays locked (the server refuses every admin action)
+   until you set a new password in **Security & Data**: this default is public knowledge.
 
 ## Updating to a new version
 
@@ -54,6 +54,38 @@ Settings**, keep the default "nginx as proxy to Apache" so `.htaccess` is honour
    project checked out: `npm run audit -- https://influencer.fsia.in`. It checks every page's status
    code, metadata, sitemap, 404 handling, retired branding and WCAG 2.2 AA accessibility, and
    prints anything that fails.
+
+## Security checklist (after every upload)
+
+1. **Delete `DEPLOY.md` from the server** if it is there (Plesk → Files → `influencer.fsia.in`).
+   Older bundles shipped it, and extracting a new zip never deletes old files. The current
+   bundle no longer contains it and `.htaccess` blocks `.md` files, but remove the old copy anyway.
+2. **Admin password:** sign in. If the panel asks you to change the default password, do it now.
+3. **Security headers on every page.** Plesk serves the HTML pages through nginx, so add these in
+   Plesk → *Websites & Domains* → `influencer.fsia.in` → **Apache & nginx Settings** →
+   *Additional nginx directives*, then **OK**:
+
+   ```nginx
+   add_header X-Frame-Options "SAMEORIGIN" always;
+   add_header X-Content-Type-Options "nosniff" always;
+   add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+   add_header Strict-Transport-Security "max-age=15552000" always;
+   add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+   ```
+
+4. **Real visitor IPs.** Admin → Security & Data → audit log: login entries should show visitors'
+   IP addresses. If they all show `127.0.0.1` or the server's own IP, the login lock-out and the
+   form spam limit treat every visitor as one; ask the host to enable the real-IP setting
+   (`mod_remoteip`) for nginx → Apache.
+5. **Optional, strongest:** keep the database outside the website folder. Create
+   `api/config.php` from `api/config.sample.php` with
+   `'storage_dir' => '/var/www/vhosts/fsia.in/private/influencer-storage'` (a folder outside
+   `influencer.fsia.in/`), move `storage/db.json` there, and check the site still loads.
+
+**Built-in protections** (no action needed): admin sessions are random tokens that expire
+(12 h idle, 7 days at most); 8 failed logins lock an IP for 15 minutes; each visitor can send
+12 form submissions per 10 minutes; photos are capped at 700 KB; and if `db.json` ever passes
+25 MB the forms pause, without breaking the site, until old leads are cleaned up.
 
 ## Google Search Console (indexing)
 
@@ -116,6 +148,7 @@ Copy `api/config.sample.php` to `api/config.php` and edit it to:
 ## Node.js hosting (alternative)
 
 If you prefer a Node host (VPS, Render, Railway…): `npm install`, `npm run build`,
-then `npm start` (listens on `$PORT`, default 3000). Set `ADMIN_USERNAME` /
+then `npm start` (listens on `$PORT`, default 3000). Behind the platform's proxy, set
+`TRUST_PROXY=1` so visitors' real IPs are used for the login and form limits. Set `ADMIN_USERNAME` /
 `ADMIN_PASSWORD` and optionally `GEMINI_API_KEY` as environment variables. Data is
 stored in `server/db.json`.

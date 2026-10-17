@@ -17,6 +17,10 @@ export default defineConfig(() => {
       hmr: process.env.DISABLE_HMR !== 'true',
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      // The dev server serves the project folder: never hand out databases, secrets or server code
+      fs: {
+        deny: ['.env', '.env.*', '*.{crt,pem}', '**/server/db.json*', '**/storage/**', '**/php-backend/**', '**/release/**'],
+      },
     },
   };
 });

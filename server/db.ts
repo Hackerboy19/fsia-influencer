@@ -157,7 +157,7 @@ export interface DatabaseSchema {
   migrations?: Record<string, string>;
 }
 
-const DB_PATH = path.join(process.cwd(), "server", "db.json");
+export const DB_PATH = path.join(process.cwd(), "server", "db.json");
 
 // Seed Initial Data
 const INITIAL_CREATORS: GallerySection[] = [

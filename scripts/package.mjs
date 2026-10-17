@@ -33,7 +33,7 @@ fs.cpSync(path.join(php, "storage"), path.join(outDir, "storage"), {
   recursive: true,
   filter: (src) => !/db\.(json|lock)|\.tmp$|corrupt/.test(path.basename(src))
 });
-fs.copyFileSync(path.join(root, "DEPLOY.md"), path.join(outDir, "DEPLOY.md"));
+// DEPLOY.md is deliberately not shipped: it would be publicly readable at /DEPLOY.md
 
 // 3. Zip (contents at the archive root so it extracts straight into public_html)
 const tryRun = (cmd, cwd) => {
@@ -50,4 +50,5 @@ const zipped =
   tryRun(`powershell -NoProfile -Command "Compress-Archive -Path '${outDir}\\*' -DestinationPath '${zipPath}'"`, root);
 
 console.log(`\nRelease folder: ${path.relative(root, outDir)}`);
+console.log("Deployment steps: DEPLOY.md in the project (not included in the bundle).");
 console.log(zipped ? `Release zip:    ${path.relative(root, zipPath)}` : "Could not create the zip automatically — zip the release folder manually.");
