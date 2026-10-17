@@ -228,11 +228,14 @@ async function auditBrowser() {
 
   for (const vp of VIEWPORTS) {
     const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, reducedMotion: "reduce" });
+    // Audit traffic must never reach the site's real Google Analytics property
+    await context.route(/google-analytics\.com|googletagmanager\.com/, (route) => route.abort());
     for (const path of [...PUBLIC_ROUTES, "/__entered__/"]) {
       const page = await context.newPage();
       const errors = [];
       page.on("pageerror", (e) => errors.push(e.message));
-      page.on("console", (m) => m.type() === "error" && !/WebGL|GPU|favicon/i.test(m.text()) && errors.push(m.text()));
+      page.on("console", (m) => m.type() === "error" && !/WebGL|GPU|favicon/i.test(m.text()) &&
+        !/google-analytics\.com|googletagmanager\.com/.test(m.location()?.url || "") && errors.push(m.text()));
       const target = path === "/__entered__/" ? "/" : path;
       const label = `${vp.name} ${path === "/__entered__/" ? "/ (explore view)" : path}`;
       await page.goto(BASE + target, { waitUntil: "networkidle" });

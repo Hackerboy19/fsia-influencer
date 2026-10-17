@@ -51,7 +51,11 @@ async function poll(read, test, ms = 5000) {
   return value;
 }
 const readAlert = (page) => page.locator('[role="alert"]').first().innerText().catch(() => "");
-const alertMatches = async (page, re) => re.test(await poll(() => readAlert(page), (t) => re.test(t)));
+const alertMatches = async (page, re) => {
+  const text = await poll(() => readAlert(page), (t) => re.test(t));
+  if (!re.test(text)) console.log(`      (alert shown: ${JSON.stringify(text)})`);
+  return re.test(text);
+};
 const focusIs = async (page, id) =>
   (await poll(() => page.evaluate(() => document.activeElement?.id || ""), (v) => v === id)) === id;
 
@@ -64,6 +68,8 @@ for (const vp of [
   { name: "mobile", width: 375, height: 812 }
 ]) {
   const context = await browser.newContext({ viewport: vp, reducedMotion: "reduce" });
+  // Test traffic must never reach the site's real Google Analytics property
+  await context.route(/google-analytics\.com|googletagmanager\.com/, (route) => route.abort());
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -253,6 +259,8 @@ for (const vp of [
   { name: "mobile", width: 375, height: 812 }
 ]) {
   const context = await browser.newContext({ viewport: vp, reducedMotion: "reduce" });
+  // Test traffic must never reach the site's real Google Analytics property
+  await context.route(/google-analytics\.com|googletagmanager\.com/, (route) => route.abort());
   const page = await context.newPage();
   await brandEnquiry(page, vp.name);
   await creatorRegistration(page, vp.name);

@@ -524,6 +524,7 @@ export default function App() {
               {activeTab === "catwalk" && <h1 className="sr-only">FSIA Creators &amp; Influencer Portal</h1>}
               <Suspense fallback={null}>
                 <ThreeGallery
+                  paused={activeTab !== "catwalk"}
                   sections={sections}
                   activeSectionIndex={activeSectionIndex}
                   selectedCreator={selectedCreator}

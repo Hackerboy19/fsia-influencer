@@ -125,6 +125,7 @@ Fixed:
 - Campaigns title shortened from 68 to 55 characters (it was being truncated).
 - Image alt text now describes the person ("Aishwarya Sen, Fashion & Couture creator from Mumbai") instead of repeating keywords; lookbook images lazy-load.
 - Core Web Vitals: the Three.js scene and the admin workspace are split into separate files loaded on demand (initial JS −55%), and fonts load in parallel.
+- The 3D scene stopped drawing only when the browser tab was hidden; it kept rendering behind every content page. It now pauses outside the Explore view. On a machine without a graphics card, content pages went from 1.5 to 60 frames per second, which matters for phones' battery and responsiveness.
 
 Not done (needs your access):
 - **Search Console:** I had no access, so nothing was verified, submitted or inspected, and I make no claim about indexing status. The step-by-step guide is in [`DEPLOY.md` → Google Search Console](../DEPLOY.md#google-search-console-indexing): verify the property, submit `sitemap.xml`, request indexing for `/`, `/talent/`, `/campaigns/`, `/join/`, and validate old *Soft 404* entries after deploying.

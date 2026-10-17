@@ -8,6 +8,8 @@ interface ThreeGalleryProps {
   selectedCreator: Creator | null;
   onSelectCreator: (creator: Creator | null) => void;
   onSectionChange: (index: number) => void;
+  /** Stop drawing while the scene is hidden behind a content page (saves battery and CPU) */
+  paused?: boolean;
 }
 
 export default function ThreeGallery({
@@ -16,6 +18,7 @@ export default function ThreeGallery({
   selectedCreator,
   onSelectCreator,
   onSectionChange,
+  paused = false,
 }: ThreeGalleryProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -23,6 +26,8 @@ export default function ThreeGallery({
   // Keep refs of values needed in the animation loop to avoid dependency re-binding
   const activeSectionIndexRef = useRef(activeSectionIndex);
   const selectedCreatorRef = useRef(selectedCreator);
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
 
   // Local state for interactive hints
   const [hoveredCreator, setHoveredCreator] = useState<Creator | null>(null);
@@ -536,6 +541,7 @@ export default function ThreeGallery({
 
     const animate = () => {
       animFrameId = requestAnimationFrame(animate);
+      if (pausedRef.current) return;
 
       const time = clock.getElapsedTime();
 
