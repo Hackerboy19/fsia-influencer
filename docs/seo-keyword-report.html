@@ -1,0 +1,166 @@
+<title>FSIA Influencer Keyword Report</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,700&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a single reading column with wide tables, like a talent agency's casting brief */
+:root {
+  --bg: #f6f5f2; --surface: #ffffff; --ink: #1b1a17; --muted: #5d5a53; --line: #dedad1;
+  --accent: #8a6a2c; --accent-soft: #f1e8d4;
+  --good: #1f6b45; --good-bg: #e2f1e8; --warn: #8a5a00; --warn-bg: #fbefd6; --bad: #a3302a; --bad-bg: #f8e1df; --na: #4d5866; --na-bg: #e7eaee;
+  --display: "Bodoni Moda", "Didot", Georgia, serif;
+  --body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121110; --surface: #1b1a18; --ink: #ece8df; --muted: #a8a294; --line: #34312c;
+  --accent: #e1c699; --accent-soft: #2c261b;
+  --good: #7fd1a4; --good-bg: #16291f; --warn: #f0c46a; --warn-bg: #2d2412; --bad: #f19a92; --bad-bg: #331a18; --na: #b3bcc8; --na-bg: #23272d;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121110; --surface: #1b1a18; --ink: #ece8df; --muted: #a8a294; --line: #34312c;
+  --accent: #e1c699; --accent-soft: #2c261b;
+  --good: #7fd1a4; --good-bg: #16291f; --warn: #f0c46a; --warn-bg: #2d2412; --bad: #f19a92; --bad-bg: #331a18; --na: #b3bcc8; --na-bg: #23272d;
+  color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font: 16px/1.6 var(--body); }
+.wrap { max-width: 980px; margin: 0 auto; padding-block: 40px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 48px; }
+header { display: grid; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 28px; }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 700 clamp(32px, 6vw, 52px)/1.05 var(--display); margin: 0; text-wrap: balance; }
+h2 { font: 600 clamp(24px, 3.4vw, 30px)/1.2 var(--display); margin: 0; text-wrap: balance; }
+h3 { font: 700 17px/1.3 var(--body); margin: 0; }
+p { margin: 0; max-width: 68ch; }
+.meta { color: var(--muted); font-size: 14px; }
+section { display: grid; gap: 18px; }
+.lede { font-size: 18px; max-width: 64ch; }
+.caveat { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 14px 16px; font-size: 14.5px; color: var(--muted); }
+.caveat strong { color: var(--ink); }
+.verdicts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.verdict { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: grid; gap: 8px; align-content: start; }
+.verdict p { font-size: 14.5px; color: var(--muted); }
+.pill { display: inline-block; font: 600 11.5px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 5px 8px; border-radius: 99px; width: max-content; }
+.good { color: var(--good); background: var(--good-bg); } .warn { color: var(--warn); background: var(--warn-bg); }
+.bad { color: var(--bad); background: var(--bad-bg); } .na { color: var(--na); background: var(--na-bg); }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 720px; font-size: 14.5px; }
+th, td { text-align: left; vertical-align: top; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+th { font: 600 11.5px/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--bg); }
+tr:last-child td { border-bottom: 0; }
+td.num { font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 13.5px; white-space: nowrap; }
+.kw { font-weight: 600; }
+.sub { color: var(--muted); font-size: 13.5px; display: block; margin-top: 3px; }
+code { font: 13px var(--mono); background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
+ol.plan { margin: 0; padding-left: 22px; display: grid; gap: 14px; max-width: 72ch; }
+ol.plan li::marker { font: 600 14px var(--mono); color: var(--accent); }
+ol.plan li p { color: var(--muted); font-size: 15px; margin-top: 2px; }
+ul.plain { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 70ch; }
+.sources { font-size: 13.5px; color: var(--muted); }
+.sources a { color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">SEO &amp; keyword report · influencer.fsia.in</span>
+  <h1>FSIA Influencer Keyword Report</h1>
+  <p class="meta">Checked 19 October 2026 against the live site, after the latest upload. On-page data comes from the live HTML and from rendering each page in a browser.</p>
+</header>
+
+<section>
+  <p class="lede">The technical foundation is now clean: all 338 automated checks pass on the live site. Keyword coverage is now the weak point. Pages are short, the home page shows almost no indexable text, and the phrases brands and creators actually search for (influencer marketing, Instagram, YouTube, city names, brand deals) barely appear.</p>
+  <div class="caveat"><strong>What this report can and can't say.</strong> I have no Google Search Console, Keyword Planner or rank-tracker access, so there are <strong>no search volumes, rankings or click numbers here</strong>; none were estimated. Keyword priorities are based on search intent and on which competitors appear in web results today. The web search I used doesn't support <code>site:</code> queries, so whether Google has indexed the pages is <strong>not verified</strong>. Search Console is the only reliable source for that.</div>
+</section>
+
+<section>
+  <h2>Where the site stands</h2>
+  <div class="verdicts">
+    <div class="verdict"><span class="pill good">Pass</span><h3>Technical SEO</h3><p>Unique titles and descriptions, canonicals, sitemap, robots.txt, valid structured data, real 404s, HTTPS. 338/338 live checks.</p></div>
+    <div class="verdict"><span class="pill bad">Weak</span><h3>Content depth</h3><p>The home page renders 25 words of text (the 3D catwalk is not readable text). Other pages have 170–410 words.</p></div>
+    <div class="verdict"><span class="pill bad">Weak</span><h3>Keyword coverage</h3><p>"Influencer marketing", "Instagram" and "YouTube" appear 0 times on any page; "India" is absent from the home and join pages.</p></div>
+    <div class="verdict"><span class="pill warn">Risk</span><h3>Brand search</h3><p>"FSIA" mostly means other organisations in search results (food safety, a finance institute). The brand needs consistent signals to own its own name.</p></div>
+    <div class="verdict"><span class="pill na">Not verified</span><h3>Indexing &amp; rankings</h3><p>Needs Search Console access. No claim is made either way.</p></div>
+  </div>
+</section>
+
+<section>
+  <h2>Current keyword targeting, page by page</h2>
+  <p>Title and H1 are what Google weighs most. Word counts are the main content after the page has rendered.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Page</th><th>Title (length)</th><th>H1</th><th>Words</th><th>What it targets now</th><th>Gap</th></tr></thead>
+    <tbody>
+      <tr><td><code>/</code></td><td>FSIA Creators &amp; Influencer Portal | Connect &amp; Collaborate <span class="sub">57 chars</span></td><td>FSIA Creators &amp; Influencer Portal</td><td class="num">25</td><td>Brand name only</td><td>No "India", no "influencer marketing", no audience. "Connect &amp; Collaborate" carries no search demand.</td></tr>
+      <tr><td><code>/talent/</code></td><td>Verified Creators &amp; Influencers Roster | FSIA Influencer <span class="sub">56 chars</span></td><td>Verified Creator &amp; Influencer Roster</td><td class="num">248</td><td>Verified Indian influencers</td><td>The roster has 6 creators. "Roster" is industry jargon; brands search for "hire / find influencers".</td></tr>
+      <tr><td><code>/campaigns/</code></td><td>Brand Campaigns &amp; Paid Collaborations | FSIA Influencer <span class="sub">55 chars</span></td><td>Live Brand Campaigns for Creators</td><td class="num">410</td><td>Paid brand campaigns for creators</td><td>Best-targeted page. Missing "influencers" and "India" in the title, and barter/paid wording.</td></tr>
+      <tr><td><code>/join/</code></td><td>Register as a Creator &amp; Get Verified | FSIA Influencer <span class="sub">54 chars</span></td><td>Register as a Creator and Get Verified</td><td class="num">172</td><td>Creator registration</td><td>Creators search "influencer registration" and "register as influencer". "India" is missing.</td></tr>
+      <tr><td><code>/membership/</code></td><td>Creator Membership Plans &amp; Pricing | FSIA Influencer <span class="sub">52 chars</span></td><td>Creator Membership Plans</td><td class="num">276</td><td>Membership pricing</td><td>Low search demand on its own. Fine as a conversion page; don't spend keyword effort here.</td></tr>
+      <tr><td><code>/faq/</code></td><td>Creator &amp; Brand FAQs | FSIA Influencer <span class="sub">38 chars</span></td><td>Frequently Asked Questions</td><td class="num">174</td><td>Brand questions</td><td>Covers real search topics (GST, micro-influencers, verification) only in one-line answers. The H1 is generic.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>Keyword clusters to target</h2>
+  <p>Grouped by who searches and why. "Fit" means how well the site can honestly answer the query today. Competitor names are the sites that showed up in web results for these themes.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Cluster</th><th>Example queries</th><th>Intent</th><th>Best page</th><th>Fit</th><th>Seen competing</th></tr></thead>
+    <tbody>
+      <tr><td class="kw">Creator sign-up</td><td>influencer registration India · register as influencer · get verified as influencer · join influencer platform</td><td>Creator, ready to act</td><td><code>/join/</code></td><td><span class="pill good">Strong</span></td><td>Influish, Viral Pitch, HashFame, CreatoBazaar</td></tr>
+      <tr><td class="kw">Brand deals for creators</td><td>paid brand collaborations for influencers India · brand deals for micro influencers · barter collaboration Instagram</td><td>Creator, looking for work</td><td><code>/campaigns/</code></td><td><span class="pill good">Strong</span></td><td>Wobb, TickTime, Influish, Good Creator Co</td></tr>
+      <tr><td class="kw">Hire influencers</td><td>hire influencers India · fashion influencers for brand collaboration · find influencers in Mumbai</td><td>Brand, commercial</td><td><code>/talent/</code></td><td><span class="pill warn">Partial</span><span class="sub">6 creators listed</span></td><td>Socialveins, The Social Cat, Kofluence, Dazzlerr</td></tr>
+      <tr><td class="kw">Influencer marketing service</td><td>influencer marketing agency India · influencer marketing platform India</td><td>Brand, commercial</td><td><code>/</code></td><td><span class="pill warn">Partial</span><span class="sub">very competitive</span></td><td>Kofluence, TickTime, Madify</td></tr>
+      <tr><td class="kw">Creator know-how</td><td>GST for influencers India · ASCI influencer disclosure rules · how to get verified on Instagram India · how much to charge for a brand post</td><td>Creator, informational</td><td>New guide pages</td><td><span class="pill warn">Needs content</span></td><td>Dazzlerr guides, news sites</td></tr>
+      <tr><td class="kw">Pageant &amp; runway</td><td>Miss India 2026 · fashion runway models India · model registration India</td><td>Mixed</td><td><code>/talent/</code>, <code>/join/</code></td><td><span class="pill warn">Check facts</span></td><td>Pageant organisers, model agencies</td></tr>
+      <tr><td class="kw">Brand name</td><td>FSIA influencer · FSIA verified creator · FSIA influencer portal</td><td>Navigational</td><td><code>/</code></td><td><span class="pill good">Strong</span><span class="sub">if signals are added</span></td><td>Other "FSIA" organisations</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>Recommended title and H1 changes</h2>
+  <p>Each title stays under 60 characters and keeps the brand. These are proposals; nothing here has been changed on the site.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Page</th><th>Proposed title</th><th>Proposed H1</th><th>Primary keyword</th></tr></thead>
+    <tbody>
+      <tr><td><code>/</code></td><td>FSIA Influencer – Verified Creators &amp; Brand Deals in India <span class="sub">58 chars</span></td><td>Verified creators and brand collaborations, India</td><td>influencer platform India</td></tr>
+      <tr><td><code>/talent/</code></td><td>Hire Verified Influencers in India | FSIA Influencer <span class="sub">51 chars</span></td><td>Find and hire verified influencers</td><td>hire influencers India</td></tr>
+      <tr><td><code>/campaigns/</code></td><td>Paid Brand Collaborations for Influencers | FSIA Influencer <span class="sub">59 chars</span></td><td>Paid brand campaigns open to creators</td><td>paid brand collaborations</td></tr>
+      <tr><td><code>/join/</code></td><td>Influencer Registration India – Get Verified | FSIA <span class="sub">51 chars</span></td><td>Register as an influencer and get verified</td><td>influencer registration India</td></tr>
+      <tr><td><code>/faq/</code></td><td>Influencer FAQs: GST, Payments, Verification | FSIA <span class="sub">51 chars</span></td><td>Creator and brand questions, answered</td><td>influencer GST India (long tail)</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <h2>Action plan, in order</h2>
+  <ol class="plan">
+    <li><strong>Connect Google Search Console.</strong><p>Verify the domain, submit <code>sitemap.xml</code>, and wait for 2–4 weeks of query data. Real queries and impressions should replace the guesses in this report; everything below is easier to judge with them.</p></li>
+    <li><strong>Give the home page real text.</strong><p>Add 150–250 words below or beside the catwalk: who it is for (creators and brands in India), what happens after sign-up, the categories covered, and links to Join, Campaigns and Talent. Today Google sees 25 words.</p></li>
+    <li><strong>Rework titles and H1s</strong> as proposed above.<p>This is the cheapest change with the most direct effect. It is a small edit in <code>src/seo.ts</code> and the page headings.</p></li>
+    <li><strong>Say the platforms and places out loud.</strong><p>Mention Instagram, YouTube and the cities where creators actually are (the roster lists Mumbai, New Delhi, Bangalore, Chennai, Kochi) in normal sentences on Join, Campaigns and Talent. Each currently appears 0–2 times.</p></li>
+    <li><strong>Expand the FAQ into full answers.</strong><p>Give GST, ASCI disclosure, micro-influencer eligibility and payment timing 80–150 words each, with facts the team can stand behind. These are real search topics with little commercial competition.</p></li>
+    <li><strong>Strengthen the brand entity.</strong><p>Add the official Instagram, YouTube and LinkedIn profiles as <code>sameAs</code> in the Organization schema. Only real profile URLs; none were supplied, so none were added. Link the site from those profiles and from fsia.in.</p></li>
+    <li><strong>Later: individual creator pages.</strong><p>Profiles currently open as overlays with no URL of their own, so none can rank. A page per creator (<code>/talent/name/</code>) would target "[name] influencer" searches and would make ProfilePage markup eligible. Do this only once the roster has real, consenting creators.</p></li>
+    <li><strong>Hold off on category and city landing pages.</strong><p>With 6 creators, pages like "fashion influencers in Mumbai" would be thin or near-empty, and Google treats those as doorway pages. Revisit at roughly 10+ real creators per category or city.</p></li>
+  </ol>
+</section>
+
+<section>
+  <h2>Things to check before promoting the site</h2>
+  <ul class="plain">
+    <li><strong>Roster accuracy.</strong> The listed creators use stock photos, and one is presented as "Winner, Miss India 2026". If these are sample profiles, label or replace them before targeting "hire influencers" or pageant searches. Presenting them as real could mislead brands and attract trust problems.</li>
+    <li><strong>Claims in copy</strong> such as "100% secure escrow" and "payment within 24 hours" (listed in the audit report). Keyword pages built on claims the team can't back up tend to convert badly and invite complaints.</li>
+    <li><strong>The old copy at fsia-influencer.vercel.app</strong> competes for the same brand searches and still shows the retired branding. Take it down or redirect it.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>How this was measured</h2>
+  <ul class="plain">
+    <li>Titles, descriptions, headings and word counts: the live HTML of all 6 indexable pages, plus each page rendered in Chromium with its main text counted.</li>
+    <li>Term counts: whole-word matches in the rendered main content.</li>
+    <li>Roster: the live <code>/api/creators</code> response (3 sections, 6 creators).</li>
+    <li>Competitors: names that appeared in web search results for each cluster on 19 Oct 2026. This search is not Google India, so treat it as a sample of who is active, not as rankings.</li>
+  </ul>
+  <p class="sources">Sources seen in search results: <a href="https://yourstory.com/companies/influish">Influish (YourStory)</a> · <a href="https://kofluence.com/social-media-influencer-marketing-agency/">Kofluence</a> · <a href="https://apps.apple.com/us/app/hashfame/id6452017249">HashFame</a> · <a href="https://creatobazaar.odoo.com">CreatoBazaar</a> · <a href="https://apps.apple.com/in/app/viral-pitch/id1644679898">Viral Pitch</a> · <a href="https://apps.apple.com/us/app/id1538489817">Wobb</a> · <a href="https://ticktime.media/barter-campaigns-paid-collaborations-for-influencers?type=cash">TickTime</a> · <a href="https://www.dazzlerr.com/how-to-hire-influencers-india-guide/">Dazzlerr</a> · <a href="https://socialveins.com/influencer/instagram/vartikalifestyle">Socialveins</a> · <a href="https://thesocialcat.com/influencers/indian-fashion">The Social Cat</a> · <a href="https://en.wikipedia.org/wiki/Food_Safety_Institute_of_the_Americas">Food Safety Institute of the Americas</a> · <a href="https://www.bankingday.com/article/finsia-aims-to-renew-its-membership-base-with-a-new-portal">Finsia portal (Banking Day)</a></p>
+</section>
+</div>
