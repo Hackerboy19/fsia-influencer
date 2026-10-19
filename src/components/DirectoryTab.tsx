@@ -77,7 +77,7 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
       name: "Pooja Hegde",
       role: "Elite Beauty & Ayurvedic Skin Expert",
       city: "Kochi",
-      image: "https://images.unsplash.com/photo-1594744803329-e58b31de215f?q=80&w=600&auto=format&fit=crop",
+      image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=600&auto=format&fit=crop",
       bio: "Pooja blends modern dermatology with organic, ancient Ayurvedic skincare practices. She inspires millions to embrace traditional organic remedies packaged with editorial design.",
       stats: {
         reach: "3.1M",
@@ -414,6 +414,10 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
                     alt={`${creator.name}, ${currentCategory} creator${creator.city ? ` from ${creator.city}` : ""}`}
                     loading="lazy"
                     decoding="async"
+                    // A removed external photo shows the site logo instead of a broken image
+                    onError={(e) => {
+                      if (!e.currentTarget.src.endsWith("/logo.png")) e.currentTarget.src = "/logo.png";
+                    }}
                     className="w-full h-full object-cover transition-all duration-500 ease-out group-hover:scale-105"
                   />
 

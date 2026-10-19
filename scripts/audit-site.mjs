@@ -100,15 +100,44 @@ async function auditHttp() {
     const xRobots = res.headers.get("x-robots-tag") || "";
     if (indexable) record("seo", `${path} has no X-Robots-Tag noindex`, !/noindex/i.test(xRobots), xRobots || "none");
 
+    const nodes = [];
     for (const block of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) {
       let ok = true;
       try {
-        JSON.parse(block[1]);
+        const data = JSON.parse(block[1]);
+        nodes.push(...(data["@graph"] || [data]));
+        ok = (data["@context"] || "") === "https://schema.org";
       } catch {
         ok = false;
       }
-      record("seo", `${path} JSON-LD parses`, ok);
+      record("schema", `${path} JSON-LD parses with the schema.org context`, ok);
     }
+    if (indexable) {
+      const ofType = (t) => nodes.filter((n) => n["@type"] === t);
+      record("schema", `${path} has one Organization, WebSite and WebPage`,
+        ofType("Organization").length === 1 && ofType("WebSite").length === 1 && ofType("WebPage").length === 1);
+      record("schema", `${path} WebPage url matches the canonical`, ofType("WebPage")[0]?.url === canonical, ofType("WebPage")[0]?.url);
+      const crumbs = ofType("BreadcrumbList")[0]?.itemListElement || [];
+      if (path === "/") record("schema", "/ has no breadcrumb", !crumbs.length);
+      else
+        record("schema", `${path} BreadcrumbList ends at this page`,
+          crumbs.length === 2 && crumbs[0].item === `${new URL(canonical).origin}/` && crumbs[1].item === canonical && crumbs.every((c, i) => c.position === i + 1));
+      if (path === "/faq/") {
+        const faq = ofType("FAQPage")[0];
+        const visible = (html.match(/<h2>/g) || []).length;
+        record("schema", "/faq/ FAQPage lists the questions shown on the page", !!faq && faq.mainEntity.length === visible && visible > 0,
+          `${faq?.mainEntity?.length} in schema, ${visible} on the page`);
+      }
+      const fakeClaims = nodes.some((n) => ["AggregateRating", "Review", "Event"].includes(n["@type"]) || n.aggregateRating || n.review);
+      record("schema", `${path} makes no rating, review or event claims`, !fakeClaims);
+    }
+
+    // Google tag: exactly one gtag.js and one config call (no duplicate page views); no GTM container
+    const gtagScripts = (html.match(/googletagmanager\.com\/gtag\/js\?id=G-[A-Z0-9]+/g) || []).length;
+    const configs = (html.match(/gtag\(\s*['"]config['"]/g) || []).length;
+    const gtm = /googletagmanager\.com\/gtm\.js/.test(html);
+    record("analytics", `${path} loads the Google tag once with one config`, gtagScripts === 1 && configs === 1 && !gtm,
+      `${gtagScripts} gtag.js, ${configs} config, GTM ${gtm ? "present" : "absent"}`);
 
     if (indexable) {
       if (title) titles.set(title, [...(titles.get(title) || []), path]);
@@ -245,6 +274,10 @@ async function auditBrowser() {
       } else {
         await page.waitForTimeout(900);
       }
+      const broken = await page.evaluate(() =>
+        Array.from(document.images).filter((img) => img.complete && img.naturalWidth === 0 && img.getAttribute("src")).map((img) => img.getAttribute("src").slice(0, 80))
+      );
+      record("images", `${label}: no broken images`, broken.length === 0, broken.join(", "));
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       record("layout", `${label}: no horizontal page scroll`, overflow <= 1, `${overflow}px wider than viewport`);
       await scanRendered(page, label);

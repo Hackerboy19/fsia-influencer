@@ -5,6 +5,7 @@ import path from "path";
 import { debrandText } from "../server/db";
 import { isValidEmail, isValidPhone } from "../server/validation";
 import { csvCell } from "../src/lib/adminSession";
+import { readableAccent } from "../src/lib/color";
 
 let failures = 0;
 const check = (name: string, ok: boolean, detail = "") => {
@@ -86,6 +87,19 @@ for (const [input, expected] of [
 ] as const) {
   check(`csvCell(${JSON.stringify(input)}) is safe`, csvCell(input) === expected, `got ${csvCell(input)}`);
 }
+
+// Admin accent colours must stay readable on the dark bars (≥ 4.5:1 against #333, the lightest dark surface)
+const lum = (hex: string) => {
+  const ch = (v: number) => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b);
+};
+for (const input of ["#2f2a23", "#000000", "#E1C699", "#123", "not-a-colour", ""]) {
+  const out = readableAccent(input);
+  const ratio = (lum(out) + 0.05) / (lum("#333333") + 0.05);
+  check(`readableAccent(${JSON.stringify(input)}) = ${out} reads on #333 (${ratio.toFixed(2)}:1)`, ratio >= 4.5);
+}
+check("readableAccent keeps an already-readable colour unchanged", readableAccent("#E1C699").toLowerCase() === "#e1c699");
 
 console.log(failures ? `\n${failures} check(s) failed.` : "\nAll unit checks passed.");
 process.exit(failures ? 1 : 0);

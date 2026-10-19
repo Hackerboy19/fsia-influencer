@@ -13,6 +13,13 @@ ErrorDocument 404 /404.html
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
+    # Folders without the trailing slash (/talent) go straight to the canonical
+    # https://…/talent/ in one redirect instead of two
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteCond %{REQUEST_URI} !/$
+    RewriteCond %{REQUEST_URI} !^/(api|storage|assets)(/|$)
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1/ [L,R=301]
+
     # Force HTTPS
     RewriteCond %{HTTPS} !=on
     RewriteCond %{HTTP:X-Forwarded-Proto} !https

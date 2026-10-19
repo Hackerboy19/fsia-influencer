@@ -24,11 +24,12 @@ for (const route of ROUTES) {
   fs.writeFileSync(path.join(dir, "index.html"), html);
 }
 
-const today = new Date().toISOString().slice(0, 10);
 const urls = ROUTES.filter((r) => r.indexable)
   .map(
     (r) =>
-      `  <url>\n    <loc>${SITE_URL}${r.path}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>${r.changefreq}</changefreq>\n    <priority>${r.priority}</priority>\n  </url>`
+      // No <lastmod>: the build date is not when the page content changed, and Google
+      // ignores lastmod values it cannot trust
+      `  <url>\n    <loc>${SITE_URL}${r.path}</loc>\n    <changefreq>${r.changefreq}</changefreq>\n    <priority>${r.priority}</priority>\n  </url>`
   )
   .join("\n");
 fs.writeFileSync(

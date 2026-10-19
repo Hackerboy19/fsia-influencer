@@ -112,7 +112,10 @@ export const canonicalUrl = (route: RouteMeta) => SITE_URL + route.path;
 export const escapeHtml = (value: string) =>
   value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-// JSON-LD blocks: WebSite + Organization everywhere, FAQPage on /faq/
+// JSON-LD blocks: Organization + WebSite + WebPage everywhere, BreadcrumbList on section
+// pages, FAQPage on /faq/. Only facts the site itself shows; no ratings or invented details.
+// (Creator profiles open as overlays on /talent/, not as their own URLs, so ProfilePage /
+// Person markup does not apply.)
 export function structuredData(route: RouteMeta): object[] {
   const organization = {
     "@type": "Organization",
@@ -140,8 +143,23 @@ export function structuredData(route: RouteMeta): object[] {
           url: canonicalUrl(route),
           name: route.title,
           description: route.description,
-          isPartOf: { "@id": `${SITE_URL}/#website` }
-        }
+          inLanguage: "en-IN",
+          isPartOf: { "@id": `${SITE_URL}/#website` },
+          primaryImageOfPage: { "@type": "ImageObject", url: OG_IMAGE, width: 1200, height: 630 },
+          ...(route.path !== "/" ? { breadcrumb: { "@id": `${canonicalUrl(route)}#breadcrumb` } } : {})
+        },
+        ...(route.path !== "/"
+          ? [
+              {
+                "@type": "BreadcrumbList",
+                "@id": `${canonicalUrl(route)}#breadcrumb`,
+                itemListElement: [
+                  { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+                  { "@type": "ListItem", position: 2, name: route.heading, item: canonicalUrl(route) }
+                ]
+              }
+            ]
+          : [])
       ]
     }
   ];

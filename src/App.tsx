@@ -31,6 +31,7 @@ import CursorParticleTrail from "./components/CursorParticleTrail";
 import SiteFooter from "./components/SiteFooter";
 import { Toaster } from "react-hot-toast";
 import { TabId, routeForPath, routeForTab, applyRouteMeta } from "./seo";
+import { readableAccent } from "./lib/color";
 
 // The 3D scene (Three.js) and the admin workspace are loaded on demand, so the
 // welcome screen and content pages don't wait for code most visitors never run
@@ -365,7 +366,7 @@ export default function App() {
     <div 
       className="relative w-screen h-screen overflow-hidden bg-alabaster font-sans text-[#111] select-none snap-y snap-mandatory"
       style={{
-        ["--color-champagne" as any]: settings.primaryColor || "#E1C699",
+        ["--color-champagne" as any]: readableAccent(settings.primaryColor),
         scrollSnapType: "y mandatory"
       }}
     >
@@ -384,7 +385,7 @@ export default function App() {
             {/* Decorative fine-art background grids */}
             <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[radial-gradient(var(--color-champagne)_1.5px,transparent_1.5px)] [background-size:24px_24px]" />
             <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] border border-champagne/15 rounded-full pointer-events-none" />
-            <CursorParticleTrail color={settings.primaryColor || "#E1C699"} />
+            <CursorParticleTrail color={readableAccent(settings.primaryColor)} />
 
             {/* Top Branding Header */}
             <div className="flex justify-between items-center z-10">
@@ -532,7 +533,7 @@ export default function App() {
                   onSectionChange={setActiveSectionIndex}
                 />
               </Suspense>
-              <CursorParticleTrail active={activeTab === "catwalk"} color={settings.primaryColor || "#E1C699"} />
+              <CursorParticleTrail active={activeTab === "catwalk"} color={readableAccent(settings.primaryColor)} />
             </div>
 
             {/* Refracting Crystal Prism Info Widget (Editorial Aesthetic Theme) */}
