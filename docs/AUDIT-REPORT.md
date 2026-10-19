@@ -117,6 +117,8 @@ Verified on desktop, tablet and mobile: every header tab, bottom-bar link, foote
 
 Already in good shape (kept): HTTPS redirect, `/talent` → `/talent/` 301, unique per-page title, description and canonical, Open Graph/Twitter cards, valid JSON-LD (Organization, WebSite, WebPage, FAQPage), `robots.txt` with sitemap, a sitemap of the 6 canonical indexable URLs only, `noindex` on `/admin/`.
 
+Added later (see [`FINAL-REPORT.md`](FINAL-REPORT.md)): BreadcrumbList and ImageObject markup, no build-date `lastmod` in the sitemap, one-hop trailing-slash redirects, readable admin accent colours, a broken-image fallback.
+
 Fixed:
 - **Soft 404s.** `.htaccess` sent every unknown URL to the home page with status 200, which Google reports as "Soft 404" or duplicates. Both servers now return a real 404 page (`noindex`, links to every section).
 - `favicon.ico` added (it was returning the home page).
@@ -179,7 +181,7 @@ Not done (needs your access):
 | Command | What it covers | Result on this branch |
 |---|---|---|
 | `npm test` | Type-check; brand-filter and validation unit tests; Node ↔ PHP parity | pass |
-| `npm run audit -- <url>` | Status codes, metadata, canonicals, sitemap and robots, 404s, `X-Robots-Tag`, retired word in HTML/bundles/API/rendered DOM, internal links, horizontal overflow, JS errors, axe WCAG 2.2 AA at 375/768/1440 px on all pages, dialogs and admin sign-in, Esc/focus behaviour | 285 checks, 0 failures (PHP build and Node build) |
+| `npm run audit -- <url>` | Status codes, metadata, canonicals, sitemap and robots, 404s, `X-Robots-Tag`, retired word in HTML/bundles/API/rendered DOM, internal links, horizontal overflow, JS errors, axe WCAG 2.2 AA at 375/768/1440 px on all pages, dialogs and admin sign-in, Esc/focus behaviour | 338 checks, 0 failures (PHP and Node builds; also with the live site's dark accent colour) |
 | `npm run test:journeys -- <local url>` | Real-browser navigation on 3 screen sizes; every public form: empty/invalid input, server failure, double click, success, draft restore, server-side validation, persistence; security: default-password lock, AI endpoint login, oversized submissions, rate limit, no version leaks; catwalk arrows; no public admin button; categories incl. "Other"; approval into the chosen section | 151/151 (PHP build and Node build) |
 
 `audit` is read-only and safe to run against the live site. `test:journeys` writes test records (`@example.com` addresses), so it refuses to run against anything but a local build.
