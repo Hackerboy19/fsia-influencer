@@ -1,0 +1,144 @@
+<title>FSIA Influencer Website Report</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,700&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column: headline numbers, then what changed by area, then where things stand */
+:root {
+  --bg: #f6f5f2; --surface: #ffffff; --ink: #1b1a17; --muted: #5d5a53; --line: #dedad1;
+  --accent: #8a6a2c; --accent-soft: #f1e8d4;
+  --good: #1f6b45; --good-bg: #e2f1e8; --warn: #8a5a00; --warn-bg: #fbefd6; --na: #4d5866; --na-bg: #e7eaee;
+  --display: "Bodoni Moda", "Didot", Georgia, serif;
+  --body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121110; --surface: #1b1a18; --ink: #ece8df; --muted: #a8a294; --line: #34312c;
+  --accent: #e1c699; --accent-soft: #2c261b;
+  --good: #7fd1a4; --good-bg: #16291f; --warn: #f0c46a; --warn-bg: #2d2412; --na: #b3bcc8; --na-bg: #23272d;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121110; --surface: #1b1a18; --ink: #ece8df; --muted: #a8a294; --line: #34312c;
+  --accent: #e1c699; --accent-soft: #2c261b;
+  --good: #7fd1a4; --good-bg: #16291f; --warn: #f0c46a; --warn-bg: #2d2412; --na: #b3bcc8; --na-bg: #23272d;
+  color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font: 16px/1.6 var(--body); }
+.wrap { max-width: 940px; margin: 0 auto; padding-block: 40px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 48px; }
+header { display: grid; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 28px; }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 700 clamp(32px, 6vw, 50px)/1.05 var(--display); margin: 0; text-wrap: balance; }
+h2 { font: 600 clamp(24px, 3.4vw, 30px)/1.2 var(--display); margin: 0; text-wrap: balance; }
+h3 { font: 700 17px/1.3 var(--body); margin: 0; }
+p { margin: 0; max-width: 68ch; }
+.meta { color: var(--muted); font-size: 14px; }
+.lede { font-size: 18px; max-width: 64ch; }
+section { display: grid; gap: 18px; }
+.figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.fig { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: grid; gap: 4px; align-content: start; }
+.fig b { font: 600 30px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.fig span { color: var(--muted); font-size: 14px; }
+.areas { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.area { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: grid; gap: 10px; align-content: start; }
+.area ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14.5px; color: var(--muted); }
+.area ul strong { color: var(--ink); font-weight: 600; }
+.pill { display: inline-block; font: 600 11.5px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 5px 8px; border-radius: 99px; white-space: nowrap; }
+.good { color: var(--good); background: var(--good-bg); } .warn { color: var(--warn); background: var(--warn-bg); } .na { color: var(--na); background: var(--na-bg); }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 14.5px; }
+th, td { text-align: left; vertical-align: top; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+th { font: 600 11.5px/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--bg); }
+tr:last-child td { border-bottom: 0; }
+td.num { font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 13.5px; white-space: nowrap; }
+.note { font-size: 14px; color: var(--muted); }
+</style>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">Website report · influencer.fsia.in</span>
+  <h1>FSIA Influencer Website Report</h1>
+  <p class="meta">Status as of 19 October 2026. All figures below were measured on the live website after the latest update was uploaded.</p>
+</header>
+
+<section>
+  <p class="lede">The website has been audited end to end, fixed, and re-checked live. The old "Forever" branding is gone everywhere, the site meets the accessibility standard, the forms are reliable, security gaps are closed, and the technical setup for Google is complete.</p>
+  <div class="figures">
+    <div class="fig"><b>338 / 338</b><span>automated checks passing on the live site</span></div>
+    <div class="fig"><b>0</b><span>accessibility violations (WCAG 2.2 AA) on phone, tablet and desktop</span></div>
+    <div class="fig"><b>0</b><span>mentions of "Forever" in pages, search data or content</span></div>
+    <div class="fig"><b>−55%</b><span>less code to download on first visit (1,178 KB → 525 KB)</span></div>
+    <div class="fig"><b>151 / 151</b><span>user-journey and form tests passing</span></div>
+  </div>
+</section>
+
+<section>
+  <h2>What was done</h2>
+  <div class="areas">
+    <div class="area"><span class="pill good">Complete</span><h3>Branding</h3><ul>
+      <li>"Forever" removed from every page, page title, search listing and stored content.</li>
+      <li><strong>Automatic filter</strong> keeps it from reappearing through future content edits.</li>
+    </ul></div>
+    <div class="area"><span class="pill good">Complete</span><h3>Design and readability</h3><ul>
+      <li>Text sizes, weights and colour contrast raised to the WCAG 2.2 AA standard.</li>
+      <li>The site keeps text readable whatever accent colour is chosen in the admin panel.</li>
+      <li>Panels over photos made solid enough to read.</li>
+    </ul></div>
+    <div class="area"><span class="pill good">Complete</span><h3>Navigation</h3><ul>
+      <li>Catwalk forward and back arrows fixed.</li>
+      <li>Admin button removed from public view; admin opens at <strong>/admin/</strong>.</li>
+      <li>Duplicate mobile menus removed; whole site usable by keyboard.</li>
+    </ul></div>
+    <div class="area"><span class="pill good">Complete</span><h3>Forms</h3><ul>
+      <li>All 4 public forms validated, with clear error messages.</li>
+      <li>Double submissions blocked; long forms keep a saved draft.</li>
+      <li>Creator sign-up now offers <strong>24 categories plus "Other"</strong> with free text.</li>
+    </ul></div>
+    <div class="area"><span class="pill good">Complete</span><h3>Security</h3><ul>
+      <li>Admin locked until the default password is changed.</li>
+      <li>Spam and overload protection on all forms.</li>
+      <li>Internal files blocked; browser security headers active.</li>
+    </ul></div>
+    <div class="area"><span class="pill good">Complete</span><h3>Speed</h3><ul>
+      <li>First download cut by 55%.</li>
+      <li>The 3D catwalk pauses when not on screen, so content pages run smoothly on phones.</li>
+    </ul></div>
+    <div class="area"><span class="pill good">Complete</span><h3>Google readiness (technical SEO)</h3><ul>
+      <li>Every page has its own title, description and preview card.</li>
+      <li>Sitemap, robots file and structured data in place and validated (0 errors).</li>
+      <li>Missing pages return a proper "not found" instead of the home page.</li>
+      <li>Google Analytics counting one visit per page, no duplicates.</li>
+    </ul></div>
+  </div>
+</section>
+
+<section>
+  <h2>Search visibility today</h2>
+  <p>The technical side is ready. The amount of written content is what currently limits how many searches the site can appear for.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Page</th><th>Purpose</th><th>Words of text</th><th>Main search topic</th></tr></thead>
+    <tbody>
+      <tr><td>Home</td><td>Introduction, 3D catwalk</td><td class="num">25</td><td>Brand name</td></tr>
+      <tr><td>Talent</td><td>Creator roster (6 creators)</td><td class="num">248</td><td>Verified Indian influencers</td></tr>
+      <tr><td>Campaigns</td><td>Paid brand campaigns (4 live)</td><td class="num">410</td><td>Paid brand campaigns for creators</td></tr>
+      <tr><td>Join</td><td>Creator registration</td><td class="num">172</td><td>Creator registration</td></tr>
+      <tr><td>Membership</td><td>Plans and pricing</td><td class="num">276</td><td>Membership pricing</td></tr>
+      <tr><td>FAQ</td><td>8 questions</td><td class="num">174</td><td>Creator and brand questions</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">Search terms such as "influencer marketing", "Instagram" and "YouTube" do not yet appear on the site. Similar Indian platforms seen in search results include Influish, Wobb, Kofluence, Viral Pitch and TickTime. A detailed keyword report is available separately.</p>
+</section>
+
+<section>
+  <h2>Where things stand</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Item</th><th>Status</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td>Latest website update</td><td><span class="pill good">Live</span></td><td>Uploaded and verified on 19 Oct 2026</td></tr>
+      <tr><td>Google Analytics (GA4)</td><td><span class="pill good">Working</span></td><td>Recording page visits correctly</td></tr>
+      <tr><td>Google Search Console</td><td><span class="pill na">Not connected</span></td><td>Needed to see which searches show the site, and whether Google has indexed it</td></tr>
+      <tr><td>Search rankings</td><td><span class="pill na">Not measured</span></td><td>No ranking data available until Search Console is connected</td></tr>
+      <tr><td>Old copy on fsia-influencer.vercel.app</td><td><span class="pill warn">Still online</span></td><td>Shows the old branding</td></tr>
+      <tr><td>Redirect from http:// addresses without a closing slash</td><td><span class="pill warn">Minor</span></td><td>Takes two steps instead of one; a hosting-panel setting</td></tr>
+    </tbody>
+  </table></div>
+</section>
+</div>
