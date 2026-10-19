@@ -58,24 +58,26 @@ This list covers this round. Earlier rounds are in `AUDIT-REPORT.md`: soft 404s,
 | `npm run test:journeys` on PHP build (fresh DB) | **151/151** | 0 | — |
 | `npm run test:journeys` on Node build (fresh DB) | **151/151** | 0 | — |
 | Schema validator (validator.schema.org) | 6/6 pages, 0 errors | 0 | — |
-| Live audit of the **new** build | — | — | **NOT VERIFIED**: needs the upload |
-| `.htaccess` one-hop redirect | — | — | **NOT VERIFIED**: no Apache here (local tests use PHP's built-in server) |
+| Live audit of the **new** build (https://influencer.fsia.in) | **338/338** | 0 | 1 warning (`/admin/` description) |
+| One-hop redirects (live) | https no-slash, http root | http + no-slash: 2 hops (Plesk nginx) | — |
 | Real-device testing, Core Web Vitals field data (CrUX) | — | — | untested; needs real traffic |
 
 The audit covers HTTP status codes, metadata, canonicals, the sitemap and robots.txt, 404s, schema, analytics, the retired word (HTML, bundles, API, rendered DOM), images, layout overflow at 375/768/1440 px, axe WCAG 2.2 AA on every page, dialog and the admin sign-in, JS errors and internal links. The journeys cover every navigation path and all 4 public forms (invalid input, server failure, double click, success, draft restore, stored data), the security limits, the catwalk arrows, and the categories with "Other".
 
 ## E. Deployment status
 
-**Not deployed.** I have no server access; you upload the zip. A check of the live site on 19 Oct 2026 still shows the previous build: no BreadcrumbList, `lastmod` present, 2-hop redirect.
+**Deployed by the owner and verified live on 19 Oct 2026.** `npm run audit -- https://influencer.fsia.in` gives **338/338 checks passed** (one warning: the short `/admin/` description, a noindex page). The live pages carry the BreadcrumbList; the sitemap has no `lastmod`; unknown URLs return 404; `/DEPLOY.md` returns 403; HSTS, X-Frame-Options, nosniff, Referrer-Policy and Permissions-Policy are now sent. The stored accent is still `#2f2a23`, and it now displays readably.
+
+One item remains: `http://…/talent` (http **and** no trailing slash) still takes 2 hops, because Plesk's nginx makes the http→https redirect before Apache's `.htaccess` runs. `https://…/talent` and `http://…/` are a single hop. To make it one hop, turn off *Permanent SEO-safe 301 redirect from HTTP to HTTPS* in Plesk → Hosting settings; `.htaccess` then handles both. This is low priority: canonicals and the sitemap never use those URLs.
 
 To deploy: back up, extract `fsia-influencer-live.zip` over the site root (data in `storage/` is kept), hard-refresh, then run `npm run audit -- https://influencer.fsia.in`. Every check should pass.
 
 ## F. Pending external actions (owner)
 
-1. **Upload the new zip**, then tell me and I'll re-run the live audit and check the redirect, schema and images.
+1. ~~Upload the new zip~~ (done and verified). Optional: switch off Plesk's HTTP→HTTPS redirect so `.htaccess` makes every redirect in one hop (see E).
 2. **Delete `DEPLOY.md` on the server** (extracting a zip doesn't remove old files).
 3. **Change the admin password** if it is still the default (the site refuses admin actions until you do).
-4. **Add the security headers** in Plesk → nginx settings (exact lines in `DEPLOY.md` → *Security checklist*).
+4. ~~Security headers~~: now sent on live pages.
 5. **Accent colour (optional):** the site now displays `#2f2a23` lightened to a readable grey. To get the gold look back, set it to `#E1C699` in Admin → Campaign Copy.
 6. **Take down fsia-influencer.vercel.app** or redirect it here. It shows the retired branding and competes with this site in Google.
 7. **Search Console:** verify the domain, submit `https://influencer.fsia.in/sitemap.xml`, request indexing for the main pages, and validate the old Soft 404 entries.
@@ -89,19 +91,19 @@ To deploy: back up, extract `fsia-influencer-live.zip` over the site root (data 
 |---|---|---|
 | 1 | Retired word absent from rendered pages, metadata, SEO files, bundles, API (local build) | **PASS** |
 | 2 | Retired word absent on the live site | **PASS** (current build); fsia.in and the Vercel copy are outside this site: **FAIL**, owner action |
-| 3 | WCAG 2.2 AA (axe) on all pages, dialogs and admin sign-in at 3 sizes, including with the live accent | **PASS** locally; live: **NOT VERIFIED** until upload |
+| 3 | WCAG 2.2 AA (axe) on all pages, dialogs and admin sign-in at 3 sizes, including with the live accent | **PASS** (local and live) |
 | 4 | Navigation, catwalk arrows, admin button hidden | **PASS** (local) |
 | 5 | All 4 public forms validate, submit once, persist, and survive failures | **PASS** (local, both backends) |
 | 6 | Unique titles, descriptions, canonicals, OG/Twitter in the initial HTML | **PASS** (local and live) |
-| 7 | JSON-LD valid, no invented data, BreadcrumbList + ImageObject | **PASS** locally (validator, 0 errors); live: **NOT VERIFIED** |
-| 8 | sitemap.xml: eligible URLs only, no false lastmod | **PASS** locally; live: **NOT VERIFIED** |
+| 7 | JSON-LD valid, no invented data, BreadcrumbList + ImageObject | **PASS** (local and live) |
+| 8 | sitemap.xml: eligible URLs only, no false lastmod | **PASS** (live) |
 | 9 | robots.txt correct | **PASS** |
-| 10 | Real 404s, no soft 404s | **PASS** (local); live: **NOT VERIFIED** for this build |
-| 11 | Single-hop redirects | **NOT VERIFIED** (needs Apache, i.e. the live server) |
-| 12 | No broken images | **PASS** locally; live: **NOT VERIFIED** |
+| 10 | Real 404s, no soft 404s | **PASS** (live) |
+| 11 | Single-hop redirects | **FAIL** for http + no-slash only (Plesk setting, see E); others **PASS** |
+| 12 | No broken images | **PASS** (live) |
 | 13 | GA4 single tag, correct page_views, no duplicates | **PASS** |
 | 14 | GTM | **NOT APPLICABLE**: no container supplied, not needed |
 | 15 | Search Console verified, sitemap submitted, pages indexed | **BLOCKED** (no access or token) |
-| 16 | Security fixes (default-password lock, limits, hidden versions, blocked files) | **PASS** (local); `DEPLOY.md` deletion and nginx headers: owner action |
+| 16 | Security fixes (default-password lock, limits, hidden versions, blocked files) | **PASS** (live: headers sent, `DEPLOY.md` 403). Still delete the leftover `DEPLOY.md` file |
 | 17 | Automated tests pass | **PASS**: audit 338/338, journeys 151/151 on PHP and on Node, unit tests all pass |
-| 18 | Deployed and verified live | **NOT VERIFIED**: waiting for the upload |
+| 18 | Deployed and verified live | **PASS**: 338/338 live audit, 19 Oct 2026 |
