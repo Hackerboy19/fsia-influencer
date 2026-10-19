@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { routeForTab } from "../seo";
 import { resizeImageFile } from "../lib/image";
 import {
   inputClass, labelClass, helpClass, optionalClass, errorBoxClass,
@@ -266,12 +267,9 @@ export default function ModelRegistrationTab() {
           Creator registration
         </span>
         <h1 className="font-serif-display text-4xl md:text-6xl text-[#111] leading-tight">
-          Register as a Creator and Get Verified
+          {routeForTab("apply").heading}
         </h1>
-        <p className="text-base md:text-lg text-[#2e2c29] max-w-2xl leading-relaxed">
-          Three quick steps, about two minutes. Verified creators get paid brand collaborations, campaign invitations and PR
-          opportunities.
-        </p>
+        <p className="text-base md:text-lg text-[#2e2c29] max-w-2xl leading-relaxed">{routeForTab("apply").intro}</p>
         <div className="flex flex-col sm:flex-row gap-3 pt-2">
           <a
             href="#registration-form-section"

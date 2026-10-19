@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { routeForTab } from "../seo";
 import { motion, AnimatePresence } from "motion/react";
 import { Calendar, Briefcase, ShieldCheck, ArrowRight, CheckCircle2, Users, X } from "lucide-react";
 import { useDialog, Portal } from "../lib/dialog";
@@ -196,10 +197,10 @@ export default function CampaignsTab() {
           FSIA Collaboration Desk
         </span>
         <h1 className="font-serif-display text-3xl md:text-5xl font-bold tracking-tight text-[#111]">
-          Live Brand Campaigns
+          {routeForTab("campaigns").heading}
         </h1>
         <p className="font-serif-text italic text-[#2e2c29] text-base md:text-lg leading-relaxed max-w-2xl">
-          Apply directly to premium brand sponsorships. FSIA Influencer operates 100% secure escrow contracts ensuring creators receive full payment within 24 hours of campaign verification.
+          {routeForTab("campaigns").intro} FSIA Influencer operates 100% secure escrow contracts ensuring creators receive full payment within 24 hours of campaign verification.
         </p>
       </div>
 

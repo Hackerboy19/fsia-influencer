@@ -2,6 +2,10 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Search, MapPin, Sparkles, SlidersHorizontal, CheckCircle2, Eye, Send, Users, ShieldCheck, ArrowRight } from "lucide-react";
 import { Creator, gallerySections } from "../data";
+import { routeForTab } from "../seo";
+
+const listCities = (cities: string[]) =>
+  cities.length > 1 ? `${cities.slice(0, -1).join(", ")} and ${cities[cities.length - 1]}` : cities[0];
 
 interface DirectoryTabProps {
   onOpenCollaboration: (creatorName: string) => void;
@@ -17,6 +21,9 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
   const [selectedReachTier, setSelectedReachTier] = useState("All");
   const [dynamicCreators, setDynamicCreators] = useState<Creator[]>([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Cities named in the intro come from the live roster, so the text never claims a city with no creators
+  const rosterCities = Array.from(new Set(dynamicCreators.map((c) => String(c.city || "").trim()).filter(Boolean))) as string[];
 
   // Flat list of core creators from our high-fashion gallery
   const coreCreators = gallerySections.flatMap((s) => s.creators);
@@ -251,11 +258,12 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
             FSIA ELITE TALENT AGENCY
           </span>
           <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-medium tracking-tight text-stone-900 leading-tight">
-            Discover India's Top Verified Influencers
+            {routeForTab("directory").heading}
           </h1>
           <div className="w-16 h-[1px] bg-[#C9A227] mx-auto my-3" />
           <p className="font-serif italic text-[#2e2c29] text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
-            Bridging luxury couture, organic cosmetics advocates, and digital innovators with India's most prestigious editorial campaigns.
+            {routeForTab("directory").intro}
+            {rosterCities.length > 0 && <> Creators are currently listed in {listCities(rosterCities)}.</>}
           </p>
         </header>
       )}

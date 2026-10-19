@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { routeForTab } from "../seo";
 import { motion, AnimatePresence } from "motion/react";
 import { Shield, Sparkles, Star, Award, CheckCircle2, DollarSign, ArrowRight, HelpCircle, X } from "lucide-react";
 import { useDialog, Portal } from "../lib/dialog";
@@ -203,10 +204,10 @@ export default function MembershipTab() {
           FSIA Premium Clubs
         </span>
         <h1 className="font-serif-display text-3xl md:text-5xl font-bold tracking-tight text-[#111]">
-          Prestige Membership Tiers
+          {routeForTab("membership").heading}
         </h1>
         <p className="font-serif-text italic text-[#2e2c29] text-base md:text-lg leading-relaxed max-w-2xl">
-          Elevate your creative brand index. Unlock professional couture photo sessions, verified status crests, PR press distributions, and direct matching with elite labels.
+          {routeForTab("membership").intro}
         </p>
       </div>
 

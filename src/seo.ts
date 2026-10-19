@@ -16,6 +16,8 @@ export interface RouteMeta {
   title: string;
   description: string;
   heading: string;
+  // Plain-language summary shown on the page and in the crawlable fallback
+  intro: string;
   indexable: boolean;
   priority: string;
   changefreq: "daily" | "weekly" | "monthly";
@@ -25,10 +27,12 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "catwalk",
     path: "/",
-    title: "FSIA Creators & Influencer Portal | Connect & Collaborate",
+    title: "FSIA Influencer – Verified Creators & Brand Deals in India",
     description:
-      "Join the official influencer network. Register and access exclusive brand collaborations, creator campaigns, and profile management.",
-    heading: "FSIA Creators & Influencer Portal",
+      "Creator and influencer platform for India: get verified, apply for paid brand collaborations on Instagram and YouTube, or hire verified influencers.",
+    heading: "Verified Creators & Brand Collaborations in India",
+    intro:
+      "FSIA Influencer is a creator and influencer platform for India. Instagram and YouTube creators register for free, get verified and apply for paid brand collaborations and barter campaigns. Brands use it to find and hire verified influencers by category and city, from fashion, beauty and pageants to travel, food, tech and gaming, and to run influencer marketing campaigns with creators across the country.",
     indexable: true,
     priority: "1.0",
     changefreq: "weekly"
@@ -36,10 +40,12 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "directory",
     path: "/talent/",
-    title: "Verified Creators & Influencers Roster | FSIA Influencer",
+    title: "Hire Verified Influencers in India | FSIA Influencer",
     description:
-      "Browse verified Indian creators and influencers by category, city, reach and engagement, and send a collaboration request in minutes.",
-    heading: "Verified Creator & Influencer Roster",
+      "Find and hire verified Indian influencers and creators by category, city, reach and engagement, then send a brand collaboration request in minutes.",
+    heading: "Find and Hire Verified Influencers in India",
+    intro:
+      "Browse verified influencers and creators from across India. Filter by category, city, reach and engagement, open a profile to see their work, and send a brand collaboration request. Every creator listed here has been reviewed and approved by the FSIA team.",
     indexable: true,
     priority: "0.9",
     changefreq: "daily"
@@ -47,10 +53,12 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "campaigns",
     path: "/campaigns/",
-    title: "Brand Campaigns & Paid Collaborations | FSIA Influencer",
+    title: "Paid Brand Collaborations for Influencers | FSIA Influencer",
     description:
-      "Discover live paid brand campaigns for creators across fashion, travel, lifestyle and tech. See budgets, requirements and perks, then apply.",
-    heading: "Live Brand Campaigns for Creators",
+      "Apply for paid brand collaborations and barter campaigns for Instagram and YouTube creators in India, across fashion, beauty, travel, lifestyle and tech.",
+    heading: "Paid Brand Campaigns for Influencers",
+    intro:
+      "Paid brand collaborations and barter campaigns for Instagram and YouTube creators in India. Each campaign lists its budget, deliverables and eligibility, and micro influencers are welcome to apply.",
     indexable: true,
     priority: "0.9",
     changefreq: "daily"
@@ -58,10 +66,12 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "apply",
     path: "/join/",
-    title: "Register as a Creator & Get Verified | FSIA Influencer",
+    title: "Influencer Registration in India | FSIA Influencer",
     description:
-      "Create your creator profile in three quick steps to get verified and unlock brand collaborations, campaign invitations and PR opportunities.",
-    heading: "Register as a Creator and Get Verified",
+      "Register as an influencer in India in three quick steps. Get verified and unlock paid brand collaborations, campaign invitations and PR opportunities.",
+    heading: "Register as an Influencer and Get Verified",
+    intro:
+      "Influencer registration takes about two minutes and is free. Tell us your category, city and audience on Instagram or YouTube, and our team reviews your profile. Once verified, you can apply for paid brand collaborations, receive campaign invitations and be listed for brands looking to hire influencers. Models, pageant contestants and creators in beauty, food, travel, tech, gaming and more are welcome from anywhere in India.",
     indexable: true,
     priority: "0.9",
     changefreq: "monthly"
@@ -73,6 +83,8 @@ export const ROUTES: RouteMeta[] = [
     description:
       "Compare free and premium creator membership plans: verification badges, priority brand matching, portfolio shoots and dedicated talent management.",
     heading: "Creator Membership Plans",
+    intro:
+      "Compare free and premium membership plans for influencers in India: verification badges, priority brand matching, portfolio shoots and talent management.",
     indexable: true,
     priority: "0.7",
     changefreq: "monthly"
@@ -80,10 +92,12 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "faq",
     path: "/faq/",
-    title: "Creator & Brand FAQs | FSIA Influencer",
+    title: "Influencer FAQs: GST, ASCI & Payments | FSIA Influencer",
     description:
-      "Answers about creator verification, payments, GST, campaign eligibility and how brands work with influencers on FSIA Influencer.",
-    heading: "Frequently Asked Questions",
+      "Answers for influencers and brands in India: registration, verification, GST, ASCI disclosure rules, payments and how brand collaborations work.",
+    heading: "Influencer & Brand FAQs",
+    intro:
+      "Answers for creators and brands on influencer registration, verification, GST and payments, ASCI disclosure rules and how brand collaborations work.",
     indexable: true,
     priority: "0.6",
     changefreq: "monthly"
@@ -94,6 +108,7 @@ export const ROUTES: RouteMeta[] = [
     title: "Admin | FSIA Influencer",
     description: "Administration workspace.",
     heading: "Admin",
+    intro: "",
     indexable: false,
     priority: "0",
     changefreq: "monthly"
@@ -216,7 +231,7 @@ export function renderBody(route: RouteMeta): string {
     route.tab === "faq"
       ? FAQS.map((f) => `<h2>${escapeHtml(f.question)}</h2><p>${escapeHtml(f.answer)}</p>`).join("")
       : "";
-  return `<main class="seo-fallback"><h1>${escapeHtml(route.heading)}</h1><p>${escapeHtml(route.description)}</p>${faq}<nav aria-label="Site">${links}</nav></main>`;
+  return `<main class="seo-fallback"><h1>${escapeHtml(route.heading)}</h1><p>${escapeHtml(route.intro || route.description)}</p>${faq}<nav aria-label="Site">${links}</nav></main>`;
 }
 
 // Browser: keep <head> in sync with the active section

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { ChevronDown, HelpCircle, Shield, FileText, Landmark, Users } from "lucide-react";
 
 import { FAQS as faqs } from "../content/faqs";
+import { routeForTab } from "../seo";
 
 export default function FaqTab() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -25,10 +26,10 @@ export default function FaqTab() {
           FSIA Information Desk
         </span>
         <h1 className="font-serif-display text-3xl md:text-5xl font-bold tracking-tight text-[#111]">
-          Guidelines & Frequently Asked Questions
+          {routeForTab("faq").heading}
         </h1>
         <p className="font-serif-text italic text-[#2e2c29] text-base md:text-lg leading-relaxed max-w-2xl">
-          Everything you need to know about our elite influencer ecosystem, verified credentials, secure escrows, and runway opportunities.
+          {routeForTab("faq").intro}
         </p>
       </div>
 

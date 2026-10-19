@@ -379,7 +379,7 @@ export default function App() {
             initial={{ opacity: 1 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 1.2, ease: [0.25, 1, 0.5, 1] }}
-            className="absolute inset-0 z-50 flex flex-col justify-between p-8 md:p-16 bg-[#FAF9F6] overflow-hidden"
+            className="absolute inset-0 z-50 flex flex-col justify-between gap-8 p-8 md:p-16 bg-[#FAF9F6] overflow-x-hidden overflow-y-auto"
             id="gala-welcome-gate"
           >
             {/* Decorative fine-art background grids */}
@@ -461,6 +461,10 @@ export default function App() {
                   </button>
                 </div>
               </motion.div>
+
+              <p className="font-sans text-sm md:text-base text-[#47453f] max-w-2xl mx-auto leading-relaxed">
+                {routeForTab("catwalk").intro}
+              </p>
             </main>
 
             {/* Footer */}
@@ -522,7 +526,7 @@ export default function App() {
               id={activeTab === "catwalk" ? "main-content" : undefined}
               tabIndex={activeTab === "catwalk" ? -1 : undefined}
             >
-              {activeTab === "catwalk" && <h1 className="sr-only">FSIA Creators &amp; Influencer Portal</h1>}
+              {activeTab === "catwalk" && <h1 className="sr-only">{routeForTab("catwalk").heading}</h1>}
               <Suspense fallback={null}>
                 <ThreeGallery
                   paused={activeTab !== "catwalk"}

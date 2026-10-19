@@ -7,6 +7,11 @@ export interface FAQItem {
 
 export const FAQS: FAQItem[] = [
   {
+    question: "How do I register as an influencer in India on FSIA?",
+    answer: "Open the Get Verified page and complete the three-step form with your category, city, audience size, engagement rate and contact details. Registration is free and takes about two minutes. The FSIA team reviews each application; once approved, your profile can be listed on the Talent page where brands look for influencers to hire, and you can apply for paid brand collaborations.",
+    category: "General"
+  },
+  {
     question: "What is the FSIA Influencer Platform?",
     answer: "FSIA is India's leading elite networking platform bridging verified Brand Campaign victors, national awards laureates, social impact champions, and top-tier digital authorities with premier luxury brand houses. We run structured physical catwalks, editorial magazines, and secure collaboration escrow models.",
     category: "General"
@@ -22,8 +27,8 @@ export const FAQS: FAQItem[] = [
     category: "Financials"
   },
   {
-    question: "Is GSTIN registration mandatory for Indian creators to receive payouts?",
-    answer: "No, a GSTIN is not mandatory for individual creators. If you do not have a GSTIN, payouts are computed based on individual PAN cards. However, if you have a registered agency or corporate structure, submitting your GSTIN allows you to raise tax-compliant invoices and claim input tax credit (ITC).",
+    question: "Do influencers in India need GST registration to receive payouts?",
+    answer: "It depends on your income. Under Indian GST law, a creator providing services must register once their aggregate turnover crosses ₹20 lakh in a financial year (₹10 lakh in special category states). Below that, registration is optional and payouts can be made against your PAN. Influencer services are generally taxed at 18% GST, and a GSTIN lets you raise tax invoices and claim input tax credit. Brands may also deduct TDS from payments, and free products or other benefits received for promotion can be taxable too. Tax rules change, so confirm your own position with a chartered accountant.",
     category: "Financials"
   },
   {
@@ -45,5 +50,20 @@ export const FAQS: FAQItem[] = [
     question: "What legal agreements govern collaborations on the FSIA portal?",
     answer: "All collaborations are bound by our standard digital 'VIP Collaboration Charter' which outlines copyright assignments, exclusivity durations, content standards, and payment timelines. Both parties sign this digitally prior to launch, making it legally enforceable.",
     category: "Brands"
+  },
+  {
+    question: "What are the ASCI disclosure rules for influencers in India?",
+    answer: "The Advertising Standards Council of India (ASCI) requires influencers to clearly label any post where they have a material connection with a brand, such as payment, free products, a barter deal or a family or employment link. Use a label such as #ad, #collab, #sponsored or #partnership, or the platform's paid-partnership tag, placed where viewers see it straight away rather than hidden among other hashtags or behind 'more'. In videos and Reels the disclosure should also appear in the video itself. The government's endorsement guidelines under the Consumer Protection Act require the same, so follow these rules on every brand collaboration, including those found through FSIA.",
+    category: "Brands"
+  },
+  {
+    question: "Can YouTube creators register, or only Instagram influencers?",
+    answer: "Both. Instagram and YouTube creators can register, as can creators who are active on other platforms. Add your follower count, engagement rate and links to your best work in the registration form so brands can see where your audience is.",
+    category: "General"
+  },
+  {
+    question: "How much should I charge for a brand collaboration?",
+    answer: "There is no fixed rate. Brands usually weigh your engagement rate, how well your audience matches their customers and locations, the number and type of deliverables (for example a Reel, a set of stories or a YouTube integration), usage rights, exclusivity and turnaround time. Many micro influencers start with barter collaborations and move to paid rates as they build results to show. Each campaign on FSIA lists its budget, so you can judge the fit before applying.",
+    category: "Financials"
   }
 ];
