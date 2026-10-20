@@ -13,3 +13,4 @@ server/db.json.*
 php-backend/storage/db.*
 php-backend/storage/*.tmp
 php-backend/api/config.php
+server/media/

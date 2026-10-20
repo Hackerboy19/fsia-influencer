@@ -231,19 +231,60 @@ function seo_default_profile_description(array $entry): string
     return seo_truncate($lead !== '' ? "$lead. $text" : $text, 160);
 }
 
+/** Public link to a creator's photo; uploaded photos are served by the API at /api/media/profile/<slug>.jpg */
+function seo_profile_photo_url(array $entry): string
+{
+    $photo = seo_clean($entry['creator']['image'] ?? '');
+    if (seo_is_url($photo)) {
+        return $photo;
+    }
+    if (preg_match('#^data:image/(jpeg|png|webp);base64,#i', $photo)) {
+        return seo_defs()['siteUrl'] . '/api/media/profile/' . $entry['slug'] . '.jpg?v=' . strlen($photo);
+    }
+    return '';
+}
+
+/**
+ * Decode an image sent as a data: URL. Returns ['bytes', 'mime', 'ext', 'width', 'height'] or an error string.
+ */
+function seo_decode_image(string $dataUrl, int $maxBytes = 5242880)
+{
+    if (!preg_match('#^data:image/(jpeg|jpg|png|webp);base64,([A-Za-z0-9+/=\s]+)$#', $dataUrl, $m)) {
+        return 'Please choose a JPG, PNG or WebP image.';
+    }
+    $bytes = base64_decode(preg_replace('/\s+/', '', $m[2]), true);
+    if ($bytes === false || $bytes === '') {
+        return 'The image could not be read. Please try another file.';
+    }
+    if (strlen($bytes) > $maxBytes) {
+        return 'The image is too large. Please use one under 5 MB.';
+    }
+    if (strncmp($bytes, "\xFF\xD8\xFF", 3) === 0) {
+        $mime = 'image/jpeg'; $ext = 'jpg';
+    } elseif (strncmp($bytes, "\x89PNG", 4) === 0) {
+        $mime = 'image/png'; $ext = 'png';
+    } elseif (substr($bytes, 0, 4) === 'RIFF' && substr($bytes, 8, 4) === 'WEBP') {
+        $mime = 'image/webp'; $ext = 'webp';
+    } else {
+        return 'Please choose a JPG, PNG or WebP image.';
+    }
+    $size = @getimagesizefromstring($bytes);
+    return ['bytes' => $bytes, 'mime' => $mime, 'ext' => $ext, 'width' => $size ? (int)$size[0] : 0, 'height' => $size ? (int)$size[1] : 0];
+}
+
 function seo_profile_meta(array $entry, array $seo): array
 {
     $c = $entry['creator'];
     $canonical = seo_defs()['siteUrl'] . $entry['path'];
     $title = seo_clean($c['seo']['title'] ?? '') ?: seo_default_profile_title($entry, $seo);
     $description = seo_clean($c['seo']['description'] ?? '') ?: seo_default_profile_description($entry);
-    $photo = seo_clean($c['image'] ?? '');
-    $image = seo_is_url($photo) ? $photo : seo_default_image($seo);
+    $photo = seo_profile_photo_url($entry);
+    $image = $photo !== '' ? $photo : seo_default_image($seo);
     $person = ['@type' => 'Person', 'name' => seo_clean($c['name'] ?? ''), 'url' => $canonical, 'description' => seo_clean($c['bio'] ?? '') ?: $description];
     if (seo_clean($c['role'] ?? '') !== '') {
         $person['jobTitle'] = seo_clean($c['role']);
     }
-    if (seo_is_url($photo)) {
+    if ($photo !== '') {
         $person['image'] = $photo;
     }
     if (seo_clean($c['city'] ?? '') !== '') {

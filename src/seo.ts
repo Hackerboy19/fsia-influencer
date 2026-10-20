@@ -346,20 +346,29 @@ export function defaultProfileDescription(entry: ProfileEntry) {
   return truncate(lead ? `${lead}. ${text}` : text, 160);
 }
 
+/** Public link to a creator's photo. Uploaded photos are stored inside the profile, so the server
+ *  serves them at /api/media/profile/<slug>.jpg for Google, WhatsApp and social previews. */
+export function profilePhotoUrl(entry: ProfileEntry): string {
+  const photo = clean(entry.creator.image);
+  if (/^https?:\/\//i.test(photo)) return photo;
+  if (/^data:image\/(jpeg|png|webp);base64,/i.test(photo)) return `${SITE_URL}/api/media/profile/${entry.slug}.jpg?v=${photo.length}`;
+  return "";
+}
+
 export function resolveProfileMeta(entry: ProfileEntry, seo: SeoConfig = EMPTY_SEO): ResolvedMeta {
   const c = entry.creator;
   const canonical = SITE_URL + entry.path;
   const title = clean(c.seo?.title) || defaultProfileTitle(entry, seo);
   const description = clean(c.seo?.description) || defaultProfileDescription(entry);
-  const photo = clean(c.image);
-  const image = /^https?:\/\//i.test(photo) ? photo : defaultImage(seo);
+  const photo = profilePhotoUrl(entry);
+  const image = photo || defaultImage(seo);
   const person: Record<string, unknown> = {
     "@type": "Person",
     name: clean(c.name),
     url: canonical,
     description: clean(c.bio) || description,
     ...(clean(c.role) ? { jobTitle: clean(c.role) } : {}),
-    ...(/^https?:\/\//i.test(photo) ? { image: photo } : {}),
+    ...(photo ? { image: photo } : {}),
     ...(clean(c.city) ? { address: { "@type": "PostalAddress", addressLocality: clean(c.city), addressCountry: "IN" } } : {})
   };
   const graph = baseGraph(seo, canonical, title, description) as { "@graph": object[] };

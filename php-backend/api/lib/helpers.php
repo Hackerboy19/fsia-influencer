@@ -55,6 +55,17 @@ function respond($payload, int $status = 200): void
     exit;
 }
 
+/** Send image bytes instead of JSON and stop. */
+function send_media(string $bytes, string $mime, int $maxAge): void
+{
+    header('Content-Type: ' . $mime);
+    header('Content-Length: ' . strlen($bytes));
+    header('Cache-Control: public, max-age=' . $maxAge);
+    header_remove('Pragma');
+    echo $bytes;
+    exit;
+}
+
 function fail(int $status, string $message): void
 {
     throw new HttpError($status, $message);

@@ -25,3 +25,39 @@ export function resizeImageFile(file: File, maxSize = 900, quality = 0.85): Prom
     reader.readAsDataURL(file);
   });
 }
+
+// Crop and resize a photo to the 1200 × 630 share-image size (centre crop),
+// so it looks right on Google, WhatsApp, Facebook and X.
+export function toShareImage(file: File, width = 1200, height = 630, quality = 0.86): Promise<string> {
+  return new Promise((resolve, reject) => {
+    if (!/^image\//.test(file.type)) {
+      reject(new Error("Please choose an image file (JPG, PNG or WebP)."));
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("This image could not be opened. Please try a JPG or PNG."));
+    };
+    img.onload = () => {
+      const scale = Math.max(width / img.width, height / img.height);
+      const sw = width / scale;
+      const sh = height / scale;
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      URL.revokeObjectURL(url);
+      if (!ctx) {
+        reject(new Error("Your browser could not process this image."));
+        return;
+      }
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, 0, 0, width, height);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.src = url;
+  });
+}

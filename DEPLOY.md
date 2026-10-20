@@ -63,6 +63,11 @@ Organization, FAQPage, ProfilePage). Manage all of it in **Admin → SEO**:
 - **Creator profiles:** each creator has a page at `/talent/<name>/`. Change the address,
   title or description, or hide a profile. Empty fields are filled in automatically.
 
+**Share images:** click **Upload image** next to any share-image field. The photo is
+cropped to 1200 × 630 px and saved in `storage/media/`, so keep the `storage/` folder when
+you upload a new version (the database backup in Admin → Security does not include these
+images). A creator's own profile photo is used automatically when their page is shared.
+
 Changes apply immediately: `/sitemap.xml` and `/robots.txt` are also generated live and
 list every visible page and profile.
 

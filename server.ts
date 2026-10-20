@@ -19,7 +19,8 @@ import {
   renderHead,
   renderSitemap,
   renderRobots,
-  slugify
+  slugify,
+  SITE_URL
 } from "./src/seo";
 
 // Initialize express app
@@ -1204,6 +1205,48 @@ app.put("/api/admin/seo", authenticateAdmin, (req, res) => {
   saveDb(db);
   logAction(`Updated SEO settings (by ${res.locals.adminUser})`, req.ip);
   res.json({ success: true, seo: seoOf(db) });
+});
+
+// Share images uploaded in Admin → SEO. Mirrors seo_decode_image() and the media routes in php-backend.
+const MEDIA_DIR = path.join(process.cwd(), "server", "media");
+
+function decodeImage(dataUrl: unknown, maxBytes = 5 * 1024 * 1024): { bytes: Buffer; mime: string; ext: string } | string {
+  const m = typeof dataUrl === "string" ? dataUrl.match(/^data:image\/(jpeg|jpg|png|webp);base64,([A-Za-z0-9+/=\s]+)$/) : null;
+  if (!m) return "Please choose a JPG, PNG or WebP image.";
+  const bytes = Buffer.from(m[2].replace(/\s+/g, ""), "base64");
+  if (!bytes.length) return "The image could not be read. Please try another file.";
+  if (bytes.length > maxBytes) return "The image is too large. Please use one under 5 MB.";
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return { bytes, mime: "image/jpeg", ext: "jpg" };
+  if (bytes.subarray(0, 4).toString("latin1") === "\x89PNG") return { bytes, mime: "image/png", ext: "png" };
+  if (bytes.subarray(0, 4).toString() === "RIFF" && bytes.subarray(8, 12).toString() === "WEBP") return { bytes, mime: "image/webp", ext: "webp" };
+  return "Please choose a JPG, PNG or WebP image.";
+}
+
+app.post("/api/admin/seo/image", authenticateAdmin, (req, res) => {
+  const img = decodeImage(req.body?.image);
+  if (typeof img === "string") return res.status(400).json({ error: img });
+  fs.mkdirSync(MEDIA_DIR, { recursive: true });
+  const name = crypto.createHash("sha1").update(img.bytes).digest("hex").slice(0, 20) + "." + img.ext;
+  const file = path.join(MEDIA_DIR, name);
+  if (!fs.existsSync(file)) fs.writeFileSync(file, img.bytes);
+  logAction(`Uploaded share image ${name} (by ${res.locals.adminUser})`, req.ip);
+  res.json({ success: true, url: `${SITE_URL}/api/media/${name}` });
+});
+
+app.get(/^\/api\/media\/([a-f0-9]{20})\.(jpg|png|webp)$/, (req, res) => {
+  const [hash, ext] = [req.params[0], req.params[1]];
+  const file = path.join(MEDIA_DIR, `${hash}.${ext}`);
+  if (!fs.existsSync(file)) return res.status(404).json({ error: "Image not found." });
+  res.set("Cache-Control", "public, max-age=31536000").type(ext === "jpg" ? "image/jpeg" : `image/${ext}`).send(fs.readFileSync(file));
+});
+
+// Creator photos uploaded from the registration form live inside the profile as data: URLs
+app.get("/api/media/profile/:slug", (req, res) => {
+  const slug = req.params.slug.replace(/\.jpg$/, "");
+  const entry = assignProfileSlugs(getDb().creators).find((e) => e.slug === slug);
+  const img = entry ? decodeImage(entry.creator.image, 20 * 1024 * 1024) : "";
+  if (!img || typeof img === "string") return res.status(404).json({ error: "Image not found." });
+  res.set("Cache-Control", "public, max-age=86400").type(img.mime).send(img.bytes);
 });
 
 // Full audit trail

@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { Globe, FileText, Users, Search, ExternalLink, RotateCcw, Save, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Globe, FileText, Users, Search, ExternalLink, RotateCcw, Save, AlertTriangle, CheckCircle2, Upload, Loader2, X } from "lucide-react";
 import { toast } from "react-hot-toast";
 import {
   ROUTES,
@@ -15,6 +15,7 @@ import {
   defaultProfileDescription,
   slugify
 } from "../seo";
+import { toShareImage } from "../lib/image";
 
 interface Props {
   token: string;
@@ -34,6 +35,9 @@ const DESC_IDEAL = 160;
 const inputClass =
   "w-full px-3.5 py-2.5 bg-white border border-black/15 rounded-lg text-sm text-[#111] focus:outline-none focus:border-[#111] focus:ring-2 focus:ring-[#E1C699]/50";
 const labelClass = "flex items-center justify-between gap-2 text-xs font-bold tracking-wider text-[#2e2c29] uppercase mb-1.5";
+
+// Show our own uploads from this server, so previews also work before the domain points here
+const previewSrc = (url: string) => (url.startsWith(SITE_URL + "/") ? url.slice(SITE_URL.length) : url);
 
 const profileKey = (sectionId: string, name: string) => `${sectionId}::${name}`;
 
@@ -65,6 +69,72 @@ function GooglePreview({ url, title, description }: { url: string; title: string
       </div>
       <p className="mt-1.5 text-[19px] leading-snug text-[#1a0dab] break-words">{shortTitle || "—"}</p>
       <p className="mt-1 text-[14px] leading-snug text-[#4d5156] break-words">{shortDesc || "—"}</p>
+    </div>
+  );
+}
+
+// Share image: upload a photo (cropped to 1200 × 630 and stored on the server) or paste a link
+function ShareImageField({ id, label, value, placeholder, fallback, token, onChange, hint }: {
+  id: string;
+  label: string;
+  value: string;
+  placeholder: string;
+  fallback: string;
+  token: string;
+  onChange: (url: string) => void;
+  hint?: string;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const shown = previewSrc(/^https?:\/\//i.test(value) ? value : fallback);
+
+  const upload = async (file: File | undefined) => {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const image = await toShareImage(file);
+      const res = await fetch("/api/admin/seo/image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ image })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.url) throw new Error(data.error || "Upload failed. Please try again.");
+      onChange(data.url);
+      toast.success("Image uploaded. Click Save SEO settings to apply it.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed. Please try again.");
+    } finally {
+      setBusy(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  return (
+    <div>
+      <label htmlFor={id} className={labelClass}>{label}</label>
+      <div className="flex gap-3 items-start">
+        <img src={shown} alt="" className="w-24 aspect-[1200/630] object-cover rounded-md border border-black/10 bg-stone-100 shrink-0" referrerPolicy="no-referrer" />
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => fileRef.current?.click()} disabled={busy}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-white bg-[#111] rounded-lg px-3 py-2 hover:bg-black disabled:opacity-60 cursor-pointer">
+              {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              {busy ? "Uploading…" : "Upload image"}
+            </button>
+            {value && (
+              <button type="button" onClick={() => onChange("")}
+                className="inline-flex items-center gap-1 text-sm font-semibold text-[#111] border border-black/15 rounded-lg px-3 py-2 hover:border-[#111] cursor-pointer">
+                <X className="w-4 h-4" /> Remove
+              </button>
+            )}
+            <input ref={fileRef} id={`${id}-file`} type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
+              onChange={(e) => upload(e.target.files?.[0])} />
+          </div>
+          <input id={id} className={inputClass} placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} />
+        </div>
+      </div>
+      <p className="text-xs text-[#47453f] mt-1">{hint || "Upload a photo (we crop it to 1200 × 630 px) or paste a link starting with https://"}</p>
     </div>
   );
 }
@@ -249,12 +319,10 @@ export default function AdminSeoPanel({ token }: Props) {
                 value={seo.site.siteName || ""} onChange={(e) => setSite({ siteName: e.target.value })} />
               <p className="text-xs text-[#47453f] mt-1">Shown as the site name in Google and in social previews.</p>
             </div>
-            <div>
-              <label htmlFor="seo-default-image" className={labelClass}>Default share image (link)</label>
-              <input id="seo-default-image" className={inputClass} placeholder={OG_IMAGE}
-                value={seo.site.defaultImage || ""} onChange={(e) => setSite({ defaultImage: e.target.value })} />
-              <p className="text-xs text-[#47453f] mt-1">Used when a page has no image of its own. Best size 1200 × 630 px. Must start with https://</p>
-            </div>
+            <ShareImageField id="seo-default-image" label="Default share image" token={token}
+              value={seo.site.defaultImage || ""} placeholder={OG_IMAGE} fallback="/og-image.png"
+              onChange={(url) => setSite({ defaultImage: url })}
+              hint="Used when a page has no image of its own. Upload a photo (we crop it to 1200 × 630 px) or paste a link starting with https://" />
             <div>
               <label htmlFor="seo-gsc" className={labelClass}>Google Search Console verification</label>
               <input id="seo-gsc" className={inputClass} placeholder='Paste the code or the whole <meta name="google-site-verification" …> tag'
@@ -273,7 +341,7 @@ export default function AdminSeoPanel({ token }: Props) {
           <div className="space-y-3">
             <p className="text-xs font-bold tracking-wider uppercase text-[#2e2c29]">Share image preview</p>
             <img
-              src={/^https?:\/\//i.test(seo.site.defaultImage || "") ? seo.site.defaultImage : "/og-image.png"}
+              src={previewSrc(/^https?:\/\//i.test(seo.site.defaultImage || "") ? seo.site.defaultImage! : "/og-image.png")}
               alt="Default share image"
               className="w-full aspect-[1200/630] object-cover rounded-xl border border-black/10 bg-stone-100"
               referrerPolicy="no-referrer"
@@ -317,11 +385,10 @@ export default function AdminSeoPanel({ token }: Props) {
                     <textarea id={`seo-d-${route.path}`} rows={3} className={inputClass} placeholder={route.description} value={description}
                       onChange={(e) => setPage(route.path, { description: e.target.value })} />
                   </div>
-                  <div>
-                    <label htmlFor={`seo-i-${route.path}`} className={labelClass}>Share image link (optional)</label>
-                    <input id={`seo-i-${route.path}`} className={inputClass} placeholder="Uses the default share image" value={o.image || ""}
-                      onChange={(e) => setPage(route.path, { image: e.target.value })} />
-                  </div>
+                  <ShareImageField id={`seo-i-${route.path}`} label="Share image (optional)" token={token}
+                    value={o.image || ""} placeholder="Uses the default share image"
+                    fallback={/^https?:\/\//i.test(seo.site.defaultImage || "") ? seo.site.defaultImage! : "/og-image.png"}
+                    onChange={(url) => setPage(route.path, { image: url })} />
                   <label className="flex items-center gap-2 text-sm text-[#111] cursor-pointer">
                     <input type="checkbox" className="w-4 h-4 accent-[#111]" checked={Boolean(o.noindex)}
                       onChange={(e) => setPage(route.path, { noindex: e.target.checked })} />

@@ -30,6 +30,16 @@ $segments = $route === '' ? [] : explode('/', $route);
 
 try {
     $config = fsia_config();
+    $mediaDir = rtrim($config['storage_dir'], '/') . '/media';
+
+    // Share images uploaded in Admin → SEO (file names are content hashes, so they never change)
+    if (($method === 'GET' || $method === 'HEAD') && preg_match('#^media/([a-f0-9]{20})\.(jpg|png|webp)$#', $route, $mm)) {
+        $file = $mediaDir . '/' . $mm[1] . '.' . $mm[2];
+        if (!is_file($file)) {
+            fail(404, 'Image not found.');
+        }
+        send_media((string)file_get_contents($file), $mm[2] === 'jpg' ? 'image/jpeg' : 'image/' . $mm[2], 31536000);
+    }
     $store = new Store($config['storage_dir'], __DIR__ . '/seed.json');
     $body = request_body();
     $db = &$store->data();
@@ -837,6 +847,39 @@ try {
             ],
             'pages' => (object)$seo['pages'],
         ]);
+    }
+
+    // Creator photos uploaded from the registration form live inside the profile as data: URLs
+    if ($is('GET', 'media/profile/{slug}', $p) || $is('HEAD', 'media/profile/{slug}', $p)) {
+        $slug = preg_replace('/\.jpg$/', '', $p[0]);
+        foreach (seo_assign_slugs($db['creators'] ?? []) as $entry) {
+            if ($entry['slug'] === $slug) {
+                $img = seo_decode_image((string)($entry['creator']['image'] ?? ''), 20971520);
+                if (is_array($img)) {
+                    send_media($img['bytes'], $img['mime'], 86400);
+                }
+                break;
+            }
+        }
+        fail(404, 'Image not found.');
+    }
+
+    if ($is('POST', 'admin/seo/image')) {
+        $admin = require_admin($store);
+        $img = seo_decode_image((string)($body['image'] ?? ''));
+        if (!is_array($img)) {
+            fail(400, $img);
+        }
+        if (!is_dir($mediaDir) && !@mkdir($mediaDir, 0755, true)) {
+            fail(500, 'Could not create the image folder. Make sure storage/ is writable.');
+        }
+        $name = substr(sha1($img['bytes']), 0, 20) . '.' . $img['ext'];
+        if (!is_file("$mediaDir/$name") && file_put_contents("$mediaDir/$name", $img['bytes']) === false) {
+            fail(500, 'Could not save the image. Make sure storage/ is writable.');
+        }
+        $store->log('Uploaded share image ' . $name . ' (by ' . $admin . ')');
+        $store->save();
+        respond(['success' => true, 'url' => seo_defs()['siteUrl'] . '/api/media/' . $name, 'width' => $img['width'], 'height' => $img['height']]);
     }
 
     if ($is('GET', 'admin/seo')) {
