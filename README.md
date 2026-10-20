@@ -39,11 +39,12 @@ php -S localhost:8080 -t release/fsia-influencer-live php-backend/dev-router.php
 
 ## SEO
 
-`src/seo.ts` is the single source for page URLs, titles, descriptions and structured data.
-`scripts/prerender-seo.ts` runs after `vite build` and writes one HTML file per route
-(`dist/talent/index.html`, …) with complete meta tags and crawlable fallback content,
-plus `robots.txt` and `sitemap.xml`. In the browser the same data keeps `<head>` in sync
-as visitors move between sections.
+`src/seo.ts` holds page defaults and the rules that turn them, plus the overrides from
+**Admin → SEO**, into each page's tags. Both servers render pages with it on every request
+(`php-backend/api/render.php` + `lib/seo.php` on PHP hosting, `server.ts` on Node), so admin
+changes reach search engines immediately; `/sitemap.xml` and `/robots.txt` are generated the
+same way. Every creator has a profile page at `/talent/<slug>/`. `scripts/prerender-seo.ts`
+saves the page template after `vite build` and writes static fallbacks for static-only hosting.
 
 ## Admin panel
 
@@ -53,4 +54,5 @@ as visitors move between sections.
 - **VIP Applications:** brand leads with search, status pipeline (new → contacted → confirmed → closed), notes, CSV export
 - **Creator Applicants:** approve straight onto the runway, decline, delete, search, CSV export
 - **Enquiries:** campaign applications and membership plan requests from the public site
+- **SEO:** titles, descriptions, share images and search visibility for the website, every page and every creator profile, with Google previews
 - **Security & Data:** change password, admin team accounts, backup / restore, searchable audit log

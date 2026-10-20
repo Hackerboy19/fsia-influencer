@@ -1,9 +1,26 @@
 import express from "express";
+import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import { getDb, saveDb, logAction, hashPassword, verifyPassword, needsRehash, createDefaultDb, GallerySection, Creator, Campaign, Registration } from "./server/db";
+import {
+  ROUTES,
+  SeoConfig,
+  CreatorSeo,
+  SeoPageOverride,
+  assignProfileSlugs,
+  normalisePath,
+  profileSlugFromPath,
+  resolvePageMeta,
+  resolveProfileMeta,
+  notFoundMeta,
+  renderHead,
+  renderSitemap,
+  renderRobots,
+  slugify
+} from "./src/seo";
 
 // Initialize express app
 const app = express();
@@ -1107,6 +1124,88 @@ app.delete("/api/enquiries/:id", authenticateAdmin, (req, res) => {
   res.json({ success: true });
 });
 
+// ----------------------------------------------------
+// SEO (Admin → SEO). Validation mirrors seo_apply_update() in php-backend/api/lib/seo.php
+// ----------------------------------------------------
+const seoOf = (db: ReturnType<typeof getDb>): SeoConfig => ({
+  site: (db as any).seo?.site || {},
+  pages: (db as any).seo?.pages || {}
+});
+const isUrl = (v: string) => /^https?:\/\//i.test(v);
+
+app.get("/api/seo", (req, res) => {
+  const seo = seoOf(getDb());
+  res.json({
+    site: { siteName: seo.site.siteName || "", defaultImage: seo.site.defaultImage || "", allowIndexing: seo.site.allowIndexing !== false },
+    pages: seo.pages
+  });
+});
+
+app.get("/api/admin/seo", authenticateAdmin, (req, res) => {
+  res.json(seoOf(getDb()));
+});
+
+app.put("/api/admin/seo", authenticateAdmin, (req, res) => {
+  const body = req.body || {};
+  const site = body.site && typeof body.site === "object" ? body.site : {};
+  let gsc = clip(site.googleVerification, 2000);
+  const tag = gsc.match(/content\s*=\s*["']([^"']+)["']/i);
+  if (tag) gsc = tag[1];
+  gsc = gsc.replace(/[^A-Za-z0-9_\-]/g, "").slice(0, 120);
+  const defaultImage = clip(site.defaultImage, 500);
+  if (defaultImage && !isUrl(defaultImage)) {
+    return res.status(400).json({ error: "The default share image must be a full link starting with https://" });
+  }
+  const cleanSite = { siteName: clip(site.siteName, 80), defaultImage, googleVerification: gsc, allowIndexing: site.allowIndexing !== false };
+
+  const cleanPages: Record<string, SeoPageOverride> = {};
+  for (const [pagePath, page] of Object.entries(body.pages && typeof body.pages === "object" ? body.pages : {})) {
+    if (!page || typeof page !== "object" || !ROUTES.some((r) => r.path === pagePath)) continue;
+    const p = page as SeoPageOverride;
+    const image = clip(p.image, 500);
+    if (image && !isUrl(image)) {
+      return res.status(400).json({ error: `Share image for ${pagePath} must be a full link starting with https://` });
+    }
+    const entry: SeoPageOverride = {};
+    if (clip(p.title, 120)) entry.title = clip(p.title, 120);
+    if (clip(p.description, 320)) entry.description = clip(p.description, 320);
+    if (image) entry.image = image;
+    if (p.noindex) entry.noindex = true;
+    if (Object.keys(entry).length) cleanPages[pagePath] = entry;
+  }
+
+  const db = getDb();
+  const creators: GallerySection[] = JSON.parse(JSON.stringify(db.creators));
+  for (const profile of Array.isArray(body.profiles) ? body.profiles : []) {
+    const section = creators.find((s) => s.id === profile?.sectionId);
+    const creator = section?.creators.find((c) => c.name === profile?.name) as (Creator & { seo?: CreatorSeo }) | undefined;
+    if (!creator) continue;
+    const input = profile.seo && typeof profile.seo === "object" ? profile.seo : {};
+    const seo: CreatorSeo = {};
+    const slug = slugify(clip(input.slug, 200));
+    if (slug) seo.slug = slug;
+    if (clip(input.title, 120)) seo.title = clip(input.title, 120);
+    if (clip(input.description, 320)) seo.description = clip(input.description, 320);
+    if (input.noindex) seo.noindex = true;
+    if (Object.keys(seo).length) creator.seo = seo;
+    else delete creator.seo;
+  }
+  // Custom profile URLs must be unique
+  for (const entry of assignProfileSlugs(creators)) {
+    const wanted = entry.creator.seo?.slug;
+    if (wanted && entry.slug !== wanted) {
+      return res.status(400).json({
+        error: `The profile URL "${wanted}" is already used by another creator. Please choose a different one for ${entry.creator.name}.`
+      });
+    }
+  }
+  db.creators = creators;
+  (db as any).seo = { site: cleanSite, pages: cleanPages };
+  saveDb(db);
+  logAction(`Updated SEO settings (by ${res.locals.adminUser})`, req.ip);
+  res.json({ success: true, seo: seoOf(db) });
+});
+
 // Full audit trail
 app.get("/api/admin/logs", authenticateAdmin, (req, res) => {
   res.json(getDb().admin_logs || []);
@@ -1136,6 +1235,7 @@ app.post("/api/admin/restore", authenticateAdmin, (req, res) => {
   db.membership_plans = Array.isArray(backup.membership_plans) ? backup.membership_plans : defaults.membership_plans;
   db.prompt_logs = Array.isArray(backup.prompt_logs) ? backup.prompt_logs : [];
   db.enquiries = Array.isArray(backup.enquiries) ? backup.enquiries : [];
+  if (backup.seo && typeof backup.seo === "object") (db as any).seo = backup.seo;
   if (backup.system_settings && typeof backup.system_settings === "object") {
     // Masked keys in backups must not overwrite the real key
     const { geminiApiKey, ...rest } = backup.system_settings;
@@ -1162,10 +1262,41 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+    const templatePath = path.join(distPath, "seo-template.html");
+
+    // robots.txt, sitemap.xml and every page carry the current Admin → SEO settings
+    app.get(["/robots.txt", "/sitemap.xml"], (req, res) => {
+      const db = getDb();
+      const seo = seoOf(db);
+      if (req.path === "/robots.txt") return res.type("text/plain").send(renderRobots(seo));
+      res.type("application/xml").send(renderSitemap(seo, assignProfileSlugs(db.creators), new Date().toISOString().slice(0, 10)));
     });
+
+    const renderPage: express.RequestHandler = (req, res, next) => {
+      if (req.method !== "GET" || (path.extname(req.path) && !req.path.endsWith("/index.html"))) return next();
+      let template: string;
+      try {
+        template = fs.readFileSync(templatePath, "utf8");
+      } catch {
+        return next();
+      }
+      const db = getDb();
+      const seo = seoOf(db);
+      const profiles = assignProfileSlugs(db.creators);
+      const urlPath = normalisePath(req.path.replace(/index\.html$/, ""));
+      const slug = profileSlugFromPath(urlPath);
+      const route = ROUTES.find((r) => r.path === urlPath);
+      const entry = slug ? profiles.find((p) => p.slug === slug) : undefined;
+      const meta = entry ? resolveProfileMeta(entry, seo) : route && !slug ? resolvePageMeta(route, seo, profiles) : notFoundMeta(urlPath, seo);
+      const html = template
+        .replace(/<!--SEO-HEAD-->[\s\S]*?<!--\/SEO-HEAD-->/, () => renderHead(meta, seo))
+        .replace("<!--SEO-BODY-->", () => meta.bodyHtml);
+      res.status(entry || (route && !slug) ? 200 : 404).set("Cache-Control", "no-cache").type("html").send(html);
+    };
+
+    app.use(renderPage);
+    app.use(express.static(distPath, { index: false }));
+    app.get("*", renderPage);
   }
 
   app.listen(PORT, "0.0.0.0", () => {

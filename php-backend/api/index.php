@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/lib/helpers.php';
 require __DIR__ . '/lib/Store.php';
+require __DIR__ . '/lib/seo.php';
 
 header('Content-Type: application/json; charset=UTF-8');
 header('X-Content-Type-Options: nosniff');
@@ -823,6 +824,40 @@ try {
     }
 
     // ------------------------------------------------
+    // 7B. SEO (Admin → SEO)
+    // ------------------------------------------------
+    if ($is('GET', 'seo')) {
+        // Public subset, used by the browser to keep <head> in sync while navigating
+        $seo = seo_config($db);
+        respond([
+            'site' => [
+                'siteName' => seo_clean($seo['site']['siteName'] ?? ''),
+                'defaultImage' => seo_clean($seo['site']['defaultImage'] ?? ''),
+                'allowIndexing' => seo_site_indexable($seo),
+            ],
+            'pages' => (object)$seo['pages'],
+        ]);
+    }
+
+    if ($is('GET', 'admin/seo')) {
+        require_admin($store);
+        $seo = seo_config($db);
+        respond(['site' => (object)$seo['site'], 'pages' => (object)$seo['pages']]);
+    }
+
+    if ($is('PUT', 'admin/seo')) {
+        $admin = require_admin($store);
+        $error = seo_apply_update($db, $body);
+        if ($error !== null) {
+            fail(400, $error);
+        }
+        $store->log('Updated SEO settings (by ' . $admin . ')');
+        $store->save();
+        $seo = seo_config($db);
+        respond(['success' => true, 'seo' => ['site' => (object)$seo['site'], 'pages' => (object)$seo['pages']]]);
+    }
+
+    // ------------------------------------------------
     // 8. ADMIN DASHBOARD, AUDIT, BACKUP
     // ------------------------------------------------
     if ($is('GET', 'admin/stats')) {
@@ -884,6 +919,9 @@ try {
         }
         if (is_array($body['membership_plans'] ?? null)) {
             $db['membership_plans'] = $body['membership_plans'];
+        }
+        if (is_array($body['seo'] ?? null)) {
+            $db['seo'] = $body['seo'];
         }
         if (is_array($body['system_settings'] ?? null)) {
             $incoming = $body['system_settings'];

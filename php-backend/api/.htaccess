@@ -1,4 +1,4 @@
-# Every /api/* request is handled by index.php. Rewriting here (not only in the
+# Every /api/* request is handled by index.php (render.php serves the HTML pages). Rewriting here (not only in the
 # root .htaccess) is required: once Apache enters this folder its own rules
 # apply, and seed data, config and libraries must never be served directly.
 <IfModule mod_rewrite.c>
@@ -8,7 +8,7 @@
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
-    RewriteRule ^index\.php$ - [L]
+    RewriteRule ^(index|render)\.php$ - [L]
     RewriteRule ^ index.php [L,QSA]
 </IfModule>
 

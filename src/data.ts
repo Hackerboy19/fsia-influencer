@@ -12,6 +12,8 @@ export interface Creator {
   };
   quote: string;
   portfolio: string[];
+  /** Search settings for the creator's profile page (Admin → SEO) */
+  seo?: { slug?: string; title?: string; description?: string; noindex?: boolean };
 }
 
 export interface GallerySection {

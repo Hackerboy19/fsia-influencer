@@ -7,7 +7,7 @@ if (preg_match('#^/api(/|$)#', $path)) {
     require $root . '/api/index.php';
     return true;
 }
-if ($path !== '/' && is_file($root . $path)) {
+if (!preg_match('#(^/$|/index\.html$|^/robots\.txt$|^/sitemap\.xml$)#', $path) && is_file($root . $path)) {
     return false;
 }
-readfile($root . '/index.html');
+require $root . '/api/render.php';

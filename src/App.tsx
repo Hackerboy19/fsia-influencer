@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Volume2,
@@ -33,7 +33,18 @@ import AdminTab from "./components/AdminTab";
 import CursorParticleTrail from "./components/CursorParticleTrail";
 import SiteFooter from "./components/SiteFooter";
 import { Toaster } from "react-hot-toast";
-import { TabId, routeForPath, routeForTab, applyRouteMeta } from "./seo";
+import {
+  TabId,
+  SeoConfig,
+  EMPTY_SEO,
+  routeForPath,
+  routeForTab,
+  profileSlugFromPath,
+  assignProfileSlugs,
+  resolvePageMeta,
+  resolveProfileMeta,
+  applyMeta
+} from "./seo";
 
 const ENTERED_KEY = "fsia_entered";
 
@@ -60,6 +71,14 @@ export default function App() {
 
   // Dynamic full-stack database roster state
   const [sections, setSections] = useState<any[]>(gallerySections);
+  const [rosterLoaded, setRosterLoaded] = useState(false);
+
+  // Search settings from Admin → SEO, and one URL per creator profile (/talent/<slug>/)
+  const [seoConfig, setSeoConfig] = useState<SeoConfig>(EMPTY_SEO);
+  const profiles = useMemo(() => assignProfileSlugs(sections), [sections]);
+  const [pendingProfileSlug, setPendingProfileSlug] = useState<string | null>(() =>
+    profileSlugFromPath(window.location.pathname)
+  );
 
   // Enterprise Dynamic Configuration Settings State
   const [settings, setSettings] = useState<any>({
@@ -84,7 +103,8 @@ export default function App() {
           setSections(data);
         }
       })
-      .catch(() => console.log("Using static local runway fallback."));
+      .catch(() => console.log("Using static local runway fallback."))
+      .finally(() => setRosterLoaded(true));
   };
 
   useEffect(() => {
@@ -103,6 +123,25 @@ export default function App() {
       })
       .catch(() => console.log("Using local fallback settings configuration."));
   }, [activeTab]);
+
+  useEffect(() => {
+    fetch("/api/seo")
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((data) => data && setSeoConfig({ site: data.site || {}, pages: data.pages || {} }))
+      .catch(() => {});
+  }, []);
+
+  // Opening /talent/<slug>/ directly: show that creator once the roster is known
+  useEffect(() => {
+    if (!pendingProfileSlug) return;
+    const entry = profiles.find((p) => p.slug === pendingProfileSlug);
+    if (entry) {
+      setSelectedCreator(entry.creator as Creator);
+      setPendingProfileSlug(null);
+    } else if (rosterLoaded) {
+      setPendingProfileSlug(null);
+    }
+  }, [pendingProfileSlug, profiles, rosterLoaded]);
 
   useEffect(() => {
     const savedMoodboard = sessionStorage.getItem("fsia_moodboard");
@@ -151,14 +190,20 @@ export default function App() {
     };
   }, []);
 
-  // Keep the address bar and <head> (title, description, canonical, OG) in sync with the section
+  // Keep the address bar and <head> (title, description, canonical, OG) in sync with
+  // the section or creator profile on screen, using the Admin → SEO settings
+  const openProfile = selectedCreator ? profiles.find((p) => p.creator.name === selectedCreator.name) : undefined;
   useEffect(() => {
-    const route = routeForTab(activeTab);
+    if (pendingProfileSlug) return; // wait until the deep-linked profile is resolved
+    const meta = openProfile ? resolveProfileMeta(openProfile, seoConfig) : resolvePageMeta(routeForTab(activeTab), seoConfig, profiles);
     // Title/meta first: Google Analytics records the page view when the URL changes
-    applyRouteMeta(route);
-    if (window.location.pathname !== route.path) {
-      window.history.pushState({ tab: activeTab }, "", route.path);
+    applyMeta(meta);
+    if (window.location.pathname !== meta.path) {
+      window.history.pushState({ tab: activeTab }, "", meta.path);
     }
+  }, [activeTab, openProfile, seoConfig, profiles, pendingProfileSlug]);
+
+  useEffect(() => {
     contentScrollRef.current?.scrollTo({ top: 0 });
     document
       .querySelector('#main-nav-tabs [aria-current="page"]')
@@ -167,8 +212,10 @@ export default function App() {
 
   useEffect(() => {
     const onPopState = () => {
+      const slug = profileSlugFromPath(window.location.pathname);
       setActiveTab(routeForPath(window.location.pathname).tab);
       setSelectedCreator(null);
+      setPendingProfileSlug(slug);
       setHasEntered(true);
     };
     window.addEventListener("popstate", onPopState);

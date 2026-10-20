@@ -4,11 +4,12 @@ import {
   Lock, User, LogIn, LayoutDashboard, Sparkles, Users, Briefcase, FileText, 
   Trash2, Plus, Edit2, Check, RefreshCw, X, AlertTriangle, Shield, CheckCircle2,
   TrendingUp, Phone, Mail, MapPin, Eye, FileSpreadsheet, Activity, UserPlus, Layout,
-  KeyRound, Search, Download, Inbox
+  KeyRound, Search, Download, Inbox, Globe
 } from "lucide-react";
 import AdminContentManager from "./AdminContentManager";
 import AdminSecurityPanel from "./AdminSecurityPanel";
 import AdminEnquiriesPanel from "./AdminEnquiriesPanel";
+import AdminSeoPanel from "./AdminSeoPanel";
 import { ADMIN_TOKEN_KEY, ADMIN_UNAUTHORIZED_EVENT, downloadCsv } from "../lib/adminSession";
 import { toast } from "react-hot-toast";
 
@@ -952,6 +953,7 @@ export default function AdminTab() {
               { id: "registrations", label: "VIP Applications", icon: FileText, badge: registrations.filter((r) => (r.status || "new") === "new").length },
               { id: "influencer_applications", label: "Creator Applicants", icon: UserPlus, badge: influencerApplications.filter((a) => a.status === "pending").length },
               { id: "enquiries", label: "Enquiries", icon: Inbox, badge: stats?.newEnquiriesCount },
+              { id: "seo", label: "SEO", icon: Globe },
               { id: "security", label: "Security & Data", icon: KeyRound }
             ].map((tab: { id: string; label: string; icon: typeof KeyRound; badge?: number }) => {
               const Icon = tab.icon;
@@ -1990,6 +1992,8 @@ export default function AdminTab() {
             {adminActiveSubTab === "enquiries" && (
               <AdminEnquiriesPanel token={token} onChange={() => fetchAdminData(token)} />
             )}
+
+            {adminActiveSubTab === "seo" && <AdminSeoPanel token={token} />}
 
             {adminActiveSubTab === "security" && (
               <AdminSecurityPanel

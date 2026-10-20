@@ -1,6 +1,6 @@
 # FSIA Influencer — Apache / LiteSpeed configuration
 Options -Indexes
-DirectoryIndex index.html
+DirectoryIndex disabled
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
@@ -19,10 +19,13 @@ DirectoryIndex index.html
     RewriteCond %{REQUEST_URI} !^/api/index\.php
     RewriteRule ^api(/.*)?$ api/index.php [QSA,L]
 
-    # Single-page app fallback
+    # Pages, robots.txt and sitemap.xml are generated from Admin → SEO, so search
+    # engines always see the current titles, descriptions and profile pages.
+    # (Rules also cover pre-rendered copies left behind by older uploads.)
+    RewriteRule ^(index\.html|robots\.txt|sitemap\.xml)$ api/render.php [L]
+    RewriteRule ^[^/]+/index\.html$ api/render.php [L]
     RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^ index.html [L]
+    RewriteRule ^ api/render.php [L]
 </IfModule>
 
 <IfModule mod_headers.c>
