@@ -12,6 +12,8 @@ export interface Creator {
   };
   quote: string;
   portfolio: string[];
+  /** Search settings for the creator's profile page (Admin → SEO) */
+  seo?: { slug?: string; title?: string; description?: string; noindex?: boolean };
 }
 
 export interface GallerySection {
@@ -26,14 +28,14 @@ export interface GallerySection {
 export const gallerySections: GallerySection[] = [
   {
     id: "miss-india",
-    title: "Forever Miss India 2026",
+    title: "Miss India 2026",
     subtitle: "The Reign of Couture & Prestige",
     zOffset: 0,
     primaryColor: "#E1C699", // Champagne Gold
     creators: [
       {
         name: "Aishwarya Sen",
-        role: "Winner, Forever Miss India 2026",
+        role: "Winner, Miss India 2026",
         city: "Mumbai",
         image: "https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?q=80&w=600&auto=format&fit=crop",
         bio: "An epitome of modern intellect and poise, Aishwarya championed rural girls' education and visual arts while walking the runways of Milan and Paris Couture Weeks. Her advocacy combined with high-fashion presence sets a new gold standard.",
@@ -53,7 +55,7 @@ export const gallerySections: GallerySection[] = [
       },
       {
         name: "Meera Deshmukh",
-        role: "1st Runner Up, Forever Miss India 2026",
+        role: "1st Runner Up, Miss India 2026",
         city: "New Delhi",
         image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format&fit=crop",
         bio: "A classical Odissi dancer and high-fashion enthusiast, Meera blends deep-rooted cultural heritage with sharp, high-fashion styling. She represents the seamless dialogue between classical antiquity and modern avant-garde design.",

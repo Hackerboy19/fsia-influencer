@@ -28,6 +28,8 @@ export default function CampaignsTab() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
   const [activeCampaigns, setActiveCampaigns] = useState<Campaign[]>([]);
 
   const campaigns: Campaign[] = [
@@ -122,6 +124,7 @@ export default function CampaignsTab() {
   const handleApplyClick = (campaign: Campaign) => {
     setSelectedCampaign(campaign);
     setSuccessMessage(false);
+    setErrorMsg("");
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -131,25 +134,37 @@ export default function CampaignsTab() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.phone) return;
+    if (!formData.name || !formData.email || !formData.phone || !selectedCampaign) return;
 
     setIsSubmitting(true);
+    setErrorMsg("");
 
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setSuccessMessage(true);
-      if (selectedCampaign) {
+    fetch("/api/enquiries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "campaign",
+        subject: `${selectedCampaign.brand} — ${selectedCampaign.title}`,
+        refId: selectedCampaign.id,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        details: { instagram: formData.instagram, pitch: formData.pitch }
+      })
+    })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || "Your application could not be sent.");
+        setSubmittedEmail(formData.email);
+        setSuccessMessage(true);
         setAppliedCampaigns((prev) => [...prev, selectedCampaign.id]);
-      }
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        instagram: "",
-        pitch: "",
-        escrowConsent: true
-      });
-    }, 1500);
+        setFormData({ name: "", email: "", phone: "", instagram: "", pitch: "", escrowConsent: true });
+      })
+      .catch((err: Error) => {
+        // Never show a fake confirmation
+        setErrorMsg((err.message || "Your application could not be sent.") + " Please try again.");
+      })
+      .finally(() => setIsSubmitting(false));
   };
 
   return (
@@ -163,7 +178,7 @@ export default function CampaignsTab() {
           Live Brand Campaigns
         </h2>
         <p className="font-serif-text italic text-[#666] text-sm md:text-base max-w-2xl">
-          Apply directly to premium brand sponsorships. Forever Star India operates 100% secure escrow contracts ensuring creators receive full payment within 24 hours of campaign verification.
+          Apply directly to premium brand sponsorships. FSIA Influencer operates 100% secure escrow contracts ensuring creators receive full payment within 24 hours of campaign verification.
         </p>
       </div>
 
@@ -214,7 +229,7 @@ export default function CampaignsTab() {
 
                 {/* Key perks */}
                 <div className="space-y-1.5 pt-2">
-                  <span className="block text-[8px] font-sans tracking-[0.2em] text-[#8E8D8A] uppercase font-bold">
+                  <span className="block text-[10px] font-sans tracking-[0.2em] text-[#8E8D8A] uppercase font-bold">
                     VIP COMPENSATIONS & PERKS:
                   </span>
                   <ul className="text-[11px] font-serif-text text-[#444] space-y-1 pl-1">
@@ -230,7 +245,7 @@ export default function CampaignsTab() {
 
               {/* Action Button */}
               <div className="pt-4 border-t border-black/5 flex items-center justify-between">
-                <span className="text-[9px] font-mono text-[#8E8D8A] uppercase">
+                <span className="text-[10px] font-mono text-[#8E8D8A] uppercase">
                   LOC: {campaign.location}
                 </span>
                 {isApplied ? (
@@ -289,7 +304,7 @@ export default function CampaignsTab() {
                   <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Safe Escrow Info */}
                     <div className="p-4 bg-white border border-black/5 rounded-xl text-xs text-[#555] font-serif-text space-y-2">
-                      <div className="flex items-center gap-2 text-champagne font-bold uppercase tracking-widest text-[9px] font-sans">
+                      <div className="flex items-center gap-2 text-champagne font-bold uppercase tracking-widest text-[10px] font-sans">
                         <ShieldCheck className="w-4 h-4 text-champagne" />
                         SECURED INR BANK WIRE GUARANTEE
                       </div>
@@ -387,6 +402,12 @@ export default function CampaignsTab() {
                       </span>
                     </label>
 
+                    {errorMsg && (
+                      <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-800 text-sm rounded-lg font-medium">
+                        {errorMsg}
+                      </div>
+                    )}
+
                     {/* Submit Button */}
                     <button
                       type="submit"
@@ -396,11 +417,11 @@ export default function CampaignsTab() {
                       {isSubmitting ? (
                         <>
                           <div className="w-4 h-4 border-2 border-t-transparent border-[#FAF9F6] rounded-full animate-spin" />
-                          SEALING AUDIT...
+                          SENDING…
                         </>
                       ) : (
                         <>
-                          DISPATCH APPLICATION
+                          SEND APPLICATION
                           <ArrowRight className="w-4 h-4" />
                         </>
                       )}
@@ -415,16 +436,16 @@ export default function CampaignsTab() {
                     </div>
 
                     <div className="space-y-1">
-                      <span className="font-sans text-[9px] tracking-[0.3em] text-[#8E8D8A] uppercase font-bold">
-                        Verification Seal Accepted
+                      <span className="font-sans text-[10px] tracking-[0.3em] text-[#8E8D8A] uppercase font-bold">
+                        Application received
                       </span>
                       <h4 className="font-serif-display text-xl md:text-2xl text-[#111] font-bold">
-                        Application Transmitted
+                        Thank you for applying
                       </h4>
                     </div>
 
                     <p className="text-xs text-[#555] font-serif-text leading-relaxed">
-                      Your Sabyasachi collaboration bid is signed and sealed on the FSIA Escrow Registry. The official brand representative and an FSIA liaison will evaluate your profile aesthetics and get in touch with you at <strong className="text-[#111]">{formData.email}</strong> or WhatsApp within 12 business hours.
+                      Your application for <strong className="text-[#111]">{selectedCampaign?.brand}</strong> has been sent to the FSIA Influencer team. We'll review your profile and get in touch at <strong className="text-[#111]">{submittedEmail}</strong> or on WhatsApp.
                     </p>
 
                     <button

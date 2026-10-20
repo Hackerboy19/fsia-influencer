@@ -1,25 +1,96 @@
 import express from "express";
+import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
-import { getDb, saveDb, logAction, DatabaseSchema, GallerySection, Creator, Campaign, Registration } from "./server/db";
+import { getDb, saveDb, logAction, hashPassword, verifyPassword, needsRehash, createDefaultDb, GallerySection, Creator, Campaign, Registration } from "./server/db";
+import {
+  ROUTES,
+  SeoConfig,
+  CreatorSeo,
+  SeoPageOverride,
+  assignProfileSlugs,
+  normalisePath,
+  profileSlugFromPath,
+  resolvePageMeta,
+  resolveProfileMeta,
+  notFoundMeta,
+  renderHead,
+  renderSitemap,
+  renderRobots,
+  slugify,
+  SITE_URL
+} from "./src/seo";
 
 // Initialize express app
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
-app.use(express.json());
+app.set("trust proxy", true);
+app.use(express.json({ limit: "5mb" }));
 
-// Create a simple token validation middleware
+// ----------------------------------------------------
+// SESSION MANAGEMENT
+// Random per-login bearer tokens held in memory with a sliding expiry.
+// ----------------------------------------------------
+const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+const sessions = new Map<string, { username: string; expires: number }>();
+
+function readToken(req: express.Request): string {
+  const header = req.headers.authorization || "";
+  if (header.startsWith("Bearer ")) return header.slice(7).trim();
+  const alt = req.headers["x-admin-token"];
+  return typeof alt === "string" ? alt.trim() : "";
+}
+
+function adminUser(req: express.Request): string | null {
+  const token = readToken(req);
+  const session = token ? sessions.get(token) : undefined;
+  if (!session) return null;
+  if (session.expires < Date.now()) {
+    sessions.delete(token);
+    return null;
+  }
+  session.expires = Date.now() + SESSION_TTL_MS;
+  return session.username;
+}
+
 const authenticateAdmin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-  const authHeader = req.headers.authorization;
-  if (authHeader === "Bearer fsia-admin-session-secure") {
+  const username = adminUser(req);
+  if (username) {
+    res.locals.adminUser = username;
     next();
   } else {
     res.status(401).json({ error: "Unauthorized access. Authentication token is invalid or expired." });
   }
 };
+
+// Simple per-IP brute-force throttle for the login endpoint
+const loginAttempts = new Map<string, { count: number; first: number }>();
+const MAX_LOGIN_ATTEMPTS = 8;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+
+function isThrottled(ip: string): boolean {
+  const entry = loginAttempts.get(ip);
+  if (!entry) return false;
+  if (Date.now() - entry.first > LOGIN_WINDOW_MS) {
+    loginAttempts.delete(ip);
+    return false;
+  }
+  return entry.count >= MAX_LOGIN_ATTEMPTS;
+}
+
+function recordFailedLogin(ip: string) {
+  const entry = loginAttempts.get(ip);
+  if (!entry || Date.now() - entry.first > LOGIN_WINDOW_MS) {
+    loginAttempts.set(ip, { count: 1, first: Date.now() });
+  } else {
+    entry.count++;
+  }
+}
+
+const isDefaultPassword = (hash: string) => verifyPassword("admin123", hash);
 
 // ----------------------------------------------------
 // 1. AUTHENTICATION CONTROLLER
@@ -31,32 +102,127 @@ app.post("/api/auth/login", (req, res) => {
       return res.status(400).json({ error: "Username and password are required." });
     }
 
+    const ip = req.ip || "unknown";
+    if (isThrottled(ip)) {
+      return res.status(429).json({ error: "Too many failed attempts. Please wait 15 minutes and try again." });
+    }
+
     const db = getDb();
     const user = db.admin_users.find((u) => u.username === username);
 
-    if (!user) {
-      logAction(`Failed login attempt for user: ${username}`, req.ip);
+    if (!user || !verifyPassword(String(password), user.passwordHash)) {
+      recordFailedLogin(ip);
+      logAction(`Failed login attempt for user: ${username}`, ip);
       return res.status(401).json({ error: "Invalid credentials. Please verify your login details." });
     }
 
-    // Compute SHA-256 Hash of incoming password to protect user keys
-    const hash = crypto.createHash("sha256").update(password).digest("hex");
-
-    if (hash === user.passwordHash) {
-      logAction(`Successful administrative login: ${username}`, req.ip);
-      return res.json({
-        success: true,
-        token: "fsia-admin-session-secure",
-        username: user.username,
-        message: "Session authenticated successfully"
-      });
-    } else {
-      logAction(`Invalid password entered for: ${username}`, req.ip);
-      return res.status(401).json({ error: "Invalid credentials. Please verify your password." });
+    loginAttempts.delete(ip);
+    const mustChangePassword = isDefaultPassword(user.passwordHash);
+    if (needsRehash(user.passwordHash)) {
+      user.passwordHash = hashPassword(String(password));
     }
+    user.lastLogin = new Date().toISOString();
+    saveDb(db);
+
+    const token = crypto.randomBytes(32).toString("hex");
+    sessions.set(token, { username: user.username, expires: Date.now() + SESSION_TTL_MS });
+    logAction(`Successful administrative login: ${username}`, ip);
+    return res.json({
+      success: true,
+      token,
+      username: user.username,
+      mustChangePassword,
+      message: "Session authenticated successfully"
+    });
   } catch (error: any) {
     res.status(500).json({ error: "Internal authentication error: " + error.message });
   }
+});
+
+app.get("/api/auth/me", authenticateAdmin, (req, res) => {
+  const db = getDb();
+  const user = db.admin_users.find((u) => u.username === res.locals.adminUser);
+  res.json({
+    success: true,
+    username: res.locals.adminUser,
+    mustChangePassword: user ? isDefaultPassword(user.passwordHash) : false
+  });
+});
+
+app.post("/api/auth/logout", (req, res) => {
+  const token = readToken(req);
+  if (token) sessions.delete(token);
+  res.json({ success: true });
+});
+
+app.post("/api/auth/change-password", authenticateAdmin, (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: "Current and new password are required." });
+  }
+  if (String(newPassword).length < 8) {
+    return res.status(400).json({ error: "New password must be at least 8 characters long." });
+  }
+  const db = getDb();
+  const user = db.admin_users.find((u) => u.username === res.locals.adminUser);
+  if (!user || !verifyPassword(String(currentPassword), user.passwordHash)) {
+    return res.status(401).json({ error: "Current password is incorrect." });
+  }
+  user.passwordHash = hashPassword(String(newPassword));
+  saveDb(db);
+  // Sign out every other session of this user
+  const current = readToken(req);
+  for (const [token, session] of sessions) {
+    if (session.username === user.username && token !== current) sessions.delete(token);
+  }
+  logAction(`Password changed for operator: ${user.username}`, req.ip);
+  res.json({ success: true, message: "Password updated successfully." });
+});
+
+// ----------------------------------------------------
+// 1B. ADMIN TEAM MANAGEMENT
+// ----------------------------------------------------
+app.get("/api/admin/users", authenticateAdmin, (req, res) => {
+  const db = getDb();
+  res.json(db.admin_users.map((u) => ({ username: u.username, createdAt: u.createdAt || null, lastLogin: u.lastLogin || null })));
+});
+
+app.post("/api/admin/users", authenticateAdmin, (req, res) => {
+  const { username, password } = req.body || {};
+  const name = String(username || "").trim();
+  if (!name || !password) {
+    return res.status(400).json({ error: "Username and password are required." });
+  }
+  if (String(password).length < 8) {
+    return res.status(400).json({ error: "Password must be at least 8 characters long." });
+  }
+  const db = getDb();
+  if (db.admin_users.some((u) => u.username.toLowerCase() === name.toLowerCase())) {
+    return res.status(400).json({ error: "An operator with this username already exists." });
+  }
+  db.admin_users.push({ username: name, passwordHash: hashPassword(String(password)), createdAt: new Date().toISOString() });
+  saveDb(db);
+  logAction(`Created operator account: ${name} (by ${res.locals.adminUser})`, req.ip);
+  res.status(201).json({ success: true });
+});
+
+app.delete("/api/admin/users/:username", authenticateAdmin, (req, res) => {
+  const { username } = req.params;
+  if (username === res.locals.adminUser) {
+    return res.status(400).json({ error: "You cannot remove the account you are signed in with." });
+  }
+  const db = getDb();
+  const before = db.admin_users.length;
+  db.admin_users = db.admin_users.filter((u) => u.username !== username);
+  if (db.admin_users.length === before) {
+    return res.status(404).json({ error: "Operator not found." });
+  }
+  saveDb(db);
+  for (const [token, session] of sessions) {
+    if (session.username === username) sessions.delete(token);
+  }
+  logAction(`Removed operator account: ${username} (by ${res.locals.adminUser})`, req.ip);
+  res.json({ success: true });
 });
 
 // ----------------------------------------------------
@@ -449,6 +615,9 @@ app.post("/api/registrations", (req, res) => {
     if (!brandName || !contactEmail || !contactPhone) {
       return res.status(400).json({ error: "Brand Name, email, and phone contact are mandatory." });
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(contactEmail))) {
+      return res.status(400).json({ error: "Please provide a valid contact email address." });
+    }
 
     const db = getDb();
     const bookingId = "FSIA-VIP-" + Math.floor(100000 + Math.random() * 900000);
@@ -471,7 +640,8 @@ app.post("/api/registrations", (req, res) => {
       gstin,
       scope,
       duration,
-      verificationHash
+      verificationHash,
+      status: "new"
     };
 
     db.registrations.unshift(newRegistration);
@@ -483,6 +653,47 @@ app.post("/api/registrations", (req, res) => {
     res.status(500).json({ error: "Failed to secure VIP registration escrow: " + error.message });
   }
 });
+
+const REGISTRATION_STATUSES = ["new", "contacted", "confirmed", "closed"];
+
+app.put("/api/registrations/:id", authenticateAdmin, (req, res) => {
+  const { id } = req.params;
+  const { status, notes } = req.body || {};
+  if (status !== undefined && !REGISTRATION_STATUSES.includes(status)) {
+    return res.status(400).json({ error: "Invalid lead status." });
+  }
+  const db = getDb();
+  const reg = db.registrations.find((r) => r.id === id);
+  if (!reg) {
+    return res.status(404).json({ error: "Registration not found." });
+  }
+  if (status !== undefined) reg.status = status;
+  if (notes !== undefined) reg.notes = String(notes).slice(0, 2000);
+  saveDb(db);
+  logAction(`Updated VIP lead ${reg.bookingId}${status ? ` → ${status}` : ""}`, req.ip);
+  res.json({ success: true, registration: reg });
+});
+
+app.delete("/api/registrations/:id", authenticateAdmin, (req, res) => {
+  const { id } = req.params;
+  const db = getDb();
+  const reg = db.registrations.find((r) => r.id === id);
+  if (!reg) {
+    return res.status(404).json({ error: "Registration not found." });
+  }
+  db.registrations = db.registrations.filter((r) => r.id !== id);
+  saveDb(db);
+  logAction(`Deleted VIP lead ${reg.bookingId} (${reg.brandName})`, req.ip);
+  res.json({ success: true });
+});
+
+// Accept only http(s) URLs or embedded raster images up to ~1.5 MB
+function safeImage(value: unknown, fallback: string): string {
+  const v = typeof value === "string" ? value.trim() : "";
+  if (/^https?:\/\//i.test(v) && v.length <= 2000) return v;
+  if (/^data:image\/(png|jpe?g|webp|gif);base64,/i.test(v) && v.length <= 1_500_000) return v;
+  return fallback;
+}
 
 // ----------------------------------------------------
 // 4A. INFLUENCER/MODEL REGISTRATION APPLICATIONS
@@ -502,13 +713,17 @@ app.post("/api/influencer-applications", (req, res) => {
     if (!name || !email || !phone || !category) {
       return res.status(400).json({ error: "Full Name, Email, Phone Contact, and Runway Category are required." });
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email))) {
+      return res.status(400).json({ error: "Please provide a valid email address." });
+    }
 
     const db = getDb();
-    const portfolioArray = Array.isArray(portfolio) 
-      ? portfolio 
-      : typeof portfolio === "string" 
+    const portfolioArray = (Array.isArray(portfolio)
+      ? portfolio
+      : typeof portfolio === "string"
         ? portfolio.split(",").map(p => p.trim()).filter(Boolean)
-        : [];
+        : []
+    ).slice(0, 12).map((u: unknown) => safeImage(u, "")).filter(Boolean);
 
     const newApplication = {
       id: "inf-app-" + Date.now(),
@@ -516,7 +731,7 @@ app.post("/api/influencer-applications", (req, res) => {
       category,
       role: role || "Featured Star Model",
       city: city || "Mumbai",
-      image: image || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format",
+      image: safeImage(image, "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format"),
       bio: bio || "Enthusiastic fashion icon looking to make an impact on the high-fashion runway.",
       reach: reach || "100K",
       engagement: engagement || "5.0%",
@@ -622,21 +837,41 @@ app.post("/api/influencer-applications/:id/decline", authenticateAdmin, (req, re
   }
 });
 
+app.delete("/api/influencer-applications/:id", authenticateAdmin, (req, res) => {
+  const { id } = req.params;
+  const db = getDb();
+  const application = (db.influencer_applications || []).find((a) => a.id === id);
+  if (!application) {
+    return res.status(404).json({ error: "Influencer application not found." });
+  }
+  db.influencer_applications = db.influencer_applications.filter((a) => a.id !== id);
+  saveDb(db);
+  logAction(`Deleted model registration application from: ${application.name}`, req.ip);
+  res.json({ success: true });
+});
+
 // ----------------------------------------------------
 // ----------------------------------------------------
 // 5. SERVER-SIDE GEMINI API INTEGRATION & SETTINGS
 // ----------------------------------------------------
+const maskKey = (key: string) =>
+  key ? key.substring(0, 4) + "••••••••" + key.substring(key.length - 4) : "";
+
+// Public settings: only appearance fields, never AI credentials or prompts
 app.get("/api/settings", (req, res) => {
   try {
     const db = getDb();
-    const settings = { ...db.system_settings };
-    if (settings.geminiApiKey) {
-      // Return a safe masked version
-      settings.geminiApiKey = settings.geminiApiKey.substring(0, 4) + "••••••••" + settings.geminiApiKey.substring(settings.geminiApiKey.length - 4);
-    } else {
-      settings.geminiApiKey = "";
-    }
-    res.json(settings);
+    const { geminiApiKey, aiSystemPrompt, modelSelection, temperature, topK, ...publicSettings } = db.system_settings;
+    res.json(publicSettings);
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to load system settings: " + error.message });
+  }
+});
+
+app.get("/api/admin/settings", authenticateAdmin, (req, res) => {
+  try {
+    const db = getDb();
+    res.json({ ...db.system_settings, geminiApiKey: maskKey(db.system_settings.geminiApiKey) });
   } catch (error: any) {
     res.status(500).json({ error: "Failed to load system settings: " + error.message });
   }
@@ -657,7 +892,7 @@ app.put("/api/settings", authenticateAdmin, (req, res) => {
     };
     saveDb(db);
     logAction("Modified dynamic system settings and appearance configurations", req.ip);
-    res.json({ success: true, settings: db.system_settings });
+    res.json({ success: true, settings: { ...db.system_settings, geminiApiKey: maskKey(db.system_settings.geminiApiKey) } });
   } catch (error: any) {
     res.status(500).json({ error: "Failed to save settings: " + error.message });
   }
@@ -699,7 +934,7 @@ app.post("/api/gemini/optimize", async (req, res) => {
 
   const modelName = settings.modelSelection || "gemini-3.5-flash";
   const systemInstruction = settings.aiSystemPrompt || `
-    You are an elite, world-class haute couture brand director and luxury media strategist for FSIA (Forever Star India).
+    You are an elite, world-class haute couture brand director and luxury media strategist for FSIA Influencer.
     Your job is to optimize a creator's rough pitch/concept for a luxury brand sponsorship campaign into a majestic, highly professional premium proposal.
     Format the output beautifully in clean markdown. Keep it under 280 words.
   `;
@@ -804,6 +1039,10 @@ app.get("/api/admin/stats", authenticateAdmin, (req, res) => {
       campaignsCount: db.campaigns.length,
       applicationsCount: db.registrations.length,
       influencerApplicationsCount: db.influencer_applications?.length || 0,
+      pendingApplicationsCount: (db.influencer_applications || []).filter((a) => a.status === "pending").length,
+      newLeadsCount: db.registrations.filter((r) => !r.status || r.status === "new").length,
+      newEnquiriesCount: (db.enquiries || []).filter((e) => e.status === "new").length,
+      membershipPlansCount: db.membership_plans?.length || 0,
       estimatedRosterReach: (totalReach / 1000000).toFixed(1) + "M",
       totalPromptsCount: totalPrompts,
       apiSuccessRate: apiSuccessRate,
@@ -816,8 +1055,247 @@ app.get("/api/admin/stats", authenticateAdmin, (req, res) => {
 });
 
 // ----------------------------------------------------
+// ENQUIRIES (campaign applications & membership plan requests)
+// ----------------------------------------------------
+const ENQUIRY_TYPES = ["campaign", "membership"];
+const clip = (value: unknown, max: number) => String(value ?? "").trim().slice(0, max);
+
+app.post("/api/enquiries", (req, res) => {
+  const body = req.body || {};
+  if (!ENQUIRY_TYPES.includes(body.type)) {
+    return res.status(400).json({ error: "Unknown enquiry type." });
+  }
+  if (!clip(body.name, 200) || !clip(body.email, 200) || !clip(body.phone, 50)) {
+    return res.status(400).json({ error: "Name, email and phone are required." });
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clip(body.email, 200))) {
+    return res.status(400).json({ error: "Please provide a valid email address." });
+  }
+  const details: Record<string, string> = {};
+  if (body.details && typeof body.details === "object") {
+    for (const [key, value] of Object.entries(body.details).slice(0, 12)) {
+      details[clip(key, 40)] = clip(value, 2000);
+    }
+  }
+  const db = getDb();
+  const enquiry = {
+    id: "enq-" + Date.now(),
+    type: body.type,
+    subject: clip(body.subject, 300),
+    refId: clip(body.refId, 100),
+    name: clip(body.name, 200),
+    email: clip(body.email, 200),
+    phone: clip(body.phone, 50),
+    details,
+    status: "new" as const,
+    timestamp: new Date().toISOString()
+  };
+  db.enquiries = [enquiry, ...(db.enquiries || [])].slice(0, 5000);
+  saveDb(db);
+  logAction(`New ${enquiry.type} enquiry from ${enquiry.name}: ${enquiry.subject}`, req.ip);
+  res.status(201).json({ success: true, enquiry: { id: enquiry.id, timestamp: enquiry.timestamp } });
+});
+
+app.get("/api/enquiries", authenticateAdmin, (req, res) => {
+  res.json(getDb().enquiries || []);
+});
+
+app.put("/api/enquiries/:id", authenticateAdmin, (req, res) => {
+  const { status, notes } = req.body || {};
+  if (status !== undefined && !REGISTRATION_STATUSES.includes(status)) {
+    return res.status(400).json({ error: "Invalid status." });
+  }
+  const db = getDb();
+  const enquiry = (db.enquiries || []).find((e) => e.id === req.params.id);
+  if (!enquiry) return res.status(404).json({ error: "Enquiry not found." });
+  if (status !== undefined) enquiry.status = status;
+  if (notes !== undefined) enquiry.notes = clip(notes, 2000);
+  saveDb(db);
+  logAction(`Updated enquiry ${enquiry.id}${status ? ` → ${status}` : ""}`, req.ip);
+  res.json({ success: true, enquiry });
+});
+
+app.delete("/api/enquiries/:id", authenticateAdmin, (req, res) => {
+  const db = getDb();
+  const before = (db.enquiries || []).length;
+  db.enquiries = (db.enquiries || []).filter((e) => e.id !== req.params.id);
+  if (db.enquiries.length === before) return res.status(404).json({ error: "Enquiry not found." });
+  saveDb(db);
+  logAction(`Deleted enquiry ${req.params.id}`, req.ip);
+  res.json({ success: true });
+});
+
+// ----------------------------------------------------
+// SEO (Admin → SEO). Validation mirrors seo_apply_update() in php-backend/api/lib/seo.php
+// ----------------------------------------------------
+const seoOf = (db: ReturnType<typeof getDb>): SeoConfig => ({
+  site: (db as any).seo?.site || {},
+  pages: (db as any).seo?.pages || {}
+});
+const isUrl = (v: string) => /^https?:\/\//i.test(v);
+
+app.get("/api/seo", (req, res) => {
+  const seo = seoOf(getDb());
+  res.json({
+    site: { siteName: seo.site.siteName || "", defaultImage: seo.site.defaultImage || "", allowIndexing: seo.site.allowIndexing !== false },
+    pages: seo.pages
+  });
+});
+
+app.get("/api/admin/seo", authenticateAdmin, (req, res) => {
+  res.json(seoOf(getDb()));
+});
+
+app.put("/api/admin/seo", authenticateAdmin, (req, res) => {
+  const body = req.body || {};
+  const site = body.site && typeof body.site === "object" ? body.site : {};
+  let gsc = clip(site.googleVerification, 2000);
+  const tag = gsc.match(/content\s*=\s*["']([^"']+)["']/i);
+  if (tag) gsc = tag[1];
+  gsc = gsc.replace(/[^A-Za-z0-9_\-]/g, "").slice(0, 120);
+  const defaultImage = clip(site.defaultImage, 500);
+  if (defaultImage && !isUrl(defaultImage)) {
+    return res.status(400).json({ error: "The default share image must be a full link starting with https://" });
+  }
+  const cleanSite = { siteName: clip(site.siteName, 80), defaultImage, googleVerification: gsc, allowIndexing: site.allowIndexing !== false };
+
+  const cleanPages: Record<string, SeoPageOverride> = {};
+  for (const [pagePath, page] of Object.entries(body.pages && typeof body.pages === "object" ? body.pages : {})) {
+    if (!page || typeof page !== "object" || !ROUTES.some((r) => r.path === pagePath)) continue;
+    const p = page as SeoPageOverride;
+    const image = clip(p.image, 500);
+    if (image && !isUrl(image)) {
+      return res.status(400).json({ error: `Share image for ${pagePath} must be a full link starting with https://` });
+    }
+    const entry: SeoPageOverride = {};
+    if (clip(p.title, 120)) entry.title = clip(p.title, 120);
+    if (clip(p.description, 320)) entry.description = clip(p.description, 320);
+    if (image) entry.image = image;
+    if (p.noindex) entry.noindex = true;
+    if (Object.keys(entry).length) cleanPages[pagePath] = entry;
+  }
+
+  const db = getDb();
+  const creators: GallerySection[] = JSON.parse(JSON.stringify(db.creators));
+  for (const profile of Array.isArray(body.profiles) ? body.profiles : []) {
+    const section = creators.find((s) => s.id === profile?.sectionId);
+    const creator = section?.creators.find((c) => c.name === profile?.name) as (Creator & { seo?: CreatorSeo }) | undefined;
+    if (!creator) continue;
+    const input = profile.seo && typeof profile.seo === "object" ? profile.seo : {};
+    const seo: CreatorSeo = {};
+    const slug = slugify(clip(input.slug, 200));
+    if (slug) seo.slug = slug;
+    if (clip(input.title, 120)) seo.title = clip(input.title, 120);
+    if (clip(input.description, 320)) seo.description = clip(input.description, 320);
+    if (input.noindex) seo.noindex = true;
+    if (Object.keys(seo).length) creator.seo = seo;
+    else delete creator.seo;
+  }
+  // Custom profile URLs must be unique
+  for (const entry of assignProfileSlugs(creators)) {
+    const wanted = entry.creator.seo?.slug;
+    if (wanted && entry.slug !== wanted) {
+      return res.status(400).json({
+        error: `The profile URL "${wanted}" is already used by another creator. Please choose a different one for ${entry.creator.name}.`
+      });
+    }
+  }
+  db.creators = creators;
+  (db as any).seo = { site: cleanSite, pages: cleanPages };
+  saveDb(db);
+  logAction(`Updated SEO settings (by ${res.locals.adminUser})`, req.ip);
+  res.json({ success: true, seo: seoOf(db) });
+});
+
+// Share images uploaded in Admin → SEO. Mirrors seo_decode_image() and the media routes in php-backend.
+const MEDIA_DIR = path.join(process.cwd(), "server", "media");
+
+function decodeImage(dataUrl: unknown, maxBytes = 5 * 1024 * 1024): { bytes: Buffer; mime: string; ext: string } | string {
+  const m = typeof dataUrl === "string" ? dataUrl.match(/^data:image\/(jpeg|jpg|png|webp);base64,([A-Za-z0-9+/=\s]+)$/) : null;
+  if (!m) return "Please choose a JPG, PNG or WebP image.";
+  const bytes = Buffer.from(m[2].replace(/\s+/g, ""), "base64");
+  if (!bytes.length) return "The image could not be read. Please try another file.";
+  if (bytes.length > maxBytes) return "The image is too large. Please use one under 5 MB.";
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return { bytes, mime: "image/jpeg", ext: "jpg" };
+  if (bytes.subarray(0, 4).toString("latin1") === "\x89PNG") return { bytes, mime: "image/png", ext: "png" };
+  if (bytes.subarray(0, 4).toString() === "RIFF" && bytes.subarray(8, 12).toString() === "WEBP") return { bytes, mime: "image/webp", ext: "webp" };
+  return "Please choose a JPG, PNG or WebP image.";
+}
+
+app.post("/api/admin/seo/image", authenticateAdmin, (req, res) => {
+  const img = decodeImage(req.body?.image);
+  if (typeof img === "string") return res.status(400).json({ error: img });
+  fs.mkdirSync(MEDIA_DIR, { recursive: true });
+  const name = crypto.createHash("sha1").update(img.bytes).digest("hex").slice(0, 20) + "." + img.ext;
+  const file = path.join(MEDIA_DIR, name);
+  if (!fs.existsSync(file)) fs.writeFileSync(file, img.bytes);
+  logAction(`Uploaded share image ${name} (by ${res.locals.adminUser})`, req.ip);
+  res.json({ success: true, url: `${SITE_URL}/api/media/${name}` });
+});
+
+app.get(/^\/api\/media\/([a-f0-9]{20})\.(jpg|png|webp)$/, (req, res) => {
+  const [hash, ext] = [req.params[0], req.params[1]];
+  const file = path.join(MEDIA_DIR, `${hash}.${ext}`);
+  if (!fs.existsSync(file)) return res.status(404).json({ error: "Image not found." });
+  res.set("Cache-Control", "public, max-age=31536000").type(ext === "jpg" ? "image/jpeg" : `image/${ext}`).send(fs.readFileSync(file));
+});
+
+// Creator photos uploaded from the registration form live inside the profile as data: URLs
+app.get("/api/media/profile/:slug", (req, res) => {
+  const slug = req.params.slug.replace(/\.jpg$/, "");
+  const entry = assignProfileSlugs(getDb().creators).find((e) => e.slug === slug);
+  const img = entry ? decodeImage(entry.creator.image, 20 * 1024 * 1024) : "";
+  if (!img || typeof img === "string") return res.status(404).json({ error: "Image not found." });
+  res.set("Cache-Control", "public, max-age=86400").type(img.mime).send(img.bytes);
+});
+
+// Full audit trail
+app.get("/api/admin/logs", authenticateAdmin, (req, res) => {
+  res.json(getDb().admin_logs || []);
+});
+
+// Backup: complete database export without operator credentials
+app.get("/api/admin/backup", authenticateAdmin, (req, res) => {
+  const { admin_users, ...data } = getDb();
+  const { geminiApiKey, ...settings } = data.system_settings;
+  logAction("Downloaded full database backup", req.ip);
+  res.setHeader("Content-Disposition", `attachment; filename="fsia-backup-${new Date().toISOString().slice(0, 10)}.json"`);
+  res.json({ ...data, system_settings: settings, exportedAt: new Date().toISOString() });
+});
+
+// Restore: replace content collections from a backup file (operator accounts are kept)
+app.post("/api/admin/restore", authenticateAdmin, (req, res) => {
+  const backup = req.body || {};
+  if (!Array.isArray(backup.creators) || !Array.isArray(backup.campaigns)) {
+    return res.status(400).json({ error: "This file does not look like an FSIA backup." });
+  }
+  const db = getDb();
+  const defaults = createDefaultDb();
+  db.creators = backup.creators;
+  db.campaigns = backup.campaigns;
+  db.registrations = Array.isArray(backup.registrations) ? backup.registrations : [];
+  db.influencer_applications = Array.isArray(backup.influencer_applications) ? backup.influencer_applications : [];
+  db.membership_plans = Array.isArray(backup.membership_plans) ? backup.membership_plans : defaults.membership_plans;
+  db.prompt_logs = Array.isArray(backup.prompt_logs) ? backup.prompt_logs : [];
+  db.enquiries = Array.isArray(backup.enquiries) ? backup.enquiries : [];
+  if (backup.seo && typeof backup.seo === "object") (db as any).seo = backup.seo;
+  if (backup.system_settings && typeof backup.system_settings === "object") {
+    // Masked keys in backups must not overwrite the real key
+    const { geminiApiKey, ...rest } = backup.system_settings;
+    db.system_settings = { ...db.system_settings, ...rest };
+  }
+  saveDb(db);
+  logAction("Restored database from uploaded backup", req.ip);
+  res.json({ success: true });
+});
+
+// ----------------------------------------------------
 // 6. VITE & STATIC FILES INGRESS PORTAL
 // ----------------------------------------------------
+app.all("/api/*", (req, res) => {
+  res.status(404).json({ error: "Endpoint not implemented: " + req.path.replace(/^\/api\//, "") });
+});
+
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -827,10 +1305,41 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+    const templatePath = path.join(distPath, "seo-template.html");
+
+    // robots.txt, sitemap.xml and every page carry the current Admin → SEO settings
+    app.get(["/robots.txt", "/sitemap.xml"], (req, res) => {
+      const db = getDb();
+      const seo = seoOf(db);
+      if (req.path === "/robots.txt") return res.type("text/plain").send(renderRobots(seo));
+      res.type("application/xml").send(renderSitemap(seo, assignProfileSlugs(db.creators), new Date().toISOString().slice(0, 10)));
     });
+
+    const renderPage: express.RequestHandler = (req, res, next) => {
+      if (req.method !== "GET" || (path.extname(req.path) && !req.path.endsWith("/index.html"))) return next();
+      let template: string;
+      try {
+        template = fs.readFileSync(templatePath, "utf8");
+      } catch {
+        return next();
+      }
+      const db = getDb();
+      const seo = seoOf(db);
+      const profiles = assignProfileSlugs(db.creators);
+      const urlPath = normalisePath(req.path.replace(/index\.html$/, ""));
+      const slug = profileSlugFromPath(urlPath);
+      const route = ROUTES.find((r) => r.path === urlPath);
+      const entry = slug ? profiles.find((p) => p.slug === slug) : undefined;
+      const meta = entry ? resolveProfileMeta(entry, seo) : route && !slug ? resolvePageMeta(route, seo, profiles) : notFoundMeta(urlPath, seo);
+      const html = template
+        .replace(/<!--SEO-HEAD-->[\s\S]*?<!--\/SEO-HEAD-->/, () => renderHead(meta, seo))
+        .replace("<!--SEO-BODY-->", () => meta.bodyHtml);
+      res.status(entry || (route && !slug) ? 200 : 404).set("Cache-Control", "no-cache").type("html").send(html);
+    };
+
+    app.use(renderPage);
+    app.use(express.static(distPath, { index: false }));
+    app.get("*", renderPage);
   }
 
   app.listen(PORT, "0.0.0.0", () => {

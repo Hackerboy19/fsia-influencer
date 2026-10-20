@@ -39,3 +39,64 @@
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+/* ------------------------------------------------------------------
+   READABILITY & CONTRAST
+   Muted greys and the champagne accent were too faint on the light
+   backgrounds (as low as 1.6:1). These tokens lift every text colour to
+   WCAG AA (≥ 4.5:1) on light surfaces, and restore the original light
+   tones on dark surfaces where the darker values would disappear.
+   Kept in the utilities layer so hover:/focus: variants still win.
+------------------------------------------------------------------- */
+:root {
+  --ink-strong: #111111;
+  --ink-body: #2e2c29;
+  --ink-muted: #47453f;   /* was #666 / #777 */
+  --ink-subtle: #57554f;  /* was #888 / #8E8D8A / #999 / stone-400/500 */
+  --ink-placeholder: #75726b;
+  /* Accent text: the brand champagne deepened enough to read on cream/white */
+  --gold-ink: color-mix(in oklab, var(--color-champagne) 42%, #1d1407);
+  --ink-on-dark: #e9e6df;
+  --ink-on-dark-muted: #cfcac0;
+}
+
+body {
+  color: var(--ink-strong);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+@layer utilities {
+  .text-\[\#555\], .text-\[\#444\], .text-zinc-600, .text-stone-600, .text-neutral-600 { color: var(--ink-body); }
+  .text-\[\#666\], .text-\[\#777\], .text-neutral-500 { color: var(--ink-muted); }
+  .text-\[\#888\], .text-\[\#8E8D8A\], .text-\[\#8e8d8a\], .text-\[\#999\], .text-\[\#AAA\],
+  .text-stone-400, .text-stone-500, .text-zinc-400, .text-zinc-500 { color: var(--ink-subtle); }
+  .text-champagne, .text-\[\#E1C699\], .text-\[\#C9A227\] { color: var(--gold-ink); }
+  [class*="placeholder:text-"]::placeholder, input::placeholder, textarea::placeholder { color: var(--ink-placeholder); opacity: 1; }
+  .font-light { font-weight: 400; }
+
+  /* Dark surfaces keep light text (exact class tokens, so hover:bg-… does not count) */
+  :where([class~="bg-[#111]"], [class~="bg-[#111]/95"], [class~="bg-[#111]/90"], [class~="bg-[#111]/80"],
+         [class~="bg-[#1A1A1A]"], [class~="bg-[#1a1a1a]"], [class~="bg-[#222]"], [class~="bg-black"], [class~="bg-black/90"],
+         [class~="bg-black/80"], [class~="bg-stone-900"], [class~="bg-stone-950"], [class~="bg-zinc-900"],
+         [class~="bg-neutral-900"], .surface-dark)
+    :is(.text-\[\#555\], .text-\[\#444\], .text-zinc-600, .text-stone-600, .text-neutral-600, .text-\[\#666\], .text-\[\#777\], .text-neutral-500) { color: var(--ink-on-dark); }
+  :where([class~="bg-[#111]"], [class~="bg-[#111]/95"], [class~="bg-[#111]/90"], [class~="bg-[#111]/80"],
+         [class~="bg-[#1A1A1A]"], [class~="bg-[#1a1a1a]"], [class~="bg-[#222]"], [class~="bg-black"], [class~="bg-black/90"],
+         [class~="bg-black/80"], [class~="bg-stone-900"], [class~="bg-stone-950"], [class~="bg-zinc-900"],
+         [class~="bg-neutral-900"], .surface-dark)
+    :is(.text-\[\#888\], .text-\[\#8E8D8A\], .text-\[\#8e8d8a\], .text-\[\#999\], .text-\[\#AAA\], .text-stone-400, .text-stone-500, .text-zinc-400, .text-zinc-500) { color: var(--ink-on-dark-muted); }
+  :where([class~="bg-[#111]"], [class~="bg-[#111]/95"], [class~="bg-[#111]/90"], [class~="bg-[#111]/80"],
+         [class~="bg-[#1A1A1A]"], [class~="bg-[#1a1a1a]"], [class~="bg-[#222]"], [class~="bg-black"], [class~="bg-black/90"],
+         [class~="bg-black/80"], [class~="bg-stone-900"], [class~="bg-stone-950"], [class~="bg-zinc-900"],
+         [class~="bg-neutral-900"], .surface-dark)
+    :is(.text-champagne, .text-\[\#E1C699\], .text-\[\#C9A227\]),
+  :is([class~="bg-[#111]"], [class~="bg-stone-900"], [class~="bg-black"], .surface-dark):is(.text-champagne, .text-\[\#E1C699\], .text-\[\#C9A227\]) { color: var(--color-champagne); }
+}
+
+/* Visible keyboard focus everywhere */
+:focus-visible {
+  outline: 2px solid var(--gold-ink);
+  outline-offset: 2px;
+}

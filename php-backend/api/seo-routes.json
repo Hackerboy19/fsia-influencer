@@ -1,0 +1,120 @@
+{
+  "siteUrl": "https://influencer.fsia.in",
+  "siteName": "FSIA Influencer",
+  "ogImage": "https://influencer.fsia.in/og-image.png",
+  "profilePrefix": "/talent/",
+  "routes": [
+    {
+      "tab": "catwalk",
+      "path": "/",
+      "title": "FSIA Creators & Influencer Portal | Connect & Collaborate",
+      "description": "Join the official influencer network. Register and access exclusive brand collaborations, creator campaigns, and profile management.",
+      "heading": "FSIA Creators & Influencer Portal",
+      "indexable": true,
+      "priority": "1.0",
+      "changefreq": "weekly"
+    },
+    {
+      "tab": "directory",
+      "path": "/talent/",
+      "title": "Verified Creators & Influencers Roster | FSIA Influencer",
+      "description": "Browse verified Indian creators and influencers by category, city, reach and engagement, and send a collaboration request in minutes.",
+      "heading": "Verified Creator & Influencer Roster",
+      "indexable": true,
+      "priority": "0.9",
+      "changefreq": "daily"
+    },
+    {
+      "tab": "campaigns",
+      "path": "/campaigns/",
+      "title": "Brand Campaigns & Paid Collaborations for Creators | FSIA Influencer",
+      "description": "Discover live paid brand campaigns for creators across fashion, travel, lifestyle and tech. See budgets, requirements and perks, then apply.",
+      "heading": "Live Brand Campaigns for Creators",
+      "indexable": true,
+      "priority": "0.9",
+      "changefreq": "daily"
+    },
+    {
+      "tab": "apply",
+      "path": "/join/",
+      "title": "Register as a Creator & Get Verified | FSIA Influencer",
+      "description": "Create your creator profile in three quick steps to get verified and unlock brand collaborations, campaign invitations and PR opportunities.",
+      "heading": "Register as a Creator and Get Verified",
+      "indexable": true,
+      "priority": "0.9",
+      "changefreq": "monthly"
+    },
+    {
+      "tab": "membership",
+      "path": "/membership/",
+      "title": "Creator Membership Plans & Pricing | FSIA Influencer",
+      "description": "Compare free and premium creator membership plans: verification badges, priority brand matching, portfolio shoots and dedicated talent management.",
+      "heading": "Creator Membership Plans",
+      "indexable": true,
+      "priority": "0.7",
+      "changefreq": "monthly"
+    },
+    {
+      "tab": "faq",
+      "path": "/faq/",
+      "title": "Creator & Brand FAQs | FSIA Influencer",
+      "description": "Answers about creator verification, payments, GST, campaign eligibility and how brands work with influencers on FSIA Influencer.",
+      "heading": "Frequently Asked Questions",
+      "indexable": true,
+      "priority": "0.6",
+      "changefreq": "monthly"
+    },
+    {
+      "tab": "admin",
+      "path": "/admin/",
+      "title": "Admin | FSIA Influencer",
+      "description": "Administration workspace.",
+      "heading": "Admin",
+      "indexable": false,
+      "priority": "0",
+      "changefreq": "monthly"
+    }
+  ],
+  "faqs": [
+    {
+      "question": "What is the FSIA Influencer Platform?",
+      "answer": "FSIA is India's leading elite networking platform bridging verified Brand Campaign victors, national awards laureates, social impact champions, and top-tier digital authorities with premier luxury brand houses. We run structured physical catwalks, editorial magazines, and secure collaboration escrow models.",
+      "category": "General"
+    },
+    {
+      "question": "How do I secure the FSIA Verified Star Badge on my profile?",
+      "answer": "The Star verification is reserved for creators who pass our comprehensive digital aesthetic audit. We evaluate alignment with high-fashion, clean brand guidelines, audience authenticity, and real-time engagement indexes. Members enrolled in our Silver, Gold, or Royal plans undergo fast-track verification.",
+      "category": "Verification"
+    },
+    {
+      "question": "How does the secure Escrow Payment protocol operate?",
+      "answer": "To shield creators from unpaid campaigns, brands must secure 100% of the allocated budget in our escrow registry before content creation starts. Once the creator publishes the content and passes automated verification checks, the funds are wired directly to their linked bank account within 24 business hours.",
+      "category": "Financials"
+    },
+    {
+      "question": "Is GSTIN registration mandatory for Indian creators to receive payouts?",
+      "answer": "No, a GSTIN is not mandatory for individual creators. If you do not have a GSTIN, payouts are computed based on individual PAN cards. However, if you have a registered agency or corporate structure, submitting your GSTIN allows you to raise tax-compliant invoices and claim input tax credit (ITC).",
+      "category": "Financials"
+    },
+    {
+      "question": "Can micro-influencers apply for brand campaigns on FSIA?",
+      "answer": "Absolutely! FSIA supports creators across multiple tiers (Nano, Micro, Macro, and Mega). Brands are increasingly looking for highly engaged micro-influencers (10k to 50k followers) who maintain deep, authentic community connections.",
+      "category": "Brands"
+    },
+    {
+      "question": "What are the core requirements for walking the FSIA Physical Runway?",
+      "answer": "Physical runways are integrated with national brand campaigns and pageants such as Miss India, Mrs India and Teen India. Creators selected for major brand campaigns or holding Gold/Royal memberships receive priority invitations to walk and showcase collaborative couture collections.",
+      "category": "General"
+    },
+    {
+      "question": "How do brands verify influencer statistics on the FSIA platform?",
+      "answer": "Our engine performs daily API sync audits directly with social networks (Instagram, YouTube, Threads). We analyze historical engagement curves, comment authenticity ratios, active follower distribution, and localized city hubs to present verified data metrics to brands.",
+      "category": "Verification"
+    },
+    {
+      "question": "What legal agreements govern collaborations on the FSIA portal?",
+      "answer": "All collaborations are bound by our standard digital 'VIP Collaboration Charter' which outlines copyright assignments, exclusivity durations, content standards, and payment timelines. Both parties sign this digitally prior to launch, making it legally enforceable.",
+      "category": "Brands"
+    }
+  ]
+}
