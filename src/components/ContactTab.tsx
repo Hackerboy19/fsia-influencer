@@ -24,9 +24,9 @@ export default function ContactTab({ onNavigate }: { onNavigate: (tab: TabId) =>
         <p className="font-serif-text text-[#2e2c29] text-lg leading-relaxed">{route.intro}</p>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] gap-6 items-start">
-        <aside aria-label="How we can help" className="surface-dark bg-gradient-to-br from-[#16233f] to-[#0b1426] text-white rounded-3xl p-6 md:p-8 space-y-6">
+        <aside aria-label="How we can help" className="surface-dark bg-gradient-to-br from-[#121824] to-[#0d111a] text-white rounded-3xl p-6 md:p-8 space-y-6">
           <div className="flex items-center gap-3">
-            <span className="w-11 h-11 rounded-full bg-[#E1C699] flex items-center justify-center" aria-hidden="true">
+            <span className="w-11 h-11 rounded-full bg-[#F59E0B] flex items-center justify-center" aria-hidden="true">
               <MessageSquare className="w-5 h-5 text-[#111]" />
             </span>
             <div>

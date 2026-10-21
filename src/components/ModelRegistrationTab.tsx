@@ -277,7 +277,7 @@ export default function ModelRegistrationTab() {
               e.preventDefault();
               document.getElementById("registration-form-section")?.scrollIntoView({ behavior: "smooth" });
             }}
-            className="inline-flex items-center justify-center gap-2 bg-[#111] hover:bg-[#222] text-white font-semibold text-sm px-7 py-3.5 rounded-xl"
+            className="inline-flex items-center justify-center gap-2 bg-[#d32f2f] hover:bg-[#b71c1c] text-white font-semibold text-sm px-7 py-3.5 rounded-xl"
           >
             Start registration <ArrowRight className="w-4 h-4" />
           </a>
@@ -519,7 +519,7 @@ export default function ModelRegistrationTab() {
                     </button>
                   ) : <span />}
                   <button type="submit" disabled={isSubmitting} aria-busy={isSubmitting}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#111] hover:bg-[#222] text-white font-semibold text-sm cursor-pointer disabled:opacity-60">
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#d32f2f] hover:bg-[#b71c1c] text-white font-semibold text-sm cursor-pointer disabled:opacity-60">
                     {isSubmitting ? (
                       <>
                         <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Submitting…
@@ -558,7 +558,7 @@ export default function ModelRegistrationTab() {
               </dl>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button onClick={() => navigateTo("campaigns")}
-                  className="px-6 py-3 bg-[#111] hover:bg-[#222] text-white font-semibold text-sm rounded-xl cursor-pointer">
+                  className="px-6 py-3 bg-[#d32f2f] hover:bg-[#b71c1c] text-white font-semibold text-sm rounded-xl cursor-pointer">
                   Browse brand campaigns
                 </button>
                 <button onClick={handleReset}

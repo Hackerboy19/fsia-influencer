@@ -1,12 +1,12 @@
 import React, { useEffect, useRef } from "react";
 
 interface CursorParticleTrailProps {
-  color?: string; // Default to luxury champagne "#E1C699"
+  color?: string; // Default to luxury champagne "#F59E0B"
   active?: boolean;
 }
 
 export default function CursorParticleTrail({
-  color = "#E1C699",
+  color = "#F59E0B",
   active = true,
 }: CursorParticleTrailProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);

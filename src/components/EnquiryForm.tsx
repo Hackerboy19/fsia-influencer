@@ -160,7 +160,7 @@ export default function EnquiryForm({
         <button
           type="submit"
           disabled={sending}
-          className="inline-flex items-center justify-center gap-2 bg-[#111] hover:bg-[#222] text-white font-semibold text-sm px-6 py-3 rounded-xl cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+          className="inline-flex items-center justify-center gap-2 bg-[#d32f2f] hover:bg-[#b71c1c] text-white font-semibold text-sm px-6 py-3 rounded-xl cursor-pointer disabled:opacity-60 disabled:cursor-wait"
         >
           <Send className="w-4 h-4" aria-hidden="true" />
           {sending ? "Sending…" : submitLabel}

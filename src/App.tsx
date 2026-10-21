@@ -32,6 +32,7 @@ import ModelRegistrationTab from "./components/ModelRegistrationTab";
 import FaqTab from "./components/FaqTab";
 import CursorParticleTrail from "./components/CursorParticleTrail";
 import SiteFooter from "./components/SiteFooter";
+import SiteHeader from "./components/SiteHeader";
 import HomeTab from "./components/HomeTab";
 import StarIndiaTab from "./components/StarIndiaTab";
 import GreenLightTab from "./components/GreenLightTab";
@@ -92,7 +93,7 @@ export default function App() {
     ctaText: "EXPLORE THE PORTAL",
     footerText: "© 2026 FSIA Influencer. All rights reserved.",
     logoUrl: "",
-    primaryColor: "#E1C699",
+    primaryColor: "#F59E0B",
     secondaryColor: "#111111"
   });
 
@@ -351,7 +352,7 @@ export default function App() {
     navigateTo("catwalk");
   };
 
-  const activeSection = sections[activeSectionIndex] || sections[0] || { id: "none", title: "No Category", creators: [], primaryColor: "#E1C699" };
+  const activeSection = sections[activeSectionIndex] || sections[0] || { id: "none", title: "No Category", creators: [], primaryColor: "#F59E0B" };
 
   // Glide through runway sections
   const handlePrevSection = () => {
@@ -390,12 +391,12 @@ export default function App() {
               <motion.div 
                 animate={{ x: activeSectionIndex * -45 }}
                 transition={{ type: "spring", stiffness: 45, damping: 25 }}
-                className="absolute top-0 right-[15%] w-[1px] h-full bg-[#E1C699]/25"
+                className="absolute top-0 right-[15%] w-[1px] h-full bg-[#F59E0B]/25"
               />
               <motion.div 
                 animate={{ y: activeSectionIndex * -35 }}
                 transition={{ type: "spring", stiffness: 45, damping: 25 }}
-                className="absolute top-[40%] left-0 w-full h-[1px] bg-[#E1C699]/25"
+                className="absolute top-[40%] left-0 w-full h-[1px] bg-[#F59E0B]/25"
               />
               <motion.div 
                 animate={{ 
@@ -441,170 +442,33 @@ export default function App() {
 
             {/* Refracting Crystal Prism Info Widget (Editorial Aesthetic Theme) */}
             <div className="absolute bottom-32 right-12 w-[110px] h-[110px] pointer-events-none hidden md:block z-10 opacity-75">
-              <div className="absolute inset-0 rotate-45 border border-[#E1C699]/35 backdrop-blur-sm"></div>
-              <div className="absolute inset-3 rotate-[15deg] border border-[#E1C699]/15"></div>
+              <div className="absolute inset-0 rotate-45 border border-[#F59E0B]/35 backdrop-blur-sm"></div>
+              <div className="absolute inset-3 rotate-[15deg] border border-[#F59E0B]/15"></div>
               <div className="absolute inset-0 flex items-center justify-center">
-                 <div className="w-1.5 h-1.5 bg-[#E1C699] rounded-full animate-ping"></div>
+                 <div className="w-1.5 h-1.5 bg-[#F59E0B] rounded-full animate-ping"></div>
               </div>
               <div className="absolute -top-7 left-0 text-[11px] tracking-[0.4em] uppercase whitespace-nowrap rotate-90 origin-bottom-left text-[#8E8D8A] font-bold">
                 REFRACTIVE INDEX: PURE
               </div>
             </div>
 
-            {/* 1. TOP EDITORIAL BANNER */}
-            <header className="absolute top-0 inset-x-0 p-2 sm:p-4 md:p-4 xl:p-8 flex flex-col xl:flex-row justify-between items-center gap-2 sm:gap-3 md:gap-4 xl:gap-3 z-20 pointer-events-none select-none border-b border-black/[0.03] bg-white/20 backdrop-blur-xs">
-              {/* Top Row on Mobile: Logo & Actions. (No admin button for visitors: the
-                  admin workspace is opened directly at /admin/.) */}
-              <div className="flex items-center justify-between w-full xl:w-auto xl:shrink-0 gap-2 sm:gap-4 pointer-events-auto">
-                {/* Logo: home link */}
-                <a
-                  href="/"
-                  onClick={(e) => {
-                    if (e.metaKey || e.ctrlKey || e.shiftKey) return;
-                    e.preventDefault();
-                    navigateTo("home");
-                    playCrystalChime();
-                  }}
-                  aria-label="FSIA Influencer — home"
-                  className="flex items-center gap-1.5 sm:gap-2.5 bg-white/85 backdrop-blur-md px-2.5 py-1.5 sm:px-5 sm:py-3 rounded-xl border border-black/10 shadow-sm cursor-pointer hover:border-black/25 transition-all select-none"
-                >
-                  <div className="space-y-0.5">
-                    <p className="font-serif-display text-[12px] sm:text-sm md:text-base lg:text-lg font-bold tracking-tight text-[#111] leading-none whitespace-nowrap">
-                      FSIA INFLUENCER
-                    </p>
-                    <p className="font-sans text-[10px] sm:text-[11px] tracking-[0.1em] text-[#47453f] uppercase font-bold leading-none whitespace-nowrap max-[399px]:hidden">
-                      Influencer Award Agency
-                    </p>
-                  </div>
-                </a>
-
-                {/* Buttons: Sound & Brand Enquiry (shown next to logo on mobile/tablet, right-aligned on desktop) */}
-                <div className="flex items-center gap-1.5 sm:gap-2 xl:hidden">
-                  {/* Custom Synthesizer Toggle */}
-                  <button
-                    onClick={toggleAudio}
-                    className="min-w-8 min-h-8 px-2 py-1.5 sm:px-2.5 sm:py-2 rounded-lg backdrop-blur-md border border-black/10 flex items-center justify-center text-[#2e2c29] bg-white/85 hover:bg-white cursor-pointer"
-                    id="toggle-synth-audio-btn-mobile"
-                    title="Ambient Sound"
-                    aria-label={audioEnabled ? "Mute ambient sound" : "Play ambient sound"}
-                    aria-pressed={audioEnabled}
-                  >
-                    {audioEnabled ? (
-                      <Volume2 className="w-4 h-4 text-champagne" aria-hidden="true" />
-                    ) : (
-                      <VolumeX className="w-4 h-4" aria-hidden="true" />
-                    )}
-                  </button>
-
-                  {/* FSIA Portal Mobile */}
-                  <a
-                    href="https://www.fsia.in"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="min-w-8 min-h-8 px-2 py-1.5 sm:px-2.5 sm:py-2 rounded-lg backdrop-blur-md border border-black/10 flex items-center justify-center text-[#111] bg-white hover:bg-stone-50 cursor-pointer"
-                    title="FSIA Portal"
-                    aria-label="FSIA Portal (opens in a new tab)"
-                  >
-                    <ExternalLink className="w-4 h-4" aria-hidden="true" />
-                  </a>
-
-                  {/* Brand enquiry (opens the collaboration form) */}
-                  <button
-                    onClick={() => setIsCollaborationOpen(true)}
-                    className="min-w-8 min-h-8 bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[11px] tracking-[0.08em] font-bold px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg shadow-xs cursor-pointer flex items-center justify-center gap-1 uppercase active:scale-95"
-                    id="open-collaboration-form-btn-mobile"
-                    aria-label="Brand enquiry"
-                  >
-                    <FileText className="w-4 h-4 text-champagne" aria-hidden="true" />
-                    <span className="hidden min-[480px]:inline">Brand enquiry</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Navigation tabs: left-aligned and scrollable whenever they don't fit (centring would crop both ends) */}
-              <nav
-                aria-label="Main"
-                id="main-nav-tabs"
-                className="pointer-events-auto flex items-center overflow-x-auto scrollbar-none gap-0.5 xl:gap-1 bg-white/85 backdrop-blur-md px-1.5 py-1 rounded-xl border border-black/5 shadow-xs w-full xl:w-auto xl:flex-initial xl:min-w-0 max-w-full justify-start"
-              >
-                {HEADER_TABS.map(({ id: tab, label }) => {
-                  const isSelected = activeTab === tab;
-                  return (
-                    <a
-                      key={tab}
-                      href={routeForTab(tab).path}
-                      aria-current={isSelected ? "page" : undefined}
-                      onClick={(e) => {
-                        if (e.metaKey || e.ctrlKey || e.shiftKey) return;
-                        e.preventDefault();
-                        setActiveTab(tab);
-                        setSelectedCreator(null);
-                        playCrystalChime();
-                      }}
-                      className={`shrink-0 px-2.5 xl:px-3 py-2 rounded-lg text-[11px] font-sans font-bold tracking-wider uppercase transition-all cursor-pointer whitespace-nowrap ${
-                        isSelected
-                          ? "bg-[#111] text-[#FAF9F6] shadow-xs"
-                          : "hover:bg-black/5 text-[#2e2c29]"
-                      }`}
-                    >
-                      {label}
-                    </a>
-                  );
-                })}
-              </nav>
-
-              {/* Actions on Desktop Only */}
-              <div className="hidden xl:flex pointer-events-auto items-center justify-end gap-2.5 shrink-0">
-                {/* Custom Synthesizer Toggle */}
-                <button
-                  onClick={toggleAudio}
-                  title={audioEnabled ? "Ambient sound on — click to mute" : "Ambient sound off — click to play"}
-                  aria-label={audioEnabled ? "Mute ambient sound" : "Play ambient sound"}
-                  className={`hud-interactive px-3 py-2.5 2xl:px-4 md:py-3 rounded-xl backdrop-blur-md border border-black/5 flex items-center gap-2 text-[11px] font-sans font-bold tracking-wider uppercase whitespace-nowrap transition-all shadow-sm cursor-pointer ${
-                    audioEnabled
-                      ? "bg-champagne/15 border border-champagne text-[#111]"
-                      : "bg-white/60 hover:bg-white text-[#666]"
-                  }`}
-                  id="toggle-synth-audio-btn"
-                >
-                  {audioEnabled ? (
-                    <>
-                      <Volume2 className="w-4 h-4 text-champagne animate-bounce" />
-                      <span className="hidden 2xl:inline">Sound on</span>
-                    </>
-                  ) : (
-                    <>
-                      <VolumeX className="w-4 h-4 text-[#888]" />
-                      <span className="hidden 2xl:inline">Sound off</span>
-                    </>
-                  )}
-                </button>
-
-                {/* FSIA Portal Button */}
-                <a
-                  href="https://www.fsia.in"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="FSIA Portal (fsia.in)"
-                  className="hud-interactive px-3 py-2.5 xl:px-4 md:py-3 rounded-xl backdrop-blur-md border border-black/10 flex items-center justify-center gap-1.5 text-[#111] bg-white hover:bg-stone-50 transition-all shadow-sm cursor-pointer text-[11px] font-sans font-bold tracking-wider uppercase whitespace-nowrap"
-                >
-                  <ExternalLink className="w-4 h-4 xl:hidden" aria-hidden="true" />
-                  <span className="hidden xl:inline">FSIA Portal</span>
-                  <span className="sr-only xl:hidden">FSIA Portal</span>
-                  <span className="sr-only"> (opens in a new tab)</span>
-                </a>
-
-                {/* VIP Collaboration Gateway Trigger */}
-                <button
-                  onClick={() => setIsCollaborationOpen(true)}
-                  className="hud-interactive bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[11px] tracking-[0.1em] font-bold px-4 py-2.5 xl:px-5 md:py-3 rounded-xl shadow-md cursor-pointer flex items-center gap-2 uppercase whitespace-nowrap active:scale-95"
-                  id="open-collaboration-form-btn"
-                >
-                  <FileText className="w-4 h-4 text-champagne" aria-hidden="true" />
-                  Brand Enquiry
-                </button>
-              </div>
-            </header>
+            {/* 1. SITE HEADER (Star India style, same as starindia.fsia.in) */}
+            <SiteHeader
+              tabs={HEADER_TABS}
+              activeTab={activeTab}
+              onTab={(tab) => {
+                setActiveTab(tab);
+                setSelectedCreator(null);
+                playCrystalChime();
+              }}
+              onHome={() => {
+                navigateTo("home");
+                playCrystalChime();
+              }}
+              audioEnabled={audioEnabled}
+              onToggleAudio={toggleAudio}
+              onBrandEnquiry={() => setIsCollaborationOpen(true)}
+            />
 
             {/* 2. LEFT PANEL: EDITORIAL INDEX SELECTOR */}
             {activeTab === "catwalk" && (
@@ -668,7 +532,7 @@ export default function App() {
 
             {/* Horizontal Runway Category Selector for Mobile/Tablet */}
             {activeTab === "catwalk" && (
-              <div className="absolute top-[112px] sm:top-[120px] left-0 right-0 lg:hidden z-20 pointer-events-none flex justify-start px-4">
+              <div className="absolute top-[148px] left-0 right-0 lg:hidden z-20 pointer-events-none flex justify-start px-4">
                 <div className="pointer-events-auto bg-white/85 backdrop-blur-md pl-3 pr-8 py-1.5 rounded-xl border border-black/10 shadow-xs flex gap-2 overflow-x-auto scrollbar-none max-w-full items-center" role="group" aria-label="Runway categories">
                   {sections.map((sec, idx) => {
                     const isActive = idx === activeSectionIndex;
@@ -683,13 +547,13 @@ export default function App() {
                         aria-pressed={isActive}
                         className={`flex-shrink-0 px-3 py-2 rounded-lg text-[11px] font-sans font-bold tracking-wider uppercase transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
                           isActive
-                            ? "bg-[#111] text-[#FAF9F6] shadow-2xs"
+                            ? "bg-[#111] text-[#FAF8F5] shadow-2xs"
                             : "bg-white/60 hover:bg-white text-[#2e2c29]"
                         }`}
                       >
                         <span 
                           className="w-1.5 h-1.5 rounded-full flex-shrink-0" 
-                          style={{ backgroundColor: sec.primaryColor || "#E1C699" }} 
+                          style={{ backgroundColor: sec.primaryColor || "#F59E0B" }} 
                         />
                         {sec.title}
                       </button>
@@ -819,7 +683,7 @@ export default function App() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -30 }}
                   transition={{ duration: 0.5, ease: "easeOut" }}
-                  className="absolute inset-0 top-[108px] sm:top-[138px] md:top-[146px] xl:top-[124px] bottom-0 overflow-y-auto px-4 md:px-8 pb-28 lg:pb-8 z-15 pointer-events-auto bg-[#FAF9F6] scrollbar-thin scrollbar-thumb-black/10 outline-none"
+                  className="absolute inset-0 top-[136px] xl:top-[112px] bottom-0 overflow-y-auto px-4 md:px-8 pb-28 lg:pb-8 z-15 pointer-events-auto bg-[#FAF8F5] scrollbar-thin scrollbar-thumb-black/10 outline-none"
                 >
                   {activeTab === "directory" && (
                     <DirectoryTab

@@ -48,8 +48,8 @@ export default function ThreeGallery({
 
     // 1. Scene, Camera, and WebGL Renderer Setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#FAF9F6"); // Pure luxury Alabaster
-    scene.fog = new THREE.FogExp2("#FAF9F6", 0.04); // Ethereal daytime fog for depth
+    scene.background = new THREE.Color("#FAF8F5"); // Pure luxury Alabaster
+    scene.fog = new THREE.FogExp2("#FAF8F5", 0.04); // Ethereal daytime fog for depth
 
     const camera = new THREE.PerspectiveCamera(
       45,
@@ -93,7 +93,7 @@ export default function ThreeGallery({
     scene.add(sunLight);
 
     // Subtle golden bounce light from the floor
-    const bounceLight = new THREE.DirectionalLight("#E1C699", 0.4);
+    const bounceLight = new THREE.DirectionalLight("#F59E0B", 0.4);
     bounceLight.position.set(-6, -2, -4);
     scene.add(bounceLight);
 
@@ -115,7 +115,7 @@ export default function ThreeGallery({
     const railLeftGeo = new THREE.BoxGeometry(0.04, 0.015, 60);
     const railRightGeo = new THREE.BoxGeometry(0.04, 0.015, 60);
     const railMat = new THREE.MeshStandardMaterial({
-      color: "#E1C699", // Champagne Gold
+      color: "#F59E0B", // Champagne Gold
       roughness: 0.2,
       metalness: 0.9,
     });
@@ -188,13 +188,13 @@ export default function ThreeGallery({
         ctx.fillRect(0, 0, labelCanvas.width, labelCanvas.height);
 
         // Name
-        ctx.font = "italic 500 32px 'Playfair Display', Georgia, serif";
+        ctx.font = "italic 500 32px 'Cinzel', Georgia, serif";
         ctx.fillStyle = "#111111";
         ctx.textAlign = "center";
         ctx.fillText(name.toUpperCase(), labelCanvas.width / 2, 52);
 
         // Role
-        ctx.font = "20px 'Cormorant Garamond', Georgia, serif";
+        ctx.font = "20px 'Plus Jakarta Sans', Georgia, serif";
         ctx.fillStyle = "#8E8D8A";
         ctx.fillText(role, labelCanvas.width / 2, 95);
       }
@@ -325,7 +325,7 @@ export default function ThreeGallery({
     // Inner champagne golden wireframe skeleton for luxurious core reflections
     const wireframeGeo = new THREE.IcosahedronGeometry(0.24, 1);
     const wireframeMat = new THREE.MeshBasicMaterial({
-      color: "#E1C699",
+      color: "#F59E0B",
       wireframe: true,
       transparent: true,
       opacity: 0.4,
@@ -347,7 +347,7 @@ export default function ThreeGallery({
     }
     particleGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     const particleMat = new THREE.PointsMaterial({
-      color: "#E1C699",
+      color: "#F59E0B",
       size: 0.035,
       transparent: true,
       opacity: 0.6,

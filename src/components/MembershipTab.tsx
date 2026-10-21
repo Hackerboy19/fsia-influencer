@@ -66,7 +66,7 @@ const FALLBACK_PLANS: Plan[] = [
     badge: "Professional Spotlight",
     price: "₹9,999",
     period: "per month (+18% GST)",
-    accent: "#E1C699", // Champagne Gold
+    accent: "#F59E0B", // Champagne Gold
     icon: Award,
     popular: true,
     perks: [
@@ -245,7 +245,7 @@ export default function MembershipTab() {
                     className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center border"
                     style={{ borderColor: plan.accent + "30", backgroundColor: plan.accent + "05" }}
                   >
-                    <PlanIcon className="w-5 h-5" style={{ color: plan.accent === "#111111" ? "#E1C699" : plan.accent }} />
+                    <PlanIcon className="w-5 h-5" style={{ color: plan.accent === "#111111" ? "#F59E0B" : plan.accent }} />
                   </div>
                 </div>
 
@@ -284,7 +284,7 @@ export default function MembershipTab() {
                 }}
                 className={`w-full font-sans text-xs tracking-wider font-bold py-3 px-4 rounded-lg uppercase transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer ${
                   plan.accent === "#111111"
-                    ? "bg-[#111] hover:bg-[#2e2c29] text-[#FAF9F6]"
+                    ? "bg-[#111] hover:bg-[#2e2c29] text-[#FAF8F5]"
                     : "bg-[#F3F3F1] border border-black/10 hover:bg-[#111] hover:text-white text-[#111]"
                 }`}
               >
@@ -313,7 +313,7 @@ export default function MembershipTab() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 180 }}
-              className="relative w-full md:max-w-xl h-full bg-[#FAF9F6] shadow-2xl flex flex-col border-l border-black/5 z-10 outline-none"
+              className="relative w-full md:max-w-xl h-full bg-[#FAF8F5] shadow-2xl flex flex-col border-l border-black/5 z-10 outline-none"
               id="payment-portal-drawer"
             >
               {/* Header */}
@@ -460,11 +460,11 @@ export default function MembershipTab() {
                       type="submit"
                       disabled={isProcessing}
                       aria-busy={isProcessing}
-                      className="w-full bg-[#111] hover:bg-[#2e2c29] text-[#FAF9F6] font-sans text-sm tracking-[0.12em] font-bold py-4 rounded-xl uppercase flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-70 disabled:cursor-wait"
+                      className="w-full bg-[#111] hover:bg-[#2e2c29] text-[#FAF8F5] font-sans text-sm tracking-[0.12em] font-bold py-4 rounded-xl uppercase flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-70 disabled:cursor-wait"
                     >
                       {isProcessing ? (
                         <>
-                          <span className="w-4 h-4 border-2 border-t-transparent border-[#FAF9F6] rounded-full animate-spin" aria-hidden="true" />
+                          <span className="w-4 h-4 border-2 border-t-transparent border-[#FAF8F5] rounded-full animate-spin" aria-hidden="true" />
                           Sending request…
                         </>
                       ) : (
@@ -515,7 +515,7 @@ export default function MembershipTab() {
                     <button
                       type="button"
                       onClick={closeDrawer}
-                      className="w-full bg-[#111] hover:bg-[#2e2c29] text-[#FAF9F6] font-sans text-sm tracking-[0.12em] font-bold py-3.5 px-6 rounded-xl uppercase cursor-pointer"
+                      className="w-full bg-[#111] hover:bg-[#2e2c29] text-[#FAF8F5] font-sans text-sm tracking-[0.12em] font-bold py-3.5 px-6 rounded-xl uppercase cursor-pointer"
                     >
                       Back to plans
                     </button>

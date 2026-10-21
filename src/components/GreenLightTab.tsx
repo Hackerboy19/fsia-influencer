@@ -25,7 +25,7 @@ function MagazineCover({ creator, onBook }: { creator?: Creator; onBook: () => v
             <p className="leading-tight"><span className="block font-serif-display text-base font-bold text-white">Influencer Success Stories</span><span className="block text-[10px] text-[#e9e6df]">How awardees turned recognition into brand deals</span></p>
             <p className="leading-tight"><span className="block font-serif-display text-sm font-bold text-white">Brand Strategy</span><span className="block text-[10px] text-[#e9e6df]">What brand managers look for</span></p>
           </div>
-          <span aria-hidden="true" className="absolute top-24 right-4 w-16 h-16 rounded-full bg-gradient-to-b from-[#f3dca6] to-[#b8893b] text-[#3b2a0c] text-[9px] font-bold uppercase leading-tight flex items-center justify-center text-center rotate-12 shadow-lg">
+          <span aria-hidden="true" className="absolute top-24 right-4 w-16 h-16 rounded-full bg-gradient-to-b from-[#FDE68A] to-[#D97706] text-[#3b2a0c] text-[9px] font-bold uppercase leading-tight flex items-center justify-center text-center rotate-12 shadow-lg">
             Award<br />winners<br />inside
           </span>
           <div className="mt-auto flex items-end justify-between gap-2">
@@ -34,7 +34,7 @@ function MagazineCover({ creator, onBook }: { creator?: Creator; onBook: () => v
               type="button"
               onClick={onBook}
               aria-label="Book a cover story"
-              className="shrink-0 px-3 py-1.5 rounded-full bg-[#E1C699] hover:bg-[#f3dca6] text-[#111] text-[11px] font-bold uppercase tracking-wider cursor-pointer"
+              className="shrink-0 px-3 py-1.5 rounded-full bg-[#F59E0B] hover:bg-[#FDE68A] text-[#111] text-[11px] font-bold uppercase tracking-wider cursor-pointer"
             >
               Book now
             </button>
@@ -67,7 +67,7 @@ export default function GreenLightTab({ coverCreator }: { coverCreator?: Creator
       </div>
 
       {/* Explore Magazine: cover preview and packages */}
-      <section aria-labelledby="magazine" className="relative overflow-hidden grid md:grid-cols-[1fr_1.3fr] gap-10 items-center bg-gradient-to-br from-[#FBF6EC] to-[#F1E6D0] border border-[#E1C699]/60 rounded-3xl p-6 md:p-10 shadow-sm">
+      <section aria-labelledby="magazine" className="relative overflow-hidden grid md:grid-cols-[1fr_1.3fr] gap-10 items-center bg-gradient-to-br from-[#FBF6EC] to-[#F1E6D0] border border-[#F59E0B]/60 rounded-3xl p-6 md:p-10 shadow-sm">
         <MagazineCover creator={coverCreator} onBook={() => book(PACKAGE_TITLES[0])} />
         <div className="space-y-5">
           <div>
@@ -86,7 +86,7 @@ export default function GreenLightTab({ coverCreator }: { coverCreator?: Creator
                 <button
                   type="button"
                   onClick={() => book(p.title)}
-                  className="shrink-0 bg-[#111] hover:bg-[#222] text-white text-sm font-semibold px-4 py-2.5 rounded-xl cursor-pointer"
+                  className="shrink-0 bg-[#d32f2f] hover:bg-[#b71c1c] text-white text-sm font-semibold px-4 py-2.5 rounded-xl cursor-pointer"
                   aria-label={`Book ${p.title}`}
                 >
                   Book now
@@ -114,7 +114,7 @@ export default function GreenLightTab({ coverCreator }: { coverCreator?: Creator
                       onClick={() => setOpenPost(isOpen ? null : post.id)}
                       aria-expanded={isOpen}
                       aria-controls={`post-${post.id}`}
-                      className="w-full text-left p-5 cursor-pointer hover:bg-[#FAF9F6] flex items-start justify-between gap-4"
+                      className="w-full text-left p-5 cursor-pointer hover:bg-[#FAF8F5] flex items-start justify-between gap-4"
                     >
                       <span className="space-y-1.5">
                         <span className="flex items-center gap-3 text-[12px] font-bold uppercase tracking-wider text-[#2e2c29]">

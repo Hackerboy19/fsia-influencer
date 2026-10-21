@@ -49,7 +49,7 @@ export default function CreatorDetailPanel({
       {/* Editorial Floating Bar */}
       <div className="flex items-center justify-between p-6 bg-[#F4F3F0]/60 border-b border-black/5">
         <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#E1C699] animate-pulse" />
+          <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B] animate-pulse" />
           <span className="font-sans text-[11px] tracking-[0.2em] text-[#47453f] uppercase font-bold flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5 text-champagne inline" aria-hidden="true" />
             Verified VIP Installation
@@ -202,7 +202,7 @@ export default function CreatorDetailPanel({
       </div>
 
       {/* Booking Drawer Action Trigger */}
-      <div className="p-4 md:p-6 border-t border-black/5 bg-[#FAF9F6]">
+      <div className="p-4 md:p-6 border-t border-black/5 bg-[#FAF8F5]">
         <button
           onClick={onOpenCollaboration}
           className="w-full bg-[#111] hover:bg-[#2e2c29] text-white font-sans text-sm tracking-[0.12em] font-bold py-4 px-6 rounded-xl uppercase flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md active:scale-[0.98]"
@@ -266,14 +266,14 @@ export default function CreatorDetailPanel({
                   toast.success("Added to Moodboard", {
                     style: {
                       background: "#111",
-                      color: "#E1C699",
+                      color: "#F59E0B",
                       fontSize: "12px",
                       textTransform: "uppercase",
                       letterSpacing: "0.1em",
                       fontWeight: "bold"
                     },
                     iconTheme: {
-                      primary: "#E1C699",
+                      primary: "#F59E0B",
                       secondary: "#111",
                     }
                   });
@@ -289,7 +289,7 @@ export default function CreatorDetailPanel({
             </button>
           </div>
 
-          <p className="mt-12 text-xs font-serif-text italic text-[#E1C699] tracking-widest uppercase">
+          <p className="mt-12 text-xs font-serif-text italic text-[#F59E0B] tracking-widest uppercase">
             FSIA Influencer Creator Profile • Click anywhere or press Esc to close
           </p>
         </div>
