@@ -72,7 +72,7 @@ export default function FaqTab() {
                 className="w-full text-left p-5 flex justify-between items-center gap-4 hover:bg-white/40 transition-colors"
               >
                 <div className="flex items-center gap-3.5">
-                  <div className="w-8 h-8 rounded-lg bg-[#FAF8F5] border border-black/5 flex items-center justify-center text-champagne shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-[#FAF9F6] border border-black/5 flex items-center justify-center text-champagne shrink-0">
                     {faq.category === "Financials" && <Landmark className="w-4 h-4" />}
                     {faq.category === "Verification" && <Shield className="w-4 h-4" />}
                     {faq.category === "Brands" && <Users className="w-4 h-4" />}
@@ -132,7 +132,7 @@ export default function FaqTab() {
         </div>
         <a
           href="mailto:partner@fsia.in"
-          className="bg-[#d32f2f] hover:bg-[#b71c1c] text-[#FAF8F5] text-xs font-sans font-bold tracking-widest px-6 py-3.5 rounded-lg uppercase transition-all whitespace-nowrap active:scale-95"
+          className="bg-[#111] hover:bg-[#222] text-[#FAF9F6] text-xs font-sans font-bold tracking-widest px-6 py-3.5 rounded-lg uppercase transition-all whitespace-nowrap active:scale-95"
         >
           CONTACT INDIA DESK
         </a>

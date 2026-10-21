@@ -226,20 +226,20 @@ export default function CampaignsTab() {
                       {campaign.title}
                     </h3>
                   </div>
-                  <span className="bg-[#111] text-[#FAF8F5] text-[11px] font-sans font-bold tracking-wider px-3 py-1 rounded-full whitespace-nowrap">
+                  <span className="bg-[#111] text-[#FAF9F6] text-[11px] font-sans font-bold tracking-wider px-3 py-1 rounded-full whitespace-nowrap">
                     {campaign.budget}
                   </span>
                 </div>
 
                 {/* Tags */}
                 <div className="flex flex-wrap gap-2 text-[11px] font-sans">
-                  <span className="bg-[#FAF8F5] border border-black/5 text-[#555] px-2.5 py-1 rounded-md flex items-center gap-1 font-semibold">
+                  <span className="bg-[#FAF9F6] border border-black/5 text-[#555] px-2.5 py-1 rounded-md flex items-center gap-1 font-semibold">
                     <Briefcase className="w-3.5 h-3.5 text-champagne" /> {campaign.niche}
                   </span>
-                  <span className="bg-[#FAF8F5] border border-black/5 text-[#555] px-2.5 py-1 rounded-md flex items-center gap-1 font-semibold">
+                  <span className="bg-[#FAF9F6] border border-black/5 text-[#555] px-2.5 py-1 rounded-md flex items-center gap-1 font-semibold">
                     <Calendar className="w-3.5 h-3.5 text-champagne" /> {campaign.duration}
                   </span>
-                  <span className="bg-[#FAF8F5] border border-black/5 text-[#555] px-2.5 py-1 rounded-md flex items-center gap-1 font-semibold">
+                  <span className="bg-[#FAF9F6] border border-black/5 text-[#555] px-2.5 py-1 rounded-md flex items-center gap-1 font-semibold">
                     <Users className="w-3.5 h-3.5 text-champagne" /> {campaign.requirements}
                   </span>
                 </div>
@@ -278,7 +278,7 @@ export default function CampaignsTab() {
                   <button
                     onClick={() => handleApplyClick(campaign)}
                     aria-label={`Apply now for ${campaign.brand}: ${campaign.title}`}
-                    className="bg-[#d32f2f] hover:bg-[#b71c1c] text-[#FAF8F5] text-xs font-sans font-bold tracking-widest py-2.5 px-5 rounded-lg uppercase transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                    className="bg-[#111] hover:bg-[#222] text-[#FAF9F6] text-xs font-sans font-bold tracking-widest py-2.5 px-5 rounded-lg uppercase transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
                   >
                     APPLY NOW <ArrowRight className="w-3.5 h-3.5 text-champagne" aria-hidden="true" />
                   </button>
@@ -306,7 +306,7 @@ export default function CampaignsTab() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 180 }}
-              className="relative w-full md:max-w-xl h-full bg-[#FAF8F5] shadow-2xl flex flex-col border-l border-black/5 z-10 outline-none"
+              className="relative w-full md:max-w-xl h-full bg-[#FAF9F6] shadow-2xl flex flex-col border-l border-black/5 z-10 outline-none"
               id="campaign-application-drawer"
             >
               {/* Header */}
@@ -449,11 +449,11 @@ export default function CampaignsTab() {
                       type="submit"
                       disabled={isSubmitting}
                       aria-busy={isSubmitting}
-                      className="w-full bg-[#111] hover:bg-[#2e2c29] text-[#FAF8F5] font-sans text-sm tracking-[0.12em] font-bold py-4 rounded-xl uppercase flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-70 disabled:cursor-wait"
+                      className="w-full bg-[#111] hover:bg-[#2e2c29] text-[#FAF9F6] font-sans text-sm tracking-[0.12em] font-bold py-4 rounded-xl uppercase flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-70 disabled:cursor-wait"
                     >
                       {isSubmitting ? (
                         <>
-                          <span className="w-4 h-4 border-2 border-t-transparent border-[#FAF8F5] rounded-full animate-spin" aria-hidden="true" />
+                          <span className="w-4 h-4 border-2 border-t-transparent border-[#FAF9F6] rounded-full animate-spin" aria-hidden="true" />
                           Sending…
                         </>
                       ) : (
@@ -487,7 +487,7 @@ export default function CampaignsTab() {
                     <button
                       type="button"
                       onClick={closeDrawer}
-                      className="w-full bg-[#111] hover:bg-[#2e2c29] text-[#FAF8F5] font-sans text-sm tracking-[0.12em] font-bold py-3.5 px-6 rounded-xl uppercase cursor-pointer"
+                      className="w-full bg-[#111] hover:bg-[#2e2c29] text-[#FAF9F6] font-sans text-sm tracking-[0.12em] font-bold py-3.5 px-6 rounded-xl uppercase cursor-pointer"
                     >
                       Back to campaigns
                     </button>

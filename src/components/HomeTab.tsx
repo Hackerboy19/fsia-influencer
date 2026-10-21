@@ -120,7 +120,7 @@ export function Reveal({
 }
 
 const Sparkle = ({ className, delay = 0 }: { className: string; delay?: number }) => (
-  <span aria-hidden="true" className={`absolute text-[#F59E0B] fsia-twinkle pointer-events-none ${className}`} style={{ animationDelay: `${delay}s` }}>
+  <span aria-hidden="true" className={`absolute text-[#E1C699] fsia-twinkle pointer-events-none ${className}`} style={{ animationDelay: `${delay}s` }}>
     ✦
   </span>
 );
@@ -176,7 +176,7 @@ function HeroSlider({ creators, onNavigate }: { creators: Creator[]; onNavigate:
                 className={`rounded-t-full ring-2 ring-white shadow-lg ${i === 1 ? "w-28 h-52" : "w-24 h-44"}`}
               />
               {i === 1 && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-gradient-to-b from-[#FDE68A] to-[#D97706] shadow flex items-center justify-center">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-gradient-to-b from-[#f3dca6] to-[#b8893b] shadow flex items-center justify-center">
                   <Trophy className="w-4 h-4 text-[#3b2a0c]" />
                 </span>
               )}
@@ -198,7 +198,7 @@ function HeroSlider({ creators, onNavigate }: { creators: Creator[]; onNavigate:
       className="relative rounded-3xl overflow-hidden shadow-xl"
     >
       {/* Navy gala band behind the headline */}
-      <div className="surface-dark relative bg-gradient-to-br from-[#10151f] via-[#121824] to-[#0d111a] px-6 sm:px-16 pt-10 pb-24 text-center">
+      <div className="surface-dark relative bg-gradient-to-br from-[#0f1a33] via-[#16233f] to-[#0b1426] px-6 sm:px-16 pt-10 pb-24 text-center">
         <div aria-hidden="true" className="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_top,rgba(225,198,153,0.35),transparent_60%)]" />
         <Sparkle className="top-6 left-[12%] text-lg" />
         <Sparkle className="top-16 right-[14%] text-sm" delay={0.8} />
@@ -214,7 +214,7 @@ function HeroSlider({ creators, onNavigate }: { creators: Creator[]; onNavigate:
       </div>
 
       {/* Cream stage with the slides */}
-      <div className="relative -mt-14 mx-3 sm:mx-6 mb-3 sm:mb-6 rounded-2xl bg-gradient-to-b from-[#FBF6EC] to-[#F4EBDA] border border-[#F59E0B]/60 shadow-lg">
+      <div className="relative -mt-14 mx-3 sm:mx-6 mb-3 sm:mb-6 rounded-2xl bg-gradient-to-b from-[#FBF6EC] to-[#F4EBDA] border border-[#E1C699]/60 shadow-lg">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(0,1.25fr)_1fr] items-end gap-6 px-5 sm:px-16 pt-8 pb-20">
           {sideGroup(left, "left", "left")}
 
@@ -229,12 +229,12 @@ function HeroSlider({ creators, onNavigate }: { creators: Creator[]; onNavigate:
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div key={index} className="space-y-4" {...fade}>
                   <p className="inline-flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.2em] text-[#5b4a2c]">
-                    <span className="w-6 h-px bg-[#D97706]" aria-hidden="true" />
+                    <span className="w-6 h-px bg-[#b8893b]" aria-hidden="true" />
                     {slide.eyebrow}
-                    <span className="w-6 h-px bg-[#D97706]" aria-hidden="true" />
+                    <span className="w-6 h-px bg-[#b8893b]" aria-hidden="true" />
                   </p>
                   <p className="font-serif-text text-xl md:text-2xl text-[#2e2c29] max-w-xl mx-auto leading-relaxed">{slide.text}</p>
-                  <TabLink tab={slide.tab} onNavigate={onNavigate} className={`${linkButton} bg-[#d32f2f] hover:bg-[#b71c1c] text-white shadow-md`}>
+                  <TabLink tab={slide.tab} onNavigate={onNavigate} className={`${linkButton} bg-[#111] hover:bg-[#222] text-white shadow-md`}>
                     {slide.cta} <ChevronRight className="w-4 h-4 text-champagne" aria-hidden="true" />
                   </TabLink>
                 </motion.div>
@@ -304,7 +304,7 @@ function StatsStrip({ creators, sections }: { creators: Creator[]; sections: Sec
     { value: String(cities || sections.length), label: cities ? "Cities represented" : "Gallery categories" }
   ];
   return (
-    <dl className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[#F59E0B]/50 rounded-2xl overflow-hidden border border-[#F59E0B]/50">
+    <dl className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[#E1C699]/50 rounded-2xl overflow-hidden border border-[#E1C699]/50">
       {stats.map((s) => (
         <div key={s.label} className="bg-white px-5 py-5 text-center">
           <dt className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#47453f]">{s.label}</dt>
@@ -417,7 +417,7 @@ function HomeSearch({
                   <button
                     type="button"
                     onClick={() => choose(r)}
-                    className="w-full text-left px-5 py-3 hover:bg-[#FAF8F5] focus:bg-[#FAF8F5] cursor-pointer flex items-center gap-3"
+                    className="w-full text-left px-5 py-3 hover:bg-[#FAF9F6] focus:bg-[#FAF9F6] cursor-pointer flex items-center gap-3"
                   >
                     {r.kind === "creator" ? (
                       <Avatar creator={r.creator} className="w-9 h-9 rounded-full shrink-0" />
@@ -487,7 +487,7 @@ function AwardGrid({
               onNavigate={onNavigate}
               aria-label={`${a.title}: apply`}
               className={`group relative h-full flex flex-col gap-3 p-5 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl overflow-hidden ${
-                premium ? "surface-dark fsia-gold-border text-white" : "bg-white border border-black/10 hover:border-[#D97706]/60"
+                premium ? "surface-dark fsia-gold-border text-white" : "bg-white border border-black/10 hover:border-[#b8893b]/60"
               }`}
             >
               {premium && (
@@ -495,7 +495,7 @@ function AwardGrid({
               )}
               <span
                 className={`relative w-11 h-11 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:rotate-[-8deg] group-hover:scale-110 ${
-                  premium ? "bg-gradient-to-b from-[#FDE68A] to-[#D97706] text-[#3b2a0c]" : "bg-[#F6EFE3] text-[#111]"
+                  premium ? "bg-gradient-to-b from-[#f3dca6] to-[#b8893b] text-[#3b2a0c]" : "bg-[#F6EFE3] text-[#111]"
                 }`}
                 aria-hidden="true"
               >
@@ -521,7 +521,7 @@ function Ribbons() {
   const reduced = useReducedMotion();
   const paths = [
     { d: "M0 70 C 160 10, 300 130, 460 70 S 760 10, 920 70 S 1220 130, 1200 70", color: "#8b2635" },
-    { d: "M0 80 C 160 140, 300 20, 460 80 S 760 140, 920 80 S 1220 20, 1200 80", color: "#1a2233" },
+    { d: "M0 80 C 160 140, 300 20, 460 80 S 760 140, 920 80 S 1220 20, 1200 80", color: "#1e2a4a" },
     { d: "M0 75 C 180 30, 320 120, 480 75 S 780 30, 940 75 S 1200 120, 1200 75", color: "#1f5a3d" }
   ];
   return (
@@ -572,21 +572,21 @@ function ValueFlow({
 
         <Reveal as="li" className="relative h-full flex flex-col items-center text-center gap-4 p-6 rounded-3xl bg-white/90 backdrop-blur border border-black/10 shadow-sm">
             <span className="relative flex items-end gap-2 h-24" aria-hidden="true">
-              <span className="w-16 h-20 rounded-2xl bg-gradient-to-b from-[#FDE68A] to-[#D97706] flex items-center justify-center shadow">
+              <span className="w-16 h-20 rounded-2xl bg-gradient-to-b from-[#f3dca6] to-[#b8893b] flex items-center justify-center shadow">
                 <Trophy className="w-9 h-9 text-[#3b2a0c]" />
               </span>
-              <span className="w-14 h-[4.5rem] rounded-xl bg-[#1a2233] flex items-center justify-center shadow">
+              <span className="w-14 h-[4.5rem] rounded-xl bg-[#1e2a4a] flex items-center justify-center shadow">
                 <ClipboardCheck className="w-7 h-7 text-white" />
               </span>
             </span>
             <h3 className="text-lg font-bold text-[#111]">1. {one.title}</h3>
             <p className="text-[15px] leading-relaxed text-[#2e2c29]">{one.text}</p>
-            <TabLink tab="apply" onNavigate={onNavigate} className={`${linkButton} mt-auto bg-[#d32f2f] hover:bg-[#b71c1c] text-white`}>
+            <TabLink tab="apply" onNavigate={onNavigate} className={`${linkButton} mt-auto bg-[#111] hover:bg-[#222] text-white`}>
               Apply for an award
             </TabLink>
         </Reveal>
 
-        <Reveal as="li" delay={0.15} className="relative surface-dark relative h-full flex flex-col items-center text-center gap-4 p-6 md:p-8 rounded-[2.5rem] bg-gradient-to-b from-[#121824] to-[#0d111a] text-white shadow-2xl ring-1 ring-[#F59E0B]/40 overflow-hidden">
+        <Reveal as="li" delay={0.15} className="relative surface-dark relative h-full flex flex-col items-center text-center gap-4 p-6 md:p-8 rounded-[2.5rem] bg-gradient-to-b from-[#16233f] to-[#0b1426] text-white shadow-2xl ring-1 ring-[#E1C699]/40 overflow-hidden">
             <span aria-hidden="true" className="absolute inset-x-0 top-0 h-48 bg-[conic-gradient(from_180deg_at_50%_0%,transparent_40%,rgba(243,220,166,0.25)_50%,transparent_60%)]" />
             <Sparkle className="top-6 left-8 text-sm" />
             <Sparkle className="top-10 right-10 text-base" delay={1.2} />
@@ -594,7 +594,7 @@ function ValueFlow({
               <TrendingUp className="w-9 h-9 text-champagne" />
               <span className="relative shrink-0">
                 {spotlight ? (
-                  <Avatar creator={spotlight} className="w-24 h-24 rounded-full ring-4 ring-[#F59E0B]/70" />
+                  <Avatar creator={spotlight} className="w-24 h-24 rounded-full ring-4 ring-[#E1C699]/70" />
                 ) : (
                   <span className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center"><Megaphone className="w-9 h-9" /></span>
                 )}
@@ -609,7 +609,7 @@ function ValueFlow({
             <h3 className="relative text-xl font-bold text-white">2. {two.title}</h3>
             <p className="relative text-[15px] leading-relaxed text-[#e9e6df]">{two.text}</p>
             {spotlight && <p className="relative text-[13px] text-[#cfcac0]">Spotlight: {spotlight.name}</p>}
-            <TabLink tab="starindia" onNavigate={onNavigate} className={`${linkButton} relative mt-auto bg-[#F59E0B] hover:bg-[#FDE68A] text-[#111]`}>
+            <TabLink tab="starindia" onNavigate={onNavigate} className={`${linkButton} relative mt-auto bg-[#E1C699] hover:bg-[#f3dca6] text-[#111]`}>
               Star India membership
             </TabLink>
         </Reveal>
@@ -617,16 +617,16 @@ function ValueFlow({
         <Reveal as="li" delay={0.3} className="relative h-full flex flex-col items-center text-center gap-4 p-6 rounded-3xl bg-white/90 backdrop-blur border border-black/10 shadow-sm">
             <span className="relative h-24 flex items-end" aria-hidden="true">
               <span className="w-20 h-20 rounded-full bg-[#F6EFE3] flex items-center justify-center">
-                <Handshake className="w-10 h-10 text-[#1a2233]" />
+                <Handshake className="w-10 h-10 text-[#1e2a4a]" />
               </span>
               <span className="absolute -top-1 -right-6 px-2 py-0.5 rounded-full bg-[#8b2635] text-white text-[11px] font-bold">Brand</span>
-              <span className="absolute -top-1 -left-6 w-8 h-8 rounded-full bg-[#1a2233] flex items-center justify-center">
+              <span className="absolute -top-1 -left-6 w-8 h-8 rounded-full bg-[#1e2a4a] flex items-center justify-center">
                 <Briefcase className="w-4 h-4 text-white" />
               </span>
             </span>
             <h3 className="text-lg font-bold text-[#111]">3. {three.title}</h3>
             <p className="text-[15px] leading-relaxed text-[#2e2c29]">{three.text}</p>
-            <button type="button" onClick={onBrandEnquiry} className={`${linkButton} mt-auto bg-[#d32f2f] hover:bg-[#b71c1c] text-white`}>
+            <button type="button" onClick={onBrandEnquiry} className={`${linkButton} mt-auto bg-[#111] hover:bg-[#222] text-white`}>
               <Briefcase className="w-4 h-4" aria-hidden="true" /> Send a brand enquiry
             </button>
         </Reveal>
@@ -705,7 +705,7 @@ export default function HomeTab({ sections, onNavigate, onSelectCreator, onOpenG
                   <span className="relative block overflow-hidden">
                     <Avatar creator={c} className="w-full aspect-[4/5] transition-transform duration-700 group-hover:scale-105" />
                     <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent" />
-                    <span aria-hidden="true" className="absolute top-3 right-3 w-9 h-9 rounded-full bg-gradient-to-b from-[#FDE68A] to-[#D97706] shadow-lg flex items-center justify-center">
+                    <span aria-hidden="true" className="absolute top-3 right-3 w-9 h-9 rounded-full bg-gradient-to-b from-[#f3dca6] to-[#b8893b] shadow-lg flex items-center justify-center">
                       <Trophy className="w-4 h-4 text-[#3b2a0c]" />
                     </span>
                     {c.stats?.reach && (
@@ -736,7 +736,7 @@ export default function HomeTab({ sections, onNavigate, onSelectCreator, onOpenG
               {/* Mini Influencer ID card */}
               <span aria-hidden="true" className="relative mx-auto w-40 rounded-2xl bg-white text-[#111] p-3 shadow-xl rotate-[-3deg] transition-transform duration-500 group-hover:rotate-0">
                 <span className="flex justify-center">
-                  {spotlight ? <Avatar creator={spotlight} className="w-14 h-14 rounded-full ring-2 ring-[#F59E0B]" /> : <UserRound className="w-14 h-14" />}
+                  {spotlight ? <Avatar creator={spotlight} className="w-14 h-14 rounded-full ring-2 ring-[#E1C699]" /> : <UserRound className="w-14 h-14" />}
                 </span>
                 <span className="block text-center text-[11px] font-bold mt-2">Influencer ID</span>
                 <span className="block text-center font-mono text-[10px] text-[#47453f]">{spotlight ? influencerId(spotlight.name) : "FSIA-00000"}</span>
@@ -751,13 +751,13 @@ export default function HomeTab({ sections, onNavigate, onSelectCreator, onOpenG
             </TabLink>
           </Reveal>
           <Reveal delay={0.1}>
-            <TabLink tab="greenlight" onNavigate={onNavigate} className="group surface-dark h-full flex flex-col bg-gradient-to-br from-[#1a2233] to-[#0d111a] text-white rounded-3xl p-6 gap-3 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+            <TabLink tab="greenlight" onNavigate={onNavigate} className="group surface-dark h-full flex flex-col bg-gradient-to-br from-[#1e2a4a] to-[#0b1426] text-white rounded-3xl p-6 gap-3 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
               {/* Mini magazine cover */}
               <span aria-hidden="true" className="relative mx-auto w-32 aspect-[3/4] rounded-lg overflow-hidden shadow-xl rotate-[3deg] transition-transform duration-500 group-hover:rotate-0 bg-[#123524]">
                 {spotlight && <Avatar creator={spotlight} className="absolute inset-0 w-full h-full opacity-80" />}
                 <span className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/70" />
-                <span className="absolute top-2 inset-x-0 text-center font-serif-display text-xl font-bold text-[#FDE68A] leading-none">EXPLORE</span>
-                <span className="absolute bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-[#F59E0B] text-[#111] text-[9px] font-bold">BOOK NOW</span>
+                <span className="absolute top-2 inset-x-0 text-center font-serif-display text-xl font-bold text-[#f3dca6] leading-none">EXPLORE</span>
+                <span className="absolute bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-[#E1C699] text-[#111] text-[9px] font-bold">BOOK NOW</span>
               </span>
               <span className="block font-serif-display text-2xl font-bold mt-2">Green Light</span>
               <span className="block text-[15px] text-[#e9e6df]">Green Light runs the FSIA blog and Explore Magazine, including cover and feature bookings.</span>
@@ -767,11 +767,11 @@ export default function HomeTab({ sections, onNavigate, onSelectCreator, onOpenG
           <Reveal delay={0.2}>
             <TabLink tab="contact" onNavigate={onNavigate} className="group h-full flex flex-col bg-white border border-black/10 rounded-3xl p-6 gap-3 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               {/* Mini form */}
-              <span aria-hidden="true" className="mx-auto w-44 rounded-xl border border-black/10 bg-[#FAF8F5] p-3 space-y-1.5 shadow-sm">
+              <span aria-hidden="true" className="mx-auto w-44 rounded-xl border border-black/10 bg-[#FAF9F6] p-3 space-y-1.5 shadow-sm">
                 <span className="grid grid-cols-2 gap-1.5"><span className="h-3 rounded bg-white border border-black/10" /><span className="h-3 rounded bg-white border border-black/10" /></span>
                 <span className="block h-3 rounded bg-white border border-black/10" />
                 <span className="block h-8 rounded bg-white border border-black/10" />
-                <span className="block w-12 h-3 rounded bg-[#F59E0B] ml-auto" />
+                <span className="block w-12 h-3 rounded bg-[#E1C699] ml-auto" />
               </span>
               <span className="block font-serif-display text-2xl font-bold text-[#111] mt-2">Contact</span>
               <span className="block text-[15px] text-[#2e2c29]">Questions about awards, membership or brand deals? Send us a message and we'll reply by email.</span>

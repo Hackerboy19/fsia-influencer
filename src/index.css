@@ -2,13 +2,12 @@
 @import "tailwindcss";
 
 @theme {
-  --font-serif-display: "Cinzel", Georgia, serif;
-  --font-serif-text: "Plus Jakarta Sans", system-ui, sans-serif;
-  --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
-  --font-serif: "Cinzel", Georgia, serif;
-  --color-alabaster: #FAF8F5;
+  --font-serif-display: "Playfair Display", Georgia, serif;
+  --font-serif-text: "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Inter", sans-serif;
+  --color-alabaster: #FAFAFA;
   --color-cashmere: #F3F3F1;
-  --color-champagne: #F59E0B; /* Star India amber */
+  --color-champagne: #E1C699;
   --color-platinum: #E5E5E5;
 }
 
@@ -63,7 +62,6 @@
 
 body {
   color: var(--ink-strong);
-  background: #FAF8F5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -74,31 +72,28 @@ body {
   .text-\[\#666\], .text-\[\#777\], .text-neutral-500 { color: var(--ink-muted); }
   .text-\[\#888\], .text-\[\#8E8D8A\], .text-\[\#8e8d8a\], .text-\[\#999\], .text-\[\#AAA\],
   .text-stone-400, .text-stone-500, .text-zinc-400, .text-zinc-500 { color: var(--ink-subtle); }
-  .text-champagne, .text-\[\#F59E0B\], .text-\[\#D97706\] { color: var(--gold-ink); }
+  .text-champagne, .text-\[\#E1C699\], .text-\[\#C9A227\] { color: var(--gold-ink); }
   [class*="placeholder:text-"]::placeholder, input::placeholder, textarea::placeholder { color: var(--ink-placeholder); opacity: 1; }
   .font-light { font-weight: 400; }
 
   /* Dark surfaces keep light text (exact class tokens, so hover:bg-… does not count) */
-  :where([class~="bg-[#111]"], [class~="bg-[#0d111a]"], [class~="bg-[#111]/95"], [class~="bg-[#111]/90"], [class~="bg-[#111]/80"],
+  :where([class~="bg-[#111]"], [class~="bg-[#111]/95"], [class~="bg-[#111]/90"], [class~="bg-[#111]/80"],
          [class~="bg-[#1A1A1A]"], [class~="bg-[#1a1a1a]"], [class~="bg-[#222]"], [class~="bg-black"], [class~="bg-black/90"],
          [class~="bg-black/80"], [class~="bg-stone-900"], [class~="bg-stone-950"], [class~="bg-zinc-900"],
          [class~="bg-neutral-900"], .surface-dark)
     :is(.text-\[\#555\], .text-\[\#444\], .text-zinc-600, .text-stone-600, .text-neutral-600, .text-\[\#666\], .text-\[\#777\], .text-neutral-500) { color: var(--ink-on-dark); }
-  :where([class~="bg-[#111]"], [class~="bg-[#0d111a]"], [class~="bg-[#111]/95"], [class~="bg-[#111]/90"], [class~="bg-[#111]/80"],
+  :where([class~="bg-[#111]"], [class~="bg-[#111]/95"], [class~="bg-[#111]/90"], [class~="bg-[#111]/80"],
          [class~="bg-[#1A1A1A]"], [class~="bg-[#1a1a1a]"], [class~="bg-[#222]"], [class~="bg-black"], [class~="bg-black/90"],
          [class~="bg-black/80"], [class~="bg-stone-900"], [class~="bg-stone-950"], [class~="bg-zinc-900"],
          [class~="bg-neutral-900"], .surface-dark)
     :is(.text-\[\#888\], .text-\[\#8E8D8A\], .text-\[\#8e8d8a\], .text-\[\#999\], .text-\[\#AAA\], .text-stone-400, .text-stone-500, .text-zinc-400, .text-zinc-500) { color: var(--ink-on-dark-muted); }
-  :where([class~="bg-[#111]"], [class~="bg-[#0d111a]"], [class~="bg-[#111]/95"], [class~="bg-[#111]/90"], [class~="bg-[#111]/80"],
+  :where([class~="bg-[#111]"], [class~="bg-[#111]/95"], [class~="bg-[#111]/90"], [class~="bg-[#111]/80"],
          [class~="bg-[#1A1A1A]"], [class~="bg-[#1a1a1a]"], [class~="bg-[#222]"], [class~="bg-black"], [class~="bg-black/90"],
          [class~="bg-black/80"], [class~="bg-stone-900"], [class~="bg-stone-950"], [class~="bg-zinc-900"],
          [class~="bg-neutral-900"], .surface-dark)
-    :is(.text-champagne, .text-\[\#F59E0B\], .text-\[\#D97706\]),
-  :is([class~="bg-[#111]"], [class~="bg-stone-900"], [class~="bg-black"], .surface-dark):is(.text-champagne, .text-\[\#F59E0B\], .text-\[\#D97706\]) { color: var(--color-champagne); }
+    :is(.text-champagne, .text-\[\#E1C699\], .text-\[\#C9A227\]),
+  :is([class~="bg-[#111]"], [class~="bg-stone-900"], [class~="bg-black"], .surface-dark):is(.text-champagne, .text-\[\#E1C699\], .text-\[\#C9A227\]) { color: var(--color-champagne); }
 }
-
-/* Star India theme: Cinzel is for headings only; long text stays in Plus Jakarta Sans */
-p.font-serif, p.font-serif-display, li.font-serif, blockquote.font-serif, .font-serif.italic, .font-serif-display.italic { font-family: var(--font-sans); }
 
 /* Visible keyboard focus everywhere */
 :focus-visible {
@@ -135,7 +130,7 @@ p.font-serif, p.font-serif-display, li.font-serif, blockquote.font-serif, .font-
   to { background-position: -200% 0; }
 }
 .fsia-gold-text {
-  background: linear-gradient(100deg, #d97706 0%, #fcd34d 30%, #f59e0b 50%, #fcd34d 70%, #d97706 100%);
+  background: linear-gradient(100deg, #b8893b 0%, #f3dca6 30%, #c99a4a 50%, #f3dca6 70%, #b8893b 100%);
   background-size: 200% 100%;
   -webkit-background-clip: text;
   background-clip: text;
@@ -146,6 +141,6 @@ p.font-serif, p.font-serif-display, li.font-serif, blockquote.font-serif, .font-
 .fsia-gold-border {
   border: 1px solid transparent;
   background:
-    linear-gradient(#0d111a, #0d111a) padding-box,
-    linear-gradient(135deg, #fcd34d, #b45309 45%, #fcd34d) border-box;
+    linear-gradient(#111, #111) padding-box,
+    linear-gradient(135deg, #f3dca6, #8a6a2f 45%, #f3dca6) border-box;
 }

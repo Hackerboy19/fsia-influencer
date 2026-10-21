@@ -158,7 +158,7 @@ export default function VipCollaborationForm({
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 180 }}
-            className="relative w-full md:max-w-xl h-full bg-[#FAF8F5] shadow-2xl flex flex-col border-l border-black/5 outline-none"
+            className="relative w-full md:max-w-xl h-full bg-[#FAF9F6] shadow-2xl flex flex-col border-l border-black/5 outline-none"
             id="vip-collaboration-form-container"
           >
             {/* Header */}
@@ -426,12 +426,12 @@ export default function VipCollaborationForm({
                     type="submit"
                     disabled={isSubmitting}
                     aria-busy={isSubmitting}
-                    className="w-full bg-[#111] hover:bg-[#2e2c29] text-[#FAF8F5] font-sans text-sm tracking-[0.12em] font-bold py-4 px-6 rounded-xl uppercase flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg active:scale-[0.98] disabled:opacity-70 disabled:cursor-wait"
+                    className="w-full bg-[#111] hover:bg-[#2e2c29] text-[#FAF9F6] font-sans text-sm tracking-[0.12em] font-bold py-4 px-6 rounded-xl uppercase flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg active:scale-[0.98] disabled:opacity-70 disabled:cursor-wait"
                     id="submit-collaboration-charter-btn"
                   >
                     {isSubmitting ? (
                       <>
-                        <span className="w-4 h-4 border-2 border-t-transparent border-[#FAF8F5] rounded-full animate-spin" aria-hidden="true" />
+                        <span className="w-4 h-4 border-2 border-t-transparent border-[#FAF9F6] rounded-full animate-spin" aria-hidden="true" />
                         Sending enquiry…
                       </>
                     ) : (
@@ -490,7 +490,7 @@ export default function VipCollaborationForm({
                     <button
                       type="button"
                       onClick={onClose}
-                      className="w-full bg-[#111] hover:bg-[#2e2c29] text-[#FAF8F5] font-sans text-sm tracking-[0.12em] py-3.5 px-6 rounded-xl uppercase cursor-pointer text-center font-bold"
+                      className="w-full bg-[#111] hover:bg-[#2e2c29] text-[#FAF9F6] font-sans text-sm tracking-[0.12em] py-3.5 px-6 rounded-xl uppercase cursor-pointer text-center font-bold"
                     >
                       Done
                     </button>

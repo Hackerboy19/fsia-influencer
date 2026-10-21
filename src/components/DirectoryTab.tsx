@@ -254,13 +254,13 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
       {/* 1. MINIMAL HERO SECTION */}
       {!hideHero && (
         <header className="max-w-4xl mx-auto text-center space-y-4">
-          <span className="font-sans text-xs tracking-[0.35em] text-[#D97706] uppercase font-bold block">
+          <span className="font-sans text-xs tracking-[0.35em] text-[#C9A227] uppercase font-bold block">
             FSIA ELITE TALENT AGENCY
           </span>
           <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-medium tracking-tight text-stone-900 leading-tight">
             {routeForTab("directory").heading}
           </h1>
-          <div className="w-16 h-[1px] bg-[#D97706] mx-auto my-3" />
+          <div className="w-16 h-[1px] bg-[#C9A227] mx-auto my-3" />
           <p className="font-serif italic text-[#2e2c29] text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
             {routeForTab("directory").intro}
             {rosterCities.length > 0 && <> Creators are currently listed in {listCities(rosterCities)}.</>}
@@ -284,7 +284,7 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
                     className={`px-5 py-2 rounded-full border text-xs font-medium tracking-wide transition-all min-h-[44px] flex items-center justify-center cursor-pointer ${
                       isSelected
                         ? "bg-stone-900 text-white border-stone-900 shadow-md"
-                        : "border-stone-200 text-zinc-600 bg-white hover:text-stone-900 hover:border-[#D97706]"
+                        : "border-stone-200 text-zinc-600 bg-white hover:text-stone-900 hover:border-[#C9A227]"
                     }`}
                   >
                     {cat}
@@ -304,7 +304,7 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
                     className={`px-6 py-2 rounded-full border text-sm font-medium transition-all cursor-pointer min-h-[44px] flex items-center justify-center ${
                       isSelected
                         ? "bg-stone-900 text-white border-stone-900 shadow-md"
-                        : "border-stone-200 text-zinc-600 bg-white hover:text-stone-900 hover:border-[#D97706]"
+                        : "border-stone-200 text-zinc-600 bg-white hover:text-stone-900 hover:border-[#C9A227]"
                     }`}
                   >
                     {cat}
@@ -323,7 +323,7 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
                 placeholder="Search by name, niche, keywords..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-white border border-stone-200 rounded-full text-xs placeholder:text-zinc-400 focus:outline-none focus:border-[#D97706] transition-all min-h-[44px]"
+                className="w-full pl-9 pr-4 py-2 bg-white border border-stone-200 rounded-full text-xs placeholder:text-zinc-400 focus:outline-none focus:border-[#C9A227] transition-all min-h-[44px]"
               />
               <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             </div>
@@ -332,9 +332,9 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
             <div className="w-full sm:w-auto flex items-center justify-end gap-2 shrink-0">
               <button
                 onClick={() => setShowAdvanced(!showAdvanced)}
-                className="flex items-center gap-1.5 px-4 py-2 border border-stone-200 rounded-full text-xs font-medium text-stone-700 bg-white hover:border-[#D97706] hover:text-stone-900 transition-all cursor-pointer min-h-[44px]"
+                className="flex items-center gap-1.5 px-4 py-2 border border-stone-200 rounded-full text-xs font-medium text-stone-700 bg-white hover:border-[#C9A227] hover:text-stone-900 transition-all cursor-pointer min-h-[44px]"
               >
-                <SlidersHorizontal className="w-3.5 h-3.5 text-[#D97706]" />
+                <SlidersHorizontal className="w-3.5 h-3.5 text-[#C9A227]" />
                 <span>{showAdvanced ? "Hide Fine Filters" : "More Filters"}</span>
               </button>
 
@@ -362,7 +362,7 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
                       <select
                         value={selectedCity}
                         onChange={(e) => setSelectedCity(e.target.value)}
-                        className="w-full pl-8 pr-4 py-2 bg-white border border-stone-200 rounded-lg text-xs text-stone-800 focus:outline-none focus:border-[#D97706] appearance-none transition-all cursor-pointer min-h-[44px]"
+                        className="w-full pl-8 pr-4 py-2 bg-white border border-stone-200 rounded-lg text-xs text-stone-800 focus:outline-none focus:border-[#C9A227] appearance-none transition-all cursor-pointer min-h-[44px]"
                       >
                         <option value="All">All Cities (India)</option>
                         {cities.filter(c => c !== "All").map((city, idx) => (
@@ -380,7 +380,7 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
                       <select
                         value={selectedReachTier}
                         onChange={(e) => setSelectedReachTier(e.target.value)}
-                        className="w-full pl-8 pr-4 py-2 bg-white border border-stone-200 rounded-lg text-xs text-stone-800 focus:outline-none focus:border-[#D97706] appearance-none transition-all cursor-pointer min-h-[44px]"
+                        className="w-full pl-8 pr-4 py-2 bg-white border border-stone-200 rounded-lg text-xs text-stone-800 focus:outline-none focus:border-[#C9A227] appearance-none transition-all cursor-pointer min-h-[44px]"
                       >
                         <option value="All">All Tiers</option>
                         <option value="macro">Premium Macro (500K - 1M)</option>
@@ -430,8 +430,8 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
                   />
 
                   {/* Floating Gold FSIA Verified Shield Badge */}
-                  <div className="absolute top-2 right-2 md:top-3 md:right-3 z-10 bg-stone-900/90 text-[#FCD34D] border border-[#D97706]/50 backdrop-blur-xs px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wider flex items-center gap-1 shadow-md">
-                    <ShieldCheck className="w-3 h-3 text-[#FCD34D] shrink-0" />
+                  <div className="absolute top-2 right-2 md:top-3 md:right-3 z-10 bg-stone-900/90 text-[#F0D9A8] border border-[#C9A227]/50 backdrop-blur-xs px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wider flex items-center gap-1 shadow-md">
+                    <ShieldCheck className="w-3 h-3 text-[#F0D9A8] shrink-0" />
                     <span>FSIA VERIFIED</span>
                   </div>
 
@@ -455,7 +455,7 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
                             {creator.name}
                           </button>
                         </h3>
-                        <span className="text-[11px] md:text-xs text-[#D97706] block font-mono">
+                        <span className="text-[11px] md:text-xs text-[#C9A227] block font-mono">
                           {formattedHandle}
                         </span>
                         <span className="text-[11px] text-stone-500 font-semibold block uppercase tracking-wider">
@@ -524,11 +524,11 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
         <footer className="max-w-6xl mx-auto pt-8">
           <div className="bg-stone-900 text-white rounded-2xl p-8 md:p-12 text-center relative overflow-hidden shadow-xl border border-stone-800">
             {/* Subtle luxurious background light glow */}
-            <div className="absolute -top-40 -left-40 w-96 h-96 bg-[#D97706]/5 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-[#F59E0B]/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -top-40 -left-40 w-96 h-96 bg-[#C9A227]/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-[#E1C699]/5 rounded-full blur-3xl pointer-events-none" />
 
             <div className="relative z-10 max-w-2xl mx-auto space-y-4">
-              <span className="text-[11px] tracking-[0.35em] text-[#D97706] font-bold uppercase block">
+              <span className="text-[11px] tracking-[0.35em] text-[#C9A227] font-bold uppercase block">
                 BECOME AN FSIA VERIFIED STAR
               </span>
               <h3 className="font-serif text-2xl sm:text-3xl md:text-4xl text-stone-100 font-medium tracking-tight">
@@ -540,7 +540,7 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
               <div className="pt-4">
                 <button
                   onClick={handleApplyClick}
-                  className="inline-flex items-center justify-center px-8 py-3.5 bg-gradient-to-r from-[#D97706] to-[#F59E0B] hover:from-[#B45309] hover:to-[#F59E0B] text-stone-950 text-xs font-bold tracking-widest rounded-full uppercase transition-all shadow-lg active:scale-95 cursor-pointer min-h-[44px]"
+                  className="inline-flex items-center justify-center px-8 py-3.5 bg-gradient-to-r from-[#C9A227] to-[#E1C699] hover:from-[#b08d1f] hover:to-[#d2b480] text-stone-950 text-xs font-bold tracking-widest rounded-full uppercase transition-all shadow-lg active:scale-95 cursor-pointer min-h-[44px]"
                 >
                   <span>Apply For Roster Entry</span>
                   <ArrowRight className="w-4 h-4 ml-2 shrink-0" />

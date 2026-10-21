@@ -1,7 +1,6 @@
 import React from "react";
 import { ArrowUp, ArrowUpRight } from "lucide-react";
 import { routeForTab, TabId } from "../seo";
-import { StarLogo } from "./SiteHeader";
 
 interface SiteFooterProps {
   footerText: string;
@@ -95,22 +94,16 @@ export default function SiteFooter({ footerText, onNavigate, onBrandEnquiry, com
   }
 
   return (
-    <footer className="surface-dark bg-[#0d111a] text-[#F4F2EE] border-t-4 border-[#d32f2f] -mx-4 md:-mx-8 mt-16 px-6 md:px-12 pt-12 pb-10 rounded-t-3xl">
+    <footer className="surface-dark bg-[#111] text-[#F4F2EE] -mx-4 md:-mx-8 mt-16 px-6 md:px-12 pt-12 pb-10 rounded-t-3xl">
       <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr] gap-10">
         <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            <StarLogo className="w-10 h-10" />
-            <div className="flex flex-col leading-none">
-              <p className="font-sans text-xl font-black tracking-tight text-white uppercase">FSIA Influencer</p>
-              <p className="text-[10px] font-bold tracking-[0.22em] text-[#ef5350] uppercase mt-1">Influencer Award Agency</p>
-            </div>
-          </div>
+          <p className="font-serif-display text-2xl font-bold text-white">FSIA Influencer</p>
           <p className="text-sm leading-relaxed text-[#E4E0D8] max-w-xs">
             The influencer award agency for India: awards, Star India profiles, brand deals and the Explore Magazine.
           </p>
           <a
             href="https://influencer.fsia.in/"
-            className="inline-flex items-center gap-1 text-sm font-semibold text-[#FBBF24] hover:text-white"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-[#E9CF9F] hover:text-white"
           >
             influencer.fsia.in <ArrowUpRight className="w-4 h-4" />
           </a>
@@ -118,7 +111,7 @@ export default function SiteFooter({ footerText, onNavigate, onBrandEnquiry, com
 
         {GROUPS.map((group) => (
           <nav key={group.title} aria-label={group.title} className="space-y-3">
-            <p className="text-xs font-bold tracking-[0.18em] uppercase text-[#FBBF24]">{group.title}</p>
+            <p className="text-xs font-bold tracking-[0.18em] uppercase text-[#E9CF9F]">{group.title}</p>
             <ul className="space-y-2.5">
               {group.links.map((link) => (
                 <li key={link.label}>
@@ -126,7 +119,7 @@ export default function SiteFooter({ footerText, onNavigate, onBrandEnquiry, com
                     {...link}
                     onNavigate={onNavigate}
                     onBrandEnquiry={onBrandEnquiry}
-                    className="text-[15px] text-white/95 hover:text-[#FBBF24] underline-offset-4 hover:underline focus-visible:underline"
+                    className="text-[15px] text-white/95 hover:text-[#E9CF9F] underline-offset-4 hover:underline focus-visible:underline"
                   />
                 </li>
               ))}

@@ -23,14 +23,14 @@ const Photo: React.FC<{ creator: Creator; size?: string }> = ({ creator, size = 
   return (
     <span className="relative inline-block">
       {creator.image && !failed ? (
-        <img src={creator.image} alt="" loading="lazy" onError={() => setFailed(true)} className={`${size} rounded-full object-cover border-4 border-white ring-2 ring-[#F59E0B] shadow-lg`} />
+        <img src={creator.image} alt="" loading="lazy" onError={() => setFailed(true)} className={`${size} rounded-full object-cover border-4 border-white ring-2 ring-[#E1C699] shadow-lg`} />
       ) : (
-        <span className={`${size} rounded-full bg-[#F3F3F1] border-4 border-white ring-2 ring-[#F59E0B] shadow-lg flex items-center justify-center`} aria-hidden="true">
+        <span className={`${size} rounded-full bg-[#F3F3F1] border-4 border-white ring-2 ring-[#E1C699] shadow-lg flex items-center justify-center`} aria-hidden="true">
           <UserRound className="w-1/3 h-1/3 text-[#8E8D8A]" />
         </span>
       )}
       {/* Gold award medal */}
-      <span aria-hidden="true" className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-gradient-to-b from-[#FDE68A] to-[#D97706] border-2 border-white shadow flex items-center justify-center">
+      <span aria-hidden="true" className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-gradient-to-b from-[#f3dca6] to-[#b8893b] border-2 border-white shadow flex items-center justify-center">
         <Trophy className="w-4 h-4 text-[#3b2a0c]" />
       </span>
     </span>
@@ -38,7 +38,7 @@ const Photo: React.FC<{ creator: Creator; size?: string }> = ({ creator, size = 
 };
 
 const Laurel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <span className="inline-flex items-center gap-1 rounded-full border border-[#D97706]/50 bg-[#FBF6EC] px-2.5 py-1 text-[12px] font-semibold text-[#3b2a0c]">
+  <span className="inline-flex items-center gap-1 rounded-full border border-[#b8893b]/50 bg-[#FBF6EC] px-2.5 py-1 text-[12px] font-semibold text-[#3b2a0c]">
     <span aria-hidden="true">❦</span>
     {children}
     <span aria-hidden="true" className="inline-block -scale-x-100">❦</span>
@@ -54,9 +54,9 @@ function SpotlightCard({ creator, award, awards, onOpen }: { creator: Creator; a
       aria-label={`View ${creator.name}`}
       className="group w-full max-w-sm mx-auto text-left bg-white text-[#111] rounded-3xl shadow-2xl overflow-hidden cursor-pointer transition-transform duration-500 hover:-translate-y-1 md:rotate-[2deg] md:hover:rotate-0"
     >
-      <span className="relative block h-24 bg-gradient-to-br from-[#1f5a3d] via-[#121824] to-[#0d111a]" aria-hidden="true">
-        <span className="absolute top-3 left-4 text-[#F59E0B] text-xs fsia-twinkle">✦</span>
-        <span className="absolute top-6 right-6 text-[#F59E0B] text-sm fsia-twinkle" style={{ animationDelay: "1s" }}>✦</span>
+      <span className="relative block h-24 bg-gradient-to-br from-[#1f5a3d] via-[#16233f] to-[#0b1426]" aria-hidden="true">
+        <span className="absolute top-3 left-4 text-[#E1C699] text-xs fsia-twinkle">✦</span>
+        <span className="absolute top-6 right-6 text-[#E1C699] text-sm fsia-twinkle" style={{ animationDelay: "1s" }}>✦</span>
       </span>
       <span className="flex flex-col items-center text-center px-6 pb-6 -mt-14 gap-2">
         <Photo creator={creator} size="w-28 h-28" />
@@ -109,14 +109,14 @@ export default function StarIndiaTab({
 
   return (
     <div className="w-full max-w-6xl mx-auto py-6 md:py-12 space-y-12">
-      <div className="surface-dark relative overflow-hidden bg-gradient-to-br from-[#1f5a3d] via-[#143d2a] to-[#0d111a] text-white rounded-3xl p-6 md:p-10 grid md:grid-cols-[1.3fr_1fr] gap-10 items-center">
+      <div className="surface-dark relative overflow-hidden bg-gradient-to-br from-[#1f5a3d] via-[#143d2a] to-[#0b1426] text-white rounded-3xl p-6 md:p-10 grid md:grid-cols-[1.3fr_1fr] gap-10 items-center">
         <span aria-hidden="true" className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-[radial-gradient(circle,rgba(243,220,166,0.25),transparent_70%)]" />
         <div className="relative space-y-4">
           <span className="font-sans text-xs tracking-[0.3em] uppercase font-bold block text-champagne">Membership &amp; Profiles</span>
           <h1 className="font-serif-display text-3xl md:text-5xl font-bold tracking-tight text-white">{route.heading}</h1>
           <p className="font-serif-text text-lg md:text-xl text-[#e9e6df] leading-relaxed">{route.intro}</p>
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
-            <TabLink tab="membership" onNavigate={onNavigate} className="inline-flex justify-center items-center gap-2 bg-[#F59E0B] hover:bg-[#F59E0B] text-[#111] font-semibold text-sm px-5 py-3 rounded-xl">
+            <TabLink tab="membership" onNavigate={onNavigate} className="inline-flex justify-center items-center gap-2 bg-[#E1C699] hover:bg-[#d4b57f] text-[#111] font-semibold text-sm px-5 py-3 rounded-xl">
               Become a member
             </TabLink>
             <TabLink tab="apply" onNavigate={onNavigate} className="inline-flex justify-center items-center gap-2 border border-white/60 hover:bg-white/10 text-white font-semibold text-sm px-5 py-3 rounded-xl">
@@ -179,7 +179,7 @@ export default function StarIndiaTab({
                   aria-label={`View ${creator.name}`}
                   className="group w-full h-full text-left bg-white border border-black/10 rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col"
                 >
-                  <span className="block h-16 bg-gradient-to-r from-[#1f5a3d] via-[#121824] to-[#1a2233]" aria-hidden="true" />
+                  <span className="block h-16 bg-gradient-to-r from-[#1f5a3d] via-[#16233f] to-[#1e2a4a]" aria-hidden="true" />
                   <span className="flex flex-col items-center text-center px-5 pb-5 -mt-12 gap-2 flex-1">
                     <Photo creator={creator} />
                     <span className="inline-flex items-center gap-1 font-serif-display text-lg font-bold text-[#111]">
