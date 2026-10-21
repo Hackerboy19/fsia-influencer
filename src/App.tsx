@@ -844,7 +844,7 @@ export default function App() {
                     <StarIndiaTab sections={sections} onNavigate={navigateTo} onSelectCreator={setSelectedCreator} />
                   )}
                   {activeTab === "greenlight" && <GreenLightTab coverCreator={sections[0]?.creators?.[0]} />}
-                  {activeTab === "contact" && <ContactTab />}
+                  {activeTab === "contact" && <ContactTab onNavigate={navigateTo} />}
                   {activeTab === "campaigns" && <CampaignsTab />}
                   {activeTab === "membership" && <MembershipTab />}
                   {activeTab === "apply" && <ModelRegistrationTab />}

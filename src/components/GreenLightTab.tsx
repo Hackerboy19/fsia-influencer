@@ -7,23 +7,41 @@ import EnquiryForm from "./EnquiryForm";
 
 const PACKAGE_TITLES = MAGAZINE_PACKAGES.map((p) => p.title);
 
-function MagazineCover({ creator }: { creator?: Creator }) {
+function MagazineCover({ creator, onBook }: { creator?: Creator; onBook: () => void }) {
   const [failed, setFailed] = useState(false);
   return (
-    <figure className="surface-dark relative w-full max-w-xs mx-auto aspect-[3/4] rounded-xl overflow-hidden shadow-2xl bg-gradient-to-b from-[#123524] to-[#0b1f15] text-white">
-      {creator?.image && !failed && (
-        <img src={creator.image} alt="" onError={() => setFailed(true)} className="absolute inset-0 w-full h-full object-cover opacity-80" />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/70" aria-hidden="true" />
-      <div className="relative h-full flex flex-col p-5">
-        <p className="text-[10px] tracking-[0.3em] uppercase font-bold text-[#e9e6df]">FSIA Magazine · Creators &amp; Strategy</p>
-        <p className="font-serif-display text-5xl font-bold tracking-tight text-champagne leading-none mt-1">EXPLORE</p>
-        <p className="text-[11px] tracking-[0.4em] uppercase text-white">Magazine</p>
-        <div className="mt-auto space-y-1">
-          <p className="font-serif-display text-lg font-bold text-white">Influencer Success Stories</p>
-          {creator && <p className="text-sm text-[#e9e6df]">Cover: {creator.name}</p>}
+    <figure className="group relative w-full max-w-xs mx-auto [perspective:1200px]">
+      <div className="surface-dark relative aspect-[3/4] rounded-xl overflow-hidden shadow-2xl bg-gradient-to-b from-[#123524] to-[#0b1f15] text-white transition-transform duration-700 md:[transform:rotateY(-10deg)_rotateX(2deg)] md:group-hover:[transform:rotateY(0deg)]">
+        {creator?.image && !failed && (
+          <img src={creator.image} alt="" onError={() => setFailed(true)} className="absolute inset-0 w-full h-full object-cover opacity-85" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/5 to-black/80" aria-hidden="true" />
+        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+        <div className="relative h-full flex flex-col p-5">
+          <p className="text-[9px] tracking-[0.25em] uppercase font-bold text-[#e9e6df]">FSIA Magazine · Creators &amp; Strategy</p>
+          <p className="font-serif-display text-[3.4rem] font-bold tracking-tight leading-none mt-1 fsia-gold-text">EXPLORE</p>
+          <p className="text-[11px] tracking-[0.5em] uppercase text-white text-center">Magazine</p>
+          <div className="mt-6 space-y-3 max-w-[60%]">
+            <p className="leading-tight"><span className="block font-serif-display text-base font-bold text-white">Influencer Success Stories</span><span className="block text-[10px] text-[#e9e6df]">How awardees turned recognition into brand deals</span></p>
+            <p className="leading-tight"><span className="block font-serif-display text-sm font-bold text-white">Brand Strategy</span><span className="block text-[10px] text-[#e9e6df]">What brand managers look for</span></p>
+          </div>
+          <span aria-hidden="true" className="absolute top-24 right-4 w-16 h-16 rounded-full bg-gradient-to-b from-[#f3dca6] to-[#b8893b] text-[#3b2a0c] text-[9px] font-bold uppercase leading-tight flex items-center justify-center text-center rotate-12 shadow-lg">
+            Award<br />winners<br />inside
+          </span>
+          <div className="mt-auto flex items-end justify-between gap-2">
+            {creator && <p className="text-[12px] text-[#e9e6df]">Cover: <span className="font-semibold text-white">{creator.name}</span></p>}
+            <button
+              type="button"
+              onClick={onBook}
+              aria-label="Book a cover story"
+              className="shrink-0 px-3 py-1.5 rounded-full bg-[#E1C699] hover:bg-[#f3dca6] text-[#111] text-[11px] font-bold uppercase tracking-wider cursor-pointer"
+            >
+              Book now
+            </button>
+          </div>
         </div>
       </div>
+      <div aria-hidden="true" className="mx-auto mt-3 h-4 w-3/4 rounded-full bg-black/20 blur-md" />
       <figcaption className="sr-only">Explore Magazine cover preview{creator ? ` featuring ${creator.name}` : ""}</figcaption>
     </figure>
   );
@@ -49,8 +67,8 @@ export default function GreenLightTab({ coverCreator }: { coverCreator?: Creator
       </div>
 
       {/* Explore Magazine: cover preview and packages */}
-      <section aria-labelledby="magazine" className="grid md:grid-cols-[1fr_1.3fr] gap-8 items-center bg-[#F6EFE3] border border-[#E1C699]/50 rounded-3xl p-6 md:p-10">
-        <MagazineCover creator={coverCreator} />
+      <section aria-labelledby="magazine" className="relative overflow-hidden grid md:grid-cols-[1fr_1.3fr] gap-10 items-center bg-gradient-to-br from-[#FBF6EC] to-[#F1E6D0] border border-[#E1C699]/60 rounded-3xl p-6 md:p-10 shadow-sm">
+        <MagazineCover creator={coverCreator} onBook={() => book(PACKAGE_TITLES[0])} />
         <div className="space-y-5">
           <div>
             <h2 id="magazine" className="font-serif-display text-2xl md:text-3xl font-bold text-[#111]">Explore Magazine</h2>
@@ -88,7 +106,7 @@ export default function GreenLightTab({ coverCreator }: { coverCreator?: Creator
           {BLOG_POSTS.map((post) => {
             const isOpen = openPost === post.id;
             return (
-              <li key={post.id} className="bg-white border border-black/10 rounded-2xl overflow-hidden">
+              <li key={post.id} className="bg-white border border-black/10 rounded-2xl overflow-hidden hover:shadow-lg hover:border-[#1f5a3d]/40 transition-all">
                 <article>
                   <h3 className="m-0">
                     <button

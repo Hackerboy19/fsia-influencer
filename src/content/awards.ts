@@ -136,3 +136,20 @@ export function influencerId(name: string): string {
   for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
   return `FSIA-${String(hash % 100000).padStart(5, "0")}`;
 }
+
+/** "2.4M" / "850K" / "12,000" → number of followers (0 when unreadable) */
+export function parseReach(value: unknown): number {
+  const m = String(value ?? "").replace(/,/g, "").trim().match(/^(\d+(?:\.\d+)?)\s*([kKmMbB])?/);
+  if (!m) return 0;
+  const n = parseFloat(m[1]);
+  const unit = (m[2] || "").toLowerCase();
+  return Math.round(n * (unit === "b" ? 1e9 : unit === "m" ? 1e6 : unit === "k" ? 1e3 : 1));
+}
+
+/** 8830000 → "8.8M" */
+export function formatReach(n: number): string {
+  if (n >= 1e9) return `${+(n / 1e9).toFixed(1)}B`;
+  if (n >= 1e6) return `${+(n / 1e6).toFixed(1)}M`;
+  if (n >= 1e3) return `${Math.round(n / 1e3)}K`;
+  return String(n);
+}

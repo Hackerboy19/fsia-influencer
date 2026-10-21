@@ -77,7 +77,7 @@ for (const vp of [
   page.on("pageerror", (e) => errors.push(e.message));
 
   await page.goto(BASE + "/", { waitUntil: "networkidle" });
-  check(`${vp.name}: home page shows the award agency heading`, /influencer award agency/i.test(await h1(page)));
+  check(`${vp.name}: home page shows the award agency heading`, /influencer\s+award agency/i.test(await h1(page)));
   check(`${vp.name}: home page shows the header tabs`, (await page.locator("#main-nav-tabs").count()) === 1);
   await page.fill("#home-search", "best fashion");
   check(`${vp.name}: home search finds award categories`,
