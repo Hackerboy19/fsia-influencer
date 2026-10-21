@@ -16,7 +16,10 @@ import {
   Users,
   Briefcase,
   HelpCircle,
-  UserPlus
+  UserPlus,
+  Home,
+  Star,
+  Mail
 } from "lucide-react";
 import { gallerySections, Creator } from "./data";
 import CreatorDetailPanel from "./components/CreatorDetailPanel";
@@ -29,42 +32,51 @@ import ModelRegistrationTab from "./components/ModelRegistrationTab";
 import FaqTab from "./components/FaqTab";
 import CursorParticleTrail from "./components/CursorParticleTrail";
 import SiteFooter from "./components/SiteFooter";
+import HomeTab from "./components/HomeTab";
+import StarIndiaTab from "./components/StarIndiaTab";
+import GreenLightTab from "./components/GreenLightTab";
+import ContactTab from "./components/ContactTab";
 import { Toaster } from "react-hot-toast";
 import { TabId, routeForPath, routeForTab, applyRouteMeta } from "./seo";
 import { readableAccent } from "./lib/color";
 
 // The 3D scene (Three.js) and the admin workspace are loaded on demand, so the
-// welcome screen and content pages don't wait for code most visitors never run
+// home page and content pages don't wait for code most visitors never run
 const ThreeGallery = lazy(() => import("./components/ThreeGallery"));
 const AdminTab = lazy(() => import("./components/AdminTab"));
 
 const MOBILE_NAV: { id: TabId; label: string; icon: typeof Compass }[] = [
-  { id: "catwalk", label: "Explore", icon: Compass },
+  { id: "home", label: "Home", icon: Home },
   { id: "directory", label: "Talent", icon: Users },
-  { id: "campaigns", label: "Campaigns", icon: Briefcase },
+  { id: "starindia", label: "Star India", icon: Star },
   { id: "apply", label: "Join", icon: UserPlus },
-  { id: "membership", label: "Plans", icon: Sparkles }
+  { id: "contact", label: "Contact", icon: Mail }
 ];
 
-const ENTERED_KEY = "fsia_entered";
-
-function readEntered(): boolean {
-  try {
-    return sessionStorage.getItem(ENTERED_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
+// Header tabs. The 3D gallery and FAQs are reached from the home page and the footer.
+const HEADER_TABS: { id: TabId; label: string }[] = [
+  { id: "home", label: "Home" },
+  { id: "directory", label: "Talent" },
+  { id: "campaigns", label: "Campaigns" },
+  { id: "starindia", label: "Star India" },
+  { id: "greenlight", label: "Green Light" },
+  { id: "membership", label: "Membership" },
+  { id: "apply", label: "Get Verified" },
+  { id: "contact", label: "Contact" }
+];
 
 export default function App() {
   // Navigation & Showcase States
-  // Deep links (/talent/, /join/ …) and return visits skip the welcome screen
   const initialTab = routeForPath(window.location.pathname).tab;
-  const [hasEntered, setHasEntered] = useState(initialTab !== "catwalk" || readEntered());
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
+  // Three.js loads the first time someone opens the 3D gallery, not on every page
+  const [galleryMounted, setGalleryMounted] = useState(initialTab === "catwalk");
+  useEffect(() => {
+    if (activeTab === "catwalk") setGalleryMounted(true);
+  }, [activeTab]);
   const contentScrollRef = useRef<HTMLDivElement>(null);
   const [moodboardItems, setMoodboardItems] = useState<string[]>([]);
   const [isMoodboardOpen, setIsMoodboardOpen] = useState(false);
@@ -186,14 +198,12 @@ export default function App() {
     const onPopState = () => {
       setActiveTab(routeForPath(window.location.pathname).tab);
       setSelectedCreator(null);
-      setHasEntered(true);
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
   const navigateTo = (tab: TabId) => {
-    setHasEntered(true);
     setActiveTab(tab);
     setSelectedCreator(null);
   };
@@ -336,13 +346,9 @@ export default function App() {
     }
   };
 
-  // Entering never auto-plays sound; visitors can switch ambient audio on from the header
-  const handleEnterExperience = (tab: TabId = "catwalk", openEnquiry = false) => {
-    try {
-      sessionStorage.setItem(ENTERED_KEY, "1");
-    } catch {}
-    navigateTo(tab);
-    if (openEnquiry) setIsCollaborationOpen(true);
+  const openGallerySection = (index: number) => {
+    setActiveSectionIndex(index);
+    navigateTo("catwalk");
   };
 
   const activeSection = sections[activeSectionIndex] || sections[0] || { id: "none", title: "No Category", creators: [], primaryColor: "#E1C699" };
@@ -371,114 +377,7 @@ export default function App() {
       }}
     >
       <Toaster position="top-right" reverseOrder={false} toastOptions={{ duration: 4000 }} />
-      <AnimatePresence mode="wait">
-        {!hasEntered ? (
-          /* SECTION 1: THE ULTRA-PRESTIGE INVITATION GALA GATE */
-          <motion.div
-            key="welcome-gate"
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 1.2, ease: [0.25, 1, 0.5, 1] }}
-            className="absolute inset-0 z-50 flex flex-col justify-between gap-8 p-8 md:p-16 bg-[#FAF9F6] overflow-x-hidden overflow-y-auto"
-            id="gala-welcome-gate"
-          >
-            {/* Decorative fine-art background grids */}
-            <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[radial-gradient(var(--color-champagne)_1.5px,transparent_1.5px)] [background-size:24px_24px]" />
-            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] border border-champagne/15 rounded-full pointer-events-none" />
-            <CursorParticleTrail color={readableAccent(settings.primaryColor)} />
-
-            {/* Top Branding Header */}
-            <div className="flex justify-between items-center z-10">
-              {settings.logoUrl ? (
-                <img src={settings.logoUrl} alt="Logo" className="h-6 object-contain" />
-              ) : (
-                <span className="font-sans text-xs tracking-[0.3em] text-[#111] uppercase font-bold">
-                  {settings.websiteTitle}
-                </span>
-              )}
-              <span className="px-3.5 py-1 rounded-full border border-champagne/30 text-[11px] font-sans text-champagne uppercase font-bold tracking-[0.2em]">
-                VIP Tier Access
-              </span>
-            </div>
-
-            {/* Central Invitation Box */}
-            <main className="max-w-3xl mx-auto text-center space-y-10 z-10 px-4">
-              <div className="space-y-4">
-                <motion.span
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="inline-flex items-center gap-2 text-xs font-sans tracking-[0.4em] text-champagne font-bold uppercase"
-                >
-                  <Sparkles className="w-4.5 h-4.5 animate-pulse text-champagne" />
-                  Creators &amp; Influencer Portal
-                </motion.span>
-                <motion.h1
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="font-serif-display text-4xl md:text-6xl lg:text-7xl font-medium tracking-tight text-[#111] leading-[1.05] uppercase"
-                >
-                  {settings.heroTitle}
-                </motion.h1>
-                <motion.p
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
-                  className="font-serif-text text-lg md:text-2xl text-[#2e2c29] max-w-2xl mx-auto leading-relaxed"
-                >
-                  {settings.heroSubtitle}
-                </motion.p>
-              </div>
-
-              {/* Entry choices: one clear primary action, two direct shortcuts */}
-              <motion.div
-                initial={{ scale: 0.97, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.8 }}
-                className="flex flex-col items-center gap-4"
-              >
-                <button
-                  onClick={() => handleEnterExperience()}
-                  className="inline-flex items-center gap-3 bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[13px] tracking-[0.12em] sm:tracking-[0.2em] font-semibold py-4 px-7 sm:px-9 rounded-xl uppercase whitespace-nowrap cursor-pointer transition-all shadow-md hover:shadow-xl active:scale-95"
-                  id="enter-exposition-btn"
-                >
-                  {settings.ctaText}
-                  <ChevronRight className="w-4 h-4 text-champagne" />
-                </button>
-                <div className="flex flex-col sm:flex-row items-center gap-3">
-                  <button
-                    onClick={() => handleEnterExperience("apply")}
-                    className="inline-flex items-center gap-2 bg-white border-2 border-[#111] text-[#111] hover:bg-[#111] hover:text-white font-sans text-[13px] font-semibold py-3 px-6 rounded-xl cursor-pointer transition-colors"
-                  >
-                    <UserPlus className="w-4 h-4" /> I'm a creator — join
-                  </button>
-                  <button
-                    onClick={() => handleEnterExperience("directory", true)}
-                    className="inline-flex items-center gap-2 bg-white border-2 border-[#111] text-[#111] hover:bg-[#111] hover:text-white font-sans text-[13px] font-semibold py-3 px-6 rounded-xl cursor-pointer transition-colors"
-                  >
-                    <Briefcase className="w-4 h-4" /> I'm a brand — enquire
-                  </button>
-                </div>
-              </motion.div>
-
-              <p className="font-sans text-sm md:text-base text-[#47453f] max-w-2xl mx-auto leading-relaxed">
-                {routeForTab("catwalk").intro}
-              </p>
-            </main>
-
-            {/* Footer */}
-            <div className="z-10">
-              <SiteFooter
-                compact
-                footerText={settings.footerText}
-                onNavigate={(tab) => handleEnterExperience(tab)}
-                onBrandEnquiry={() => handleEnterExperience("directory", true)}
-              />
-            </div>
-          </motion.div>
-        ) : (
-          /* SECTION 2: THE INTERACTIVE 3D WORLD AND HUD OVERLAY */
+      {/* THE INTERACTIVE 3D WORLD AND HUD OVERLAY, with content pages on top */}
           <motion.div
             key="exposition-viewport"
             initial={{ opacity: 0 }}
@@ -527,7 +426,7 @@ export default function App() {
               tabIndex={activeTab === "catwalk" ? -1 : undefined}
             >
               {activeTab === "catwalk" && <h1 className="sr-only">{routeForTab("catwalk").heading}</h1>}
-              <Suspense fallback={null}>
+              {galleryMounted && <Suspense fallback={null}>
                 <ThreeGallery
                   paused={activeTab !== "catwalk"}
                   sections={sections}
@@ -536,7 +435,7 @@ export default function App() {
                   onSelectCreator={setSelectedCreator}
                   onSectionChange={setActiveSectionIndex}
                 />
-              </Suspense>
+              </Suspense>}
               <CursorParticleTrail active={activeTab === "catwalk"} color={readableAccent(settings.primaryColor)} />
             </div>
 
@@ -563,7 +462,7 @@ export default function App() {
                   onClick={(e) => {
                     if (e.metaKey || e.ctrlKey || e.shiftKey) return;
                     e.preventDefault();
-                    navigateTo("catwalk");
+                    navigateTo("home");
                     playCrystalChime();
                   }}
                   aria-label="FSIA Influencer — home"
@@ -574,7 +473,7 @@ export default function App() {
                       FSIA INFLUENCER
                     </p>
                     <p className="font-sans text-[10px] sm:text-[11px] tracking-[0.1em] text-[#47453f] uppercase font-bold leading-none whitespace-nowrap max-[399px]:hidden">
-                      Creators &amp; Influencer Portal
+                      Influencer Award Agency
                     </p>
                   </div>
                 </a>
@@ -628,15 +527,8 @@ export default function App() {
                 id="main-nav-tabs"
                 className="pointer-events-auto flex items-center overflow-x-auto scrollbar-none gap-0.5 xl:gap-1 bg-white/85 backdrop-blur-md px-1.5 py-1 rounded-xl border border-black/5 shadow-xs w-full xl:w-auto xl:flex-initial xl:min-w-0 max-w-full justify-start"
               >
-                {(["catwalk", "directory", "campaigns", "membership", "apply", "faq"] as const).map((tab) => {
+                {HEADER_TABS.map(({ id: tab, label }) => {
                   const isSelected = activeTab === tab;
-                  // Short labels so all six tabs fit on laptop screens without scrolling
-                  const label =
-                    tab === "catwalk" ? "Explore" :
-                    tab === "directory" ? "Talent" :
-                    tab === "campaigns" ? "Campaigns" :
-                    tab === "membership" ? "Membership" :
-                    tab === "apply" ? "Get Verified" : "FAQs";
                   return (
                     <a
                       key={tab}
@@ -939,6 +831,20 @@ export default function App() {
                       }}
                     />
                   )}
+                  {activeTab === "home" && (
+                    <HomeTab
+                      sections={sections}
+                      onNavigate={navigateTo}
+                      onSelectCreator={setSelectedCreator}
+                      onOpenGallerySection={openGallerySection}
+                      onBrandEnquiry={() => setIsCollaborationOpen(true)}
+                    />
+                  )}
+                  {activeTab === "starindia" && (
+                    <StarIndiaTab sections={sections} onNavigate={navigateTo} onSelectCreator={setSelectedCreator} />
+                  )}
+                  {activeTab === "greenlight" && <GreenLightTab coverCreator={sections[0]?.creators?.[0]} />}
+                  {activeTab === "contact" && <ContactTab />}
                   {activeTab === "campaigns" && <CampaignsTab />}
                   {activeTab === "membership" && <MembershipTab />}
                   {activeTab === "apply" && <ModelRegistrationTab />}
@@ -1028,8 +934,6 @@ export default function App() {
               })}
             </nav>
           </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

@@ -8,7 +8,18 @@ export const SITE_URL = "https://influencer.fsia.in";
 export const SITE_NAME = "FSIA Influencer";
 export const OG_IMAGE = `${SITE_URL}/og-image.png`;
 
-export type TabId = "catwalk" | "directory" | "campaigns" | "membership" | "apply" | "faq" | "admin";
+export type TabId =
+  | "home"
+  | "catwalk"
+  | "directory"
+  | "campaigns"
+  | "membership"
+  | "apply"
+  | "starindia"
+  | "greenlight"
+  | "faq"
+  | "contact"
+  | "admin";
 
 export interface RouteMeta {
   tab: TabId;
@@ -25,16 +36,29 @@ export interface RouteMeta {
 
 export const ROUTES: RouteMeta[] = [
   {
-    tab: "catwalk",
+    tab: "home",
     path: "/",
-    title: "FSIA Influencer – Verified Creators & Brand Deals in India",
+    title: "Best Indian Influencer Award Agency & Company | FSIA Influencer",
     description:
-      "Creator and influencer platform for India: get verified, apply for paid brand collaborations on Instagram and YouTube, or hire verified influencers.",
-    heading: "Verified Creators & Brand Collaborations in India",
+      "India's influencer award agency: apply for the FSIA influencer awards, get branding and marketing support, and connect with brands for paid deals.",
+    heading: "Best Indian Influencer Award Agency & Company",
     intro:
-      "FSIA Influencer is a creator and influencer platform for India. Instagram and YouTube creators register for free, get verified and apply for paid brand collaborations and barter campaigns. Brands use it to find and hire verified influencers by category and city, from fashion, beauty and pageants to travel, food, tech and gaming, and to run influencer marketing campaigns with creators across the country.",
+      "FSIA Influencer is an influencer award agency and company for India. Creators apply for awards in traditional and premium categories, become Star India members, receive branding and marketing support with a dedicated profile page, and connect with brands for paid business deals. Brands use FSIA to find and hire awarded, verified influencers by category and city.",
     indexable: true,
     priority: "1.0",
+    changefreq: "weekly"
+  },
+  {
+    tab: "catwalk",
+    path: "/gallery/",
+    title: "3D Awardee Gallery | FSIA Influencer",
+    description:
+      "Walk through the FSIA 3D gallery of award winners and verified creators from India, category by category, and open any profile.",
+    heading: "3D Gallery of Awardees and Verified Creators",
+    intro:
+      "An interactive 3D gallery of FSIA award winners and verified creators. Move between award categories with the arrows and open any creator to see their profile and work.",
+    indexable: true,
+    priority: "0.6",
     changefreq: "weekly"
   },
   {
@@ -90,6 +114,32 @@ export const ROUTES: RouteMeta[] = [
     changefreq: "monthly"
   },
   {
+    tab: "starindia",
+    path: "/star-india/",
+    title: "Star India Membership & Influencer Profiles | FSIA Influencer",
+    description:
+      "Star India is the FSIA membership for awarded creators: an Influencer ID profile page, awards on record, branding support and brand deal access.",
+    heading: "Star India Membership & Influencer Profiles",
+    intro:
+      "Star India manages membership and profiles for FSIA awardees and verified creators. Every member gets an Influencer ID profile with their awards, audience and work, plus endorsement representation, digital marketing support and introductions to brands.",
+    indexable: true,
+    priority: "0.8",
+    changefreq: "weekly"
+  },
+  {
+    tab: "greenlight",
+    path: "/green-light/",
+    title: "Green Light Blog & Explore Magazine Booking | FSIA Influencer",
+    description:
+      "Green Light is the FSIA blog and magazine desk: creator guides, award news and Explore Magazine features. Book a cover or feature for your profile.",
+    heading: "Green Light: Blog & Explore Magazine",
+    intro:
+      "Green Light handles the FSIA blog and Explore Magazine. Read guides for creators and brands, preview the current magazine cover, and book a cover story, feature or digital spotlight for yourself or your brand.",
+    indexable: true,
+    priority: "0.7",
+    changefreq: "weekly"
+  },
+  {
     tab: "faq",
     path: "/faq/",
     title: "Influencer FAQs: GST, ASCI & Payments | FSIA Influencer",
@@ -100,6 +150,19 @@ export const ROUTES: RouteMeta[] = [
       "Answers for creators and brands on influencer registration, verification, GST and payments, ASCI disclosure rules and how brand collaborations work.",
     indexable: true,
     priority: "0.6",
+    changefreq: "monthly"
+  },
+  {
+    tab: "contact",
+    path: "/contact/",
+    title: "Contact FSIA Influencer | Support & Enquiries",
+    description:
+      "Send a message to the FSIA Influencer support team about awards, membership, magazine bookings or brand deals. We reply by email.",
+    heading: "Contact Us",
+    intro:
+      "Questions about awards, Star India membership, magazine bookings or brand deals? Send us a message with the form below and our support team will reply by email.",
+    indexable: true,
+    priority: "0.5",
     changefreq: "monthly"
   },
   {

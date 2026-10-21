@@ -15,7 +15,8 @@ const GROUPS: { title: string; links: { label: string; tab?: TabId; action?: "en
   {
     title: "For Creators",
     links: [
-      { label: "Register & Get Verified", tab: "apply" },
+      { label: "Apply for an Award", tab: "apply" },
+      { label: "Star India Profiles", tab: "starindia" },
       { label: "Brand Campaigns", tab: "campaigns" },
       { label: "Membership Plans", tab: "membership" }
     ]
@@ -24,12 +25,17 @@ const GROUPS: { title: string; links: { label: string; tab?: TabId; action?: "en
     title: "For Brands",
     links: [
       { label: "Browse Talent", tab: "directory" },
+      { label: "3D Awardee Gallery", tab: "catwalk" },
       { label: "Send a Brand Enquiry", action: "enquiry" }
     ]
   },
   {
-    title: "Help",
-    links: [{ label: "FAQs", tab: "faq" }]
+    title: "Green Light & Help",
+    links: [
+      { label: "Blog & Magazine", tab: "greenlight" },
+      { label: "FAQs", tab: "faq" },
+      { label: "Contact", tab: "contact" }
+    ]
   }
 ];
 
@@ -93,7 +99,7 @@ export default function SiteFooter({ footerText, onNavigate, onBrandEnquiry, com
         <div className="space-y-3">
           <p className="font-serif-display text-2xl font-bold text-white">FSIA Influencer</p>
           <p className="text-sm leading-relaxed text-[#E4E0D8] max-w-xs">
-            The creator &amp; influencer portal for verified profiles, brand campaigns and collaborations.
+            The influencer award agency for India: awards, Star India profiles, brand deals and the Explore Magazine.
           </p>
           <a
             href="https://influencer.fsia.in/"

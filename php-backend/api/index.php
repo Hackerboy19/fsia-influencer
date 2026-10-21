@@ -679,20 +679,24 @@ try {
     }
 
     // ------------------------------------------------
-    // 6B. ENQUIRIES (campaign applications & membership plan requests)
+    // 6B. ENQUIRIES (campaign applications, membership plan requests, contact
+    // messages and magazine bookings). Same rules as server.ts.
     // ------------------------------------------------
     if ($is('POST', 'enquiries')) {
         $type = (string)($body['type'] ?? '');
-        if (!in_array($type, ['campaign', 'membership'], true)) {
+        if (!in_array($type, ['campaign', 'membership', 'contact', 'booking'], true)) {
             fail(400, 'Unknown enquiry type.');
         }
-        if (trim((string)($body['name'] ?? '')) === '' || trim((string)($body['email'] ?? '')) === '' || trim((string)($body['phone'] ?? '')) === '') {
-            fail(400, 'Name, email and phone are required.');
+        // The contact page is form-only (name, email, subject, message): no phone number asked
+        $phoneOptional = $type === 'contact';
+        $phone = trim((string)($body['phone'] ?? ''));
+        if (trim((string)($body['name'] ?? '')) === '' || trim((string)($body['email'] ?? '')) === '' || (!$phoneOptional && $phone === '')) {
+            fail(400, $phoneOptional ? 'Name and email are required.' : 'Name, email and phone are required.');
         }
         if (!valid_email(trim((string)$body['email']))) {
             fail(400, 'Please provide a valid email address.');
         }
-        if (!valid_phone($body['phone'])) {
+        if ((!$phoneOptional || $phone !== '') && !valid_phone($phone)) {
             fail(400, PHONE_ERROR);
         }
         enforce_submission_limit($db);
@@ -709,7 +713,7 @@ try {
             'refId' => str_cut(trim((string)($body['refId'] ?? '')), 100),
             'name' => str_cut(trim((string)$body['name']), 200),
             'email' => str_cut(trim((string)$body['email']), 200),
-            'phone' => str_cut(trim((string)$body['phone']), 50),
+            'phone' => str_cut($phone, 50),
             'details' => (object)$details,
             'status' => 'new',
             'timestamp' => gmdate('c'),

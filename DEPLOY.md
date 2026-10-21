@@ -92,7 +92,7 @@ Settings**, keep the default "nginx as proxy to Apache" so `.htaccess` is honour
 The bundle already contains everything Google needs: a title, description, canonical URL,
 Open Graph/Twitter tags and structured data (WebSite, Organization, FAQPage) on every page,
 plus `/robots.txt` and `/sitemap.xml`. Each section has its own URL:
-`/`, `/talent/`, `/campaigns/`, `/join/`, `/membership/`, `/faq/`.
+`/`, `/gallery/`, `/talent/`, `/campaigns/`, `/join/`, `/membership/`, `/star-india/`, `/green-light/`, `/faq/`, `/contact/`.
 
 1. **Add the property.** In [Search Console](https://search.google.com/search-console):
    - *Domain property* `fsia.in` covers every subdomain, but needs a DNS TXT record at your
@@ -137,7 +137,7 @@ Copy `api/config.sample.php` to `api/config.php` and edit it to:
 | Plesk "default page" or old site still shows | The files were extracted into the wrong folder or into a sub-folder; `index.html` must sit directly in the subdomain's document root. Clear the browser cache. |
 | Blank white page | Open the browser console: if `assets/…` files return 404, the `assets/` folder was not uploaded next to `index.html`. |
 | Admin login works but every action says "Unauthorized" | Your host strips the `Authorization` header; the app already sends a fallback header, so make sure the bundled `.htaccess` was uploaded. |
-| Section pages (`/talent/`, `/faq/` …) show "Page not found" | Their folders (`talent/`, `campaigns/`, `join/`, `membership/`, `faq/`, `admin/`) were not uploaded next to `index.html`. |
+| Section pages (`/talent/`, `/faq/` …) show "Page not found" | Their folders (`gallery/`, `talent/`, `campaigns/`, `join/`, `membership/`, `star-india/`, `green-light/`, `faq/`, `contact/`, `admin/`) were not uploaded next to `index.html`. |
 | A mistyped address shows "Page not found" | Intended: unknown URLs return a real 404 status (`404.html`) so search engines never index them as duplicates of the home page. |
 | A Plesk-branded "404 Not Found" page appears instead of the site's own | Harmless (the status is still 404). To show the site's page, untick *Custom error documents* in the subdomain's **Hosting Settings**. |
 | API calls return 404 / the admin panel cannot load data | `.htaccess` is missing or `mod_rewrite` is disabled (it routes `/api/…` to `api/index.php`). |

@@ -1129,9 +1129,12 @@ app.get("/api/admin/stats", authenticateAdmin, (req, res) => {
 });
 
 // ----------------------------------------------------
-// ENQUIRIES (campaign applications & membership plan requests)
+// ENQUIRIES (campaign applications, membership plan requests, contact messages
+// and magazine bookings)
 // ----------------------------------------------------
-const ENQUIRY_TYPES = ["campaign", "membership"];
+const ENQUIRY_TYPES = ["campaign", "membership", "contact", "booking"];
+// The contact page is form-only (name, email, subject, message): no phone number asked
+const PHONE_OPTIONAL_TYPES = ["contact"];
 const clip = (value: unknown, max: number) => String(value ?? "").trim().slice(0, max);
 
 app.post("/api/enquiries", limitSubmissions, (req, res) => {
@@ -1139,13 +1142,14 @@ app.post("/api/enquiries", limitSubmissions, (req, res) => {
   if (!ENQUIRY_TYPES.includes(body.type)) {
     return res.status(400).json({ error: "Unknown enquiry type." });
   }
-  if (!clip(body.name, 200) || !clip(body.email, 200) || !clip(body.phone, 50)) {
-    return res.status(400).json({ error: "Name, email and phone are required." });
+  const phoneOptional = PHONE_OPTIONAL_TYPES.includes(body.type);
+  if (!clip(body.name, 200) || !clip(body.email, 200) || (!phoneOptional && !clip(body.phone, 50))) {
+    return res.status(400).json({ error: phoneOptional ? "Name and email are required." : "Name, email and phone are required." });
   }
   if (!isValidEmail(clip(body.email, 200))) {
     return res.status(400).json({ error: "Please provide a valid email address." });
   }
-  if (!isValidPhone(clip(body.phone, 50))) {
+  if ((!phoneOptional || clip(body.phone, 50)) && !isValidPhone(clip(body.phone, 50))) {
     return res.status(400).json({ error: PHONE_ERROR });
   }
   const details: Record<string, string> = {};

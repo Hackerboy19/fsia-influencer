@@ -28,7 +28,7 @@ const prohibitedPattern = new RegExp(
   "i"
 );
 
-const PUBLIC_ROUTES = ["/", "/talent/", "/campaigns/", "/join/", "/membership/", "/faq/"];
+const PUBLIC_ROUTES = ["/", "/gallery/", "/talent/", "/campaigns/", "/join/", "/membership/", "/star-india/", "/green-light/", "/faq/", "/contact/"];
 const PRIVATE_ROUTES = ["/admin/"];
 const PUBLIC_APIS = ["/api/creators", "/api/campaigns", "/api/membership-plans", "/api/settings"];
 const VIEWPORTS = [
@@ -259,21 +259,15 @@ async function auditBrowser() {
     const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, reducedMotion: "reduce" });
     // Audit traffic must never reach the site's real Google Analytics property
     await context.route(/google-analytics\.com|googletagmanager\.com/, (route) => route.abort());
-    for (const path of [...PUBLIC_ROUTES, "/__entered__/"]) {
+    for (const path of PUBLIC_ROUTES) {
       const page = await context.newPage();
       const errors = [];
       page.on("pageerror", (e) => errors.push(e.message));
       page.on("console", (m) => m.type() === "error" && !/WebGL|GPU|favicon/i.test(m.text()) &&
         !/google-analytics\.com|googletagmanager\.com/.test(m.location()?.url || "") && errors.push(m.text()));
-      const target = path === "/__entered__/" ? "/" : path;
-      const label = `${vp.name} ${path === "/__entered__/" ? "/ (explore view)" : path}`;
-      await page.goto(BASE + target, { waitUntil: "networkidle" });
-      if (path === "/__entered__/") {
-        await page.click("#enter-exposition-btn");
-        await page.waitForTimeout(1800);
-      } else {
-        await page.waitForTimeout(900);
-      }
+      const label = `${vp.name} ${path}`;
+      await page.goto(BASE + path, { waitUntil: "networkidle" });
+      await page.waitForTimeout(path === "/gallery/" ? 1800 : 900);
       const broken = await page.evaluate(() =>
         Array.from(document.images).filter((img) => img.complete && img.naturalWidth === 0 && img.getAttribute("src")).map((img) => img.getAttribute("src").slice(0, 80))
       );
