@@ -875,6 +875,9 @@ export default function App() {
                   onClose={() => setSelectedCreator(null)}
                   onOpenCollaboration={() => setIsCollaborationOpen(true)}
                   moodboardItems={moodboardItems}
+                  awards={sections
+                    .filter((s: any) => (s.creators || []).some((c: Creator) => c?.name === selectedCreator.name))
+                    .map((s: any) => s.title)}
                 />
               )}
             </AnimatePresence>
