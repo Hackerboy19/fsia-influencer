@@ -21,6 +21,7 @@ import {
 import type { Creator } from "../data";
 import { ROUTES, TabId } from "../seo";
 import { TRADITIONAL_AWARDS, PREMIUM_AWARDS, VALUE_FLOW, AwardCategory, influencerId, parseReach, formatReach } from "../content/awards";
+import ProfileCard from "./ProfileCard";
 import TabLink from "./TabLink";
 
 interface Section {
@@ -642,6 +643,7 @@ function ValueFlow({
 export default function HomeTab({ sections, onNavigate, onSelectCreator, onOpenGallerySection, onBrandEnquiry }: HomeTabProps) {
   const creators = useMemo(() => sections.flatMap((s) => s.creators || []).filter((c) => c && c.name), [sections]);
   const featured = creators.slice(0, 4);
+  const awardOf = (c: Creator) => sections.find((s) => (s.creators || []).includes(c))?.title;
   // The creator with the largest audience leads the "branding support" step
   const spotlight = useMemo(
     () => creators.reduce<Creator | undefined>((best, c) => (!best || parseReach(c.stats?.reach) > parseReach(best.stats?.reach) ? c : best), undefined),
@@ -696,28 +698,7 @@ export default function HomeTab({ sections, onNavigate, onSelectCreator, onOpenG
           <ul className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
             {featured.map((c, i) => (
               <Reveal as="li" key={c.name} delay={i * 0.08}>
-                <button
-                  type="button"
-                  onClick={() => onSelectCreator(c)}
-                  aria-label={`View ${c.name}`}
-                  className="group w-full text-left bg-white border border-black/10 rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer"
-                >
-                  <span className="relative block overflow-hidden">
-                    <Avatar creator={c} className="w-full aspect-[4/5] transition-transform duration-700 group-hover:scale-105" />
-                    <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent" />
-                    <span aria-hidden="true" className="absolute top-3 right-3 w-9 h-9 rounded-full bg-gradient-to-b from-[#f3dca6] to-[#b8893b] shadow-lg flex items-center justify-center">
-                      <Trophy className="w-4 h-4 text-[#3b2a0c]" />
-                    </span>
-                    {c.stats?.reach && (
-                      <span className="absolute left-3 bottom-3 text-white text-sm font-bold drop-shadow">{String(c.stats.reach)} followers</span>
-                    )}
-                  </span>
-                  <span className="block p-4 space-y-1">
-                    <span className="block font-serif-display text-base md:text-lg font-bold text-[#111] truncate">{c.name}</span>
-                    <span className="block text-[13px] text-[#47453f] line-clamp-2">{c.role}</span>
-                    <span className="inline-block font-mono text-[12px] text-[#2e2c29] bg-[#F3F3F1] px-2 py-0.5 rounded mt-1">{influencerId(c.name)}</span>
-                  </span>
-                </button>
+                <ProfileCard creator={c} award={awardOf(c)} onOpen={() => onSelectCreator(c)} compact />
               </Reveal>
             ))}
           </ul>

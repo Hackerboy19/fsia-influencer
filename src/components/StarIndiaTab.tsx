@@ -4,6 +4,7 @@ import type { Creator } from "../data";
 import { routeForTab, TabId } from "../seo";
 import { influencerId, parseReach } from "../content/awards";
 import TabLink from "./TabLink";
+import ProfileCard from "./ProfileCard";
 
 interface Section {
   id: string;
@@ -170,37 +171,10 @@ export default function StarIndiaTab({
         </div>
 
         {shown.length ? (
-          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {shown.map(({ creator, award }) => (
               <li key={`${creator.name}-${award}`}>
-                <button
-                  type="button"
-                  onClick={() => onSelectCreator(creator)}
-                  aria-label={`View ${creator.name}`}
-                  className="group w-full h-full text-left bg-white border border-black/10 rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col"
-                >
-                  <span className="block h-16 bg-gradient-to-r from-[#1f5a3d] via-[#16233f] to-[#1e2a4a]" aria-hidden="true" />
-                  <span className="flex flex-col items-center text-center px-5 pb-5 -mt-12 gap-2 flex-1">
-                    <Photo creator={creator} />
-                    <span className="inline-flex items-center gap-1 font-serif-display text-lg font-bold text-[#111]">
-                      {creator.name}
-                      {creator.stats?.verified && <BadgeCheck className="w-4 h-4 text-[#1f5a3d]" aria-label="Verified" />}
-                    </span>
-                    <span className="font-mono text-[12px] text-[#2e2c29] bg-[#F3F3F1] px-2 py-0.5 rounded">Influencer ID {influencerId(creator.name)}</span>
-                    <span className="text-[13px] text-[#47453f] line-clamp-2">{creator.role}</span>
-                    <span className="grid grid-cols-2 w-full border-t border-black/10 pt-3 mt-auto">
-                      <span>
-                        <span className="block font-bold text-[#111]">{creator.stats?.reach || "—"}</span>
-                        <span className="block text-[12px] text-[#47453f]">Reach</span>
-                      </span>
-                      <span>
-                        <span className="block font-bold text-[#111]">{creator.stats?.engagement || "—"}</span>
-                        <span className="block text-[12px] text-[#47453f]">Engagement</span>
-                      </span>
-                    </span>
-                    <Laurel>{award}</Laurel>
-                  </span>
-                </button>
+                <ProfileCard creator={creator} award={award} onOpen={() => onSelectCreator(creator)} />
               </li>
             ))}
           </ul>
