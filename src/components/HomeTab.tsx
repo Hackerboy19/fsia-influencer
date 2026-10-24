@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import type { Creator } from "../data";
 import { ROUTES, TabId } from "../seo";
-import { TRADITIONAL_AWARDS, PREMIUM_AWARDS, VALUE_FLOW, AwardCategory, influencerId, parseReach, formatReach } from "../content/awards";
+import { AWARD, AWARD_NAME, AWARD_PERKS, ELIGIBLE_NICHES, VALUE_FLOW, influencerId, parseReach, formatReach } from "../content/awards";
 import ProfileCard from "./ProfileCard";
 import TabLink from "./TabLink";
 
@@ -40,9 +40,9 @@ interface HomeTabProps {
 
 const SLIDES: { eyebrow: string; text: string; cta: string; tab: TabId }[] = [
   {
-    eyebrow: "Influencer Awards",
-    text: "Apply for India's influencer awards in traditional and premium categories, judged by the FSIA team.",
-    cta: "Apply for an award",
+    eyebrow: AWARD_NAME,
+    text: "Apply for the Forever Influencer Award, India's award for influencers in every niche.",
+    cta: "Apply for the award",
     tab: "apply"
   },
   {
@@ -206,7 +206,7 @@ function HeroSlider({ creators, onNavigate }: { creators: Creator[]; onNavigate:
         <Sparkle className="bottom-10 left-[22%] text-xs" delay={1.6} />
         <Sparkle className="bottom-14 right-[26%] text-base" delay={2.2} />
         <p className="relative inline-flex items-center gap-2 text-xs font-bold tracking-[0.3em] uppercase text-champagne">
-          <Sparkles className="w-4 h-4" aria-hidden="true" /> FSIA Influencer
+          <Sparkles className="w-4 h-4" aria-hidden="true" /> Forever Influencer
         </p>
         <h1 className="relative font-serif-display text-[2rem] leading-[1.12] sm:text-5xl lg:text-6xl font-bold tracking-tight text-white mt-3 max-w-4xl mx-auto">
           <span className="fsia-gold-text">Best Indian Influencer</span>
@@ -299,7 +299,7 @@ function StatsStrip({ creators, sections }: { creators: Creator[]; sections: Sec
   const reach = creators.reduce((sum, c) => sum + parseReach(c.stats?.reach), 0);
   const cities = new Set(creators.map((c) => (c.city || "").trim()).filter(Boolean)).size;
   const stats = [
-    { value: String(TRADITIONAL_AWARDS.length + PREMIUM_AWARDS.length), label: "Award categories" },
+    { value: String(ELIGIBLE_NICHES.length), label: "Niches that can apply" },
     { value: String(creators.length), label: "Star India profiles" },
     { value: reach ? `${formatReach(reach)}+` : "—", label: "Combined audience" },
     { value: String(cities || sections.length), label: cities ? "Cities represented" : "Gallery categories" }
@@ -317,7 +317,7 @@ function StatsStrip({ creators, sections }: { creators: Creator[]; sections: Sec
 }
 
 // ----------------------------------------------------
-// Search: creators, award categories and pages
+// Search: creators, the award and pages
 // ----------------------------------------------------
 type Result =
   | { kind: "creator"; label: string; detail: string; creator: Creator }
@@ -349,9 +349,7 @@ function HomeSearch({
     sections.forEach((section, i) => {
       if (has(section.title)) out.push({ kind: "gallery", label: section.title, detail: "Awardee category in the 3D gallery", sectionIndex: i });
     });
-    [...TRADITIONAL_AWARDS, ...PREMIUM_AWARDS].forEach((a) => {
-      if (has(a.title, a.blurb, a.creatorCategory)) out.push({ kind: "award", label: a.title, detail: "Award category · apply now" });
-    });
+    if (has(AWARD.name, AWARD.tagline, "award", ...ELIGIBLE_NICHES)) out.push({ kind: "award", label: AWARD.name, detail: "The award · apply now" });
     ROUTES.filter((r) => r.indexable && r.tab !== "home").forEach((r) => {
       if (has(r.heading, r.description)) out.push({ kind: "page", label: r.heading, detail: "Page", tab: r.tab });
     });
@@ -450,67 +448,62 @@ function HomeSearch({
 }
 
 // ----------------------------------------------------
-// Award category grids
+// The award (one category: the Forever Influencer Award)
 // ----------------------------------------------------
-function AwardGrid({
-  id,
-  title,
-  text,
-  awards,
-  premium,
-  onNavigate
-}: {
-  id: string;
-  title: string;
-  text: string;
-  awards: AwardCategory[];
-  premium?: boolean;
-  onNavigate: (tab: TabId) => void;
-}) {
-  const Icon = premium ? Crown : Award;
+function AwardSpotlight({ onNavigate }: { onNavigate: (tab: TabId) => void }) {
   return (
-    <section aria-labelledby={id} className="space-y-5">
-      <Reveal className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
-        <div>
-          <p className="text-xs font-bold tracking-[0.3em] uppercase text-champagne">{premium ? "Premium" : "Traditional"}</p>
-          <h2 id={id} className="font-serif-display text-3xl md:text-4xl font-bold text-[#111] mt-1">{title}</h2>
-          <p className="text-[15px] text-[#2e2c29] mt-1">{text}</p>
+    <section aria-labelledby="the-award">
+      <Reveal className="surface-dark relative overflow-hidden rounded-[28px] p-[1.5px] bg-gradient-to-br from-[#f3dca6] via-[#9c7a3c] to-[#f3dca6] shadow-[0_30px_60px_-30px_rgba(17,17,17,0.6)]">
+        <div className="relative overflow-hidden rounded-[26.5px] bg-gradient-to-br from-[#141b2e] via-[#0d1324] to-[#0a0f1c] text-white p-6 md:p-12 grid md:grid-cols-[1fr_1.25fr] gap-10 items-center">
+          <span aria-hidden="true" className="absolute -top-32 -left-24 w-96 h-96 rounded-full bg-[radial-gradient(circle,rgba(243,220,166,0.22),transparent_70%)]" />
+          <span aria-hidden="true" className="absolute top-6 right-10 text-[#E1C699] text-lg fsia-twinkle">✦</span>
+          <span aria-hidden="true" className="absolute bottom-10 left-1/2 text-[#E1C699] text-sm fsia-twinkle" style={{ animationDelay: "1.2s" }}>✦</span>
+
+          {/* Trophy emblem */}
+          <div className="relative flex flex-col items-center text-center gap-4">
+            <span aria-hidden="true" className="relative w-40 h-40 md:w-52 md:h-52 rounded-full p-[3px] bg-gradient-to-b from-[#f3dca6] to-[#8a6a2f] shadow-[0_0_80px_-10px_rgba(243,220,166,0.55)]">
+              <span className="w-full h-full rounded-full bg-gradient-to-b from-[#1b2440] to-[#0a0f1c] flex items-center justify-center">
+                <Trophy className="w-20 h-20 md:w-24 md:h-24 text-[#F3DCA6]" strokeWidth={1.25} />
+              </span>
+            </span>
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#E1C699]/50 px-4 py-1.5 text-[12px] font-bold uppercase tracking-[0.22em] text-[#F3DCA6]">
+              One award · every niche
+            </span>
+          </div>
+
+          <div className="relative space-y-5">
+            <p className="text-xs font-bold tracking-[0.3em] uppercase text-champagne">The award</p>
+            <h2 id="the-award" className="font-serif-display text-4xl md:text-5xl font-bold leading-[1.05]">
+              <span className="fsia-gold-text">{AWARD.name}</span>
+            </h2>
+            <p className="font-serif-text text-lg text-[#e9e6df] leading-relaxed">{AWARD.text}</p>
+            <ul className="grid sm:grid-cols-3 gap-3">
+              {AWARD_PERKS.map((p) => (
+                <li key={p.title} className="rounded-2xl border border-[#E1C699]/25 bg-white/[0.04] p-4">
+                  <span className="block font-semibold text-white text-[15px]">{p.title}</span>
+                  <span className="block text-[13px] text-[#e9e6df] mt-1 leading-relaxed">{p.text}</span>
+                </li>
+              ))}
+            </ul>
+            <div>
+              <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#c9c4b8] mb-2">Open to creators in</p>
+              <ul className="flex flex-wrap gap-2">
+                {ELIGIBLE_NICHES.map((n) => (
+                  <li key={n} className="rounded-full bg-white/[0.07] border border-white/10 px-3 py-1 text-[13px] text-[#f1ede4]">{n}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 pt-1">
+              <TabLink tab="apply" onNavigate={onNavigate} className={`${linkButton} bg-gradient-to-r from-[#f3dca6] to-[#d4b06a] hover:brightness-105 text-[#111]`}>
+                Apply for the award <ChevronRight className="w-4 h-4" aria-hidden="true" />
+              </TabLink>
+              <TabLink tab="starindia" onNavigate={onNavigate} className={`${linkButton} border border-white/40 hover:bg-white/10 text-white`}>
+                See award winners
+              </TabLink>
+            </div>
+          </div>
         </div>
-        <TabLink tab="apply" onNavigate={onNavigate} className="text-sm font-semibold text-[#111] underline underline-offset-4 hover:no-underline shrink-0">
-          Apply now
-        </TabLink>
       </Reveal>
-      <ul className={`grid gap-4 ${premium ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"}`}>
-        {awards.map((a, i) => (
-          <Reveal as="li" key={a.id} delay={Math.min(i, 7) * 0.05}>
-            <TabLink
-              tab="apply"
-              onNavigate={onNavigate}
-              aria-label={`${a.title}: apply`}
-              className={`group relative h-full flex flex-col gap-3 p-5 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl overflow-hidden ${
-                premium ? "surface-dark fsia-gold-border text-white" : "bg-white border border-black/10 hover:border-[#b8893b]/60"
-              }`}
-            >
-              {premium && (
-                <span aria-hidden="true" className="absolute -top-16 -right-16 w-40 h-40 rounded-full bg-[radial-gradient(circle,rgba(243,220,166,0.25),transparent_70%)] transition-transform duration-500 group-hover:scale-125" />
-              )}
-              <span
-                className={`relative w-11 h-11 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:rotate-[-8deg] group-hover:scale-110 ${
-                  premium ? "bg-gradient-to-b from-[#f3dca6] to-[#b8893b] text-[#3b2a0c]" : "bg-[#F6EFE3] text-[#111]"
-                }`}
-                aria-hidden="true"
-              >
-                <Icon className="w-5 h-5" />
-              </span>
-              <span className={`font-serif-display text-lg font-bold leading-snug ${premium ? "text-white" : "text-[#111]"}`}>{a.title}</span>
-              <span className={`text-sm leading-relaxed ${premium ? "text-[#e9e6df]" : "text-[#2e2c29]"}`}>{a.blurb}</span>
-              <span className={`mt-auto text-sm font-semibold inline-flex items-center gap-1 ${premium ? "text-champagne" : "text-[#111]"}`}>
-                Apply <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-              </span>
-            </TabLink>
-          </Reveal>
-        ))}
-      </ul>
     </section>
   );
 }
@@ -643,7 +636,7 @@ function ValueFlow({
 export default function HomeTab({ sections, onNavigate, onSelectCreator, onOpenGallerySection, onBrandEnquiry }: HomeTabProps) {
   const creators = useMemo(() => sections.flatMap((s) => s.creators || []).filter((c) => c && c.name), [sections]);
   const featured = creators.slice(0, 4);
-  const awardOf = (c: Creator) => sections.find((s) => (s.creators || []).includes(c))?.title;
+  
   // The creator with the largest audience leads the "branding support" step
   const spotlight = useMemo(
     () => creators.reduce<Creator | undefined>((best, c) => (!best || parseReach(c.stats?.reach) > parseReach(best.stats?.reach) ? c : best), undefined),
@@ -660,21 +653,7 @@ export default function HomeTab({ sections, onNavigate, onSelectCreator, onOpenG
         </Reveal>
       </div>
 
-      <AwardGrid
-        id="traditional-awards"
-        title="Traditional award categories"
-        text="Awards for the best creators in each niche."
-        awards={TRADITIONAL_AWARDS}
-        onNavigate={onNavigate}
-      />
-      <AwardGrid
-        id="premium-awards"
-        title="Premium award categories"
-        text="Top honours judged across every niche."
-        awards={PREMIUM_AWARDS}
-        premium
-        onNavigate={onNavigate}
-      />
+      <AwardSpotlight onNavigate={onNavigate} />
 
       <ValueFlow spotlight={spotlight} onNavigate={onNavigate} onBrandEnquiry={onBrandEnquiry} />
 
@@ -698,7 +677,7 @@ export default function HomeTab({ sections, onNavigate, onSelectCreator, onOpenG
           <ul className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
             {featured.map((c, i) => (
               <Reveal as="li" key={c.name} delay={i * 0.08}>
-                <ProfileCard creator={c} award={awardOf(c)} onOpen={() => onSelectCreator(c)} compact />
+                <ProfileCard creator={c} award={AWARD_NAME} onOpen={() => onSelectCreator(c)} compact />
               </Reveal>
             ))}
           </ul>

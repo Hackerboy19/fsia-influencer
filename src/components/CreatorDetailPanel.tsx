@@ -321,7 +321,7 @@ export default function CreatorDetailPanel({
           </div>
 
           <p className="mt-12 text-xs font-serif-text italic text-[#E1C699] tracking-widest uppercase">
-            FSIA Influencer Creator Profile • Click anywhere or press Esc to close
+            Forever Influencer Creator Profile • Click anywhere or press Esc to close
           </p>
         </div>
         </Portal>

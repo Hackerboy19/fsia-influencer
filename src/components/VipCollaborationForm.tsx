@@ -192,7 +192,7 @@ export default function VipCollaborationForm({
                       <ShieldCheck className="w-4 h-4" aria-hidden="true" />
                       Secure escrow protocol &amp; VIP triage
                     </div>
-                    By submitting this charter to the FSIA Influencer brand desk, your brand requirements enter the elite curation pipeline. Our team will contact you within 4 business hours.
+                    By submitting this charter to the Forever Influencer brand desk, your brand requirements enter the elite curation pipeline. Our team will contact you within 4 business hours.
                   </div>
                   <p className="text-[13px] text-[#47453f]">Fields marked * are required.</p>
 

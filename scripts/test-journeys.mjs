@@ -79,9 +79,10 @@ for (const vp of [
   await page.goto(BASE + "/", { waitUntil: "networkidle" });
   check(`${vp.name}: home page shows the award agency heading`, /influencer\s+award agency/i.test(await h1(page)));
   check(`${vp.name}: home page shows the header tabs`, (await page.locator("#main-nav-tabs").count()) === 1);
-  await page.fill("#home-search", "best fashion");
-  check(`${vp.name}: home search finds award categories`,
-    (await page.locator("#home-search-results button", { hasText: "Best Fashion Influencer" }).count()) === 1);
+  check(`${vp.name}: home page shows the one award`, (await page.locator("#the-award").innerText()).includes("Forever Influencer Award"));
+  await page.fill("#home-search", "forever");
+  check(`${vp.name}: home search finds the award`,
+    (await page.locator("#home-search-results button", { hasText: "Forever Influencer Award" }).count()) === 1);
   await page.fill("#home-search", "");
   await page.locator('a', { hasText: /^Walk the 3D gallery$/ }).click();
   await page.waitForTimeout(1500);
@@ -118,7 +119,7 @@ for (const vp of [
   await page.waitForTimeout(700);
   check(`${vp.name}: browser Back returns to the previous section`, new URL(page.url()).pathname === "/join/");
 
-  await page.locator('a[aria-label="FSIA Influencer — home"]').click();
+  await page.locator('a[aria-label="Forever Influencer — home"]').click();
   await page.waitForTimeout(900);
   check(`${vp.name}: logo returns to the home page`, new URL(page.url()).pathname === "/");
 

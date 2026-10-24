@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Award, BadgeCheck, Handshake, Megaphone, UserRound, IdCard, Trophy } from "lucide-react";
 import type { Creator } from "../data";
 import { routeForTab, TabId } from "../seo";
-import { influencerId, parseReach } from "../content/awards";
+import { AWARD_NAME, influencerId, parseReach } from "../content/awards";
 import TabLink from "./TabLink";
 import ProfileCard from "./ProfileCard";
 
@@ -16,7 +16,7 @@ const BENEFITS = [
   { icon: IdCard, title: "Influencer ID profile", text: "A dedicated profile page with your awards, audience and work." },
   { icon: Megaphone, title: "Branding & marketing", text: "Endorsement representation and digital marketing support." },
   { icon: Handshake, title: "Brand introductions", text: "Direct introductions when a brand brief fits your category." },
-  { icon: Award, title: "Awards on record", text: "Your FSIA awards shown on your profile for brands to see." }
+  { icon: Award, title: "Award on record", text: "Your Forever Influencer Award shown on your profile for brands to see." }
 ];
 
 const Photo: React.FC<{ creator: Creator; size?: string }> = ({ creator, size = "w-24 h-24" }) => {
@@ -93,16 +93,16 @@ export default function StarIndiaTab({
   onSelectCreator: (creator: Creator) => void;
 }) {
   const route = routeForTab("starindia");
-  const [filter, setFilter] = useState("all");
-  const members = useMemo(
-    () =>
-      sections.flatMap((s) =>
-        (s.creators || []).filter((c) => c && c.name).map((c) => ({ creator: c, sectionId: s.id, award: s.title }))
-      ),
-    [sections]
-  );
-  const shown = filter === "all" ? members : members.filter((m) => m.sectionId === filter);
-  const awardsOf = (name: string) => members.filter((m) => m.creator.name === name).map((m) => m.award);
+  // One award exists, so each member appears once with the Forever Influencer Award
+  const members = useMemo(() => {
+    const seen = new Set<string>();
+    return sections
+      .flatMap((s) => (s.creators || []).filter((c) => c && c.name))
+      .filter((c) => (seen.has(c.name) ? false : (seen.add(c.name), true)))
+      .map((c) => ({ creator: c, award: AWARD_NAME }));
+  }, [sections]);
+  const shown = members;
+  const awardsOf = (_name: string) => [AWARD_NAME];
   const spotlight = members.reduce<(typeof members)[number] | undefined>(
     (best, m) => (!best || parseReach(m.creator.stats?.reach) > parseReach(best.creator.stats?.reach) ? m : best),
     undefined
@@ -151,22 +151,7 @@ export default function StarIndiaTab({
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h2 id="member-profiles" className="font-serif-display text-2xl md:text-3xl font-bold text-[#111]">Influencer ID profiles</h2>
-            <p className="text-[15px] text-[#2e2c29] mt-1">Awardees and verified members. Open a card to see the full profile.</p>
-          </div>
-          <div className="flex gap-2 overflow-x-auto scrollbar-none" role="group" aria-label="Filter by award category">
-            {[{ id: "all", title: "All" }, ...sections].map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => setFilter(s.id)}
-                aria-pressed={filter === s.id}
-                className={`shrink-0 px-4 py-2 rounded-full text-[13px] font-semibold border cursor-pointer ${
-                  filter === s.id ? "bg-[#111] border-[#111] text-white" : "bg-white border-black/15 text-[#2e2c29] hover:bg-[#F3F3F1]"
-                }`}
-              >
-                {s.title}
-              </button>
-            ))}
+            <p className="text-[15px] text-[#2e2c29] mt-1">Forever Influencer Award winners and verified members. Open a card to see the full profile.</p>
           </div>
         </div>
 
@@ -179,7 +164,7 @@ export default function StarIndiaTab({
             ))}
           </ul>
         ) : (
-          <p className="text-[15px] text-[#2e2c29]">No members in this category yet.</p>
+          <p className="text-[15px] text-[#2e2c29]">No members yet.</p>
         )}
       </section>
     </div>

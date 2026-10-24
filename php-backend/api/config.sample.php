@@ -1,6 +1,6 @@
 <?php
 /**
- * FSIA Influencer — PHP backend configuration.
+ * Forever Influencer — PHP backend configuration.
  *
  * Copy this file to config.php (same folder) and adjust. Every value is
  * optional; config.php is never overwritten by a redeploy.

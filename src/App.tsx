@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { gallerySections, Creator } from "./data";
 import CreatorDetailPanel from "./components/CreatorDetailPanel";
+import { AWARD_NAME } from "./content/awards";
 import VipCollaborationForm from "./components/VipCollaborationForm";
 import MoodboardModal from "./components/MoodboardModal";
 import DirectoryTab from "./components/DirectoryTab";
@@ -86,11 +87,11 @@ export default function App() {
 
   // Enterprise Dynamic Configuration Settings State
   const [settings, setSettings] = useState<any>({
-    websiteTitle: "FSIA Creators & Influencer Portal",
-    heroTitle: "FSIA INFLUENCER",
+    websiteTitle: "Forever Influencer Portal",
+    heroTitle: "FOREVER INFLUENCER",
     heroSubtitle: "Connect with verified creators, launch brand campaigns and grow your influence.",
     ctaText: "EXPLORE THE PORTAL",
-    footerText: "© 2026 FSIA Influencer. All rights reserved.",
+    footerText: "© 2026 Forever Influencer. All rights reserved.",
     logoUrl: "",
     primaryColor: "#E1C699",
     secondaryColor: "#111111"
@@ -465,12 +466,12 @@ export default function App() {
                     navigateTo("home");
                     playCrystalChime();
                   }}
-                  aria-label="FSIA Influencer — home"
+                  aria-label="Forever Influencer — home"
                   className="flex items-center gap-1.5 sm:gap-2.5 bg-white/85 backdrop-blur-md px-2.5 py-1.5 sm:px-5 sm:py-3 rounded-xl border border-black/10 shadow-sm cursor-pointer hover:border-black/25 transition-all select-none"
                 >
                   <div className="space-y-0.5">
                     <p className="font-serif-display text-[12px] sm:text-sm md:text-base lg:text-lg font-bold tracking-tight text-[#111] leading-none whitespace-nowrap">
-                      FSIA INFLUENCER
+                      FOREVER INFLUENCER
                     </p>
                     <p className="font-sans text-[10px] sm:text-[11px] tracking-[0.1em] text-[#47453f] uppercase font-bold leading-none whitespace-nowrap max-[399px]:hidden">
                       Influencer Award Agency
@@ -875,9 +876,7 @@ export default function App() {
                   onClose={() => setSelectedCreator(null)}
                   onOpenCollaboration={() => setIsCollaborationOpen(true)}
                   moodboardItems={moodboardItems}
-                  awards={sections
-                    .filter((s: any) => (s.creators || []).some((c: Creator) => c?.name === selectedCreator.name))
-                    .map((s: any) => s.title)}
+                  awards={sections.some((s: any) => (s.creators || []).some((c: Creator) => c?.name === selectedCreator.name)) ? [AWARD_NAME] : []}
                 />
               )}
             </AnimatePresence>

@@ -12,7 +12,7 @@ export const FAQS: FAQItem[] = [
     category: "General"
   },
   {
-    question: "What is the FSIA Influencer Platform?",
+    question: "What is the Forever Influencer Platform?",
     answer: "FSIA is India's leading elite networking platform bridging verified Brand Campaign victors, national awards laureates, social impact champions, and top-tier digital authorities with premier luxury brand houses. We run structured physical catwalks, editorial magazines, and secure collaboration escrow models.",
     category: "General"
   },

@@ -1,6 +1,6 @@
 <?php
 /**
- * FSIA Influencer Platform — PHP API router.
+ * Forever Influencer Platform — PHP API router.
  *
  * Drop-in replacement for the Node/Express API in server.ts for shared hosting
  * (cPanel, Hostinger, LiteSpeed…). Data is stored in storage/db.json.
@@ -838,7 +838,7 @@ try {
             "3. INTEGRATED OUTREACH STRATEGY (Specifically designed to showcase high engagement metrics)";
         $payload = [
             'contents' => [['parts' => [['text' => $userPrompt]]]],
-            'systemInstruction' => ['parts' => [['text' => ($settings['aiSystemPrompt'] ?? '') ?: 'You are an elite luxury media strategist for FSIA Influencer. Format the output in clean markdown under 280 words.']]],
+            'systemInstruction' => ['parts' => [['text' => ($settings['aiSystemPrompt'] ?? '') ?: 'You are an elite luxury media strategist for Forever Influencer. Format the output in clean markdown under 280 words.']]],
             'generationConfig' => ['temperature' => (float)($settings['temperature'] ?? 0.7)],
         ];
 

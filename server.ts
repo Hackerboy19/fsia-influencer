@@ -1008,7 +1008,7 @@ app.post("/api/gemini/optimize", authenticateAdmin, async (req, res) => {
 
   const modelName = settings.modelSelection || "gemini-3.5-flash";
   const systemInstruction = settings.aiSystemPrompt || `
-    You are an elite, world-class haute couture brand director and luxury media strategist for FSIA Influencer.
+    You are an elite, world-class haute couture brand director and luxury media strategist for Forever Influencer.
     Your job is to optimize a creator's rough pitch/concept for a luxury brand sponsorship campaign into a majestic, highly professional premium proposal.
     Format the output beautifully in clean markdown. Keep it under 280 words.
   `;

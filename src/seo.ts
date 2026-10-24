@@ -5,7 +5,7 @@
 import { FAQS } from "./content/faqs";
 
 export const SITE_URL = "https://influencer.fsia.in";
-export const SITE_NAME = "FSIA Influencer";
+export const SITE_NAME = "Forever Influencer";
 export const OG_IMAGE = `${SITE_URL}/og-image.png`;
 
 export type TabId =
@@ -38,12 +38,12 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "home",
     path: "/",
-    title: "Best Indian Influencer Award Agency & Company | FSIA Influencer",
+    title: "Indian Influencer Award Agency & Company | Forever Influencer",
     description:
-      "India's influencer award agency: apply for the FSIA influencer awards, get branding and marketing support, and connect with brands for paid deals.",
+      "India's influencer award agency: apply for the Forever Influencer Award, get branding and marketing support, and connect with brands for paid deals.",
     heading: "Best Indian Influencer Award Agency & Company",
     intro:
-      "FSIA Influencer is an influencer award agency and company for India. Creators apply for awards in traditional and premium categories, become Star India members, receive branding and marketing support with a dedicated profile page, and connect with brands for paid business deals. Brands use FSIA to find and hire awarded, verified influencers by category and city.",
+      "Forever Influencer is an influencer award agency and company for India. Creators in every niche apply for one award, the Forever Influencer Award, become Star India members, receive branding and marketing support with a dedicated profile page, and connect with brands for paid business deals. Brands use FSIA to find and hire awarded, verified influencers by category and city.",
     indexable: true,
     priority: "1.0",
     changefreq: "weekly"
@@ -51,12 +51,12 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "catwalk",
     path: "/gallery/",
-    title: "3D Awardee Gallery | FSIA Influencer",
+    title: "3D Awardee Gallery | Forever Influencer",
     description:
-      "Walk through the FSIA 3D gallery of award winners and verified creators from India, category by category, and open any profile.",
+      "Walk through the FSIA 3D gallery of award winners and verified creators from India, section by section, and open any profile.",
     heading: "3D Gallery of Awardees and Verified Creators",
     intro:
-      "An interactive 3D gallery of FSIA award winners and verified creators. Move between award categories with the arrows and open any creator to see their profile and work.",
+      "An interactive 3D gallery of FSIA award winners and verified creators. Move between gallery sections with the arrows and open any creator to see their profile and work.",
     indexable: true,
     priority: "0.6",
     changefreq: "weekly"
@@ -64,7 +64,7 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "directory",
     path: "/talent/",
-    title: "Hire Verified Influencers in India | FSIA Influencer",
+    title: "Hire Verified Influencers in India | Forever Influencer",
     description:
       "Find and hire verified Indian influencers and creators by category, city, reach and engagement, then send a brand collaboration request in minutes.",
     heading: "Find and Hire Verified Influencers in India",
@@ -77,7 +77,7 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "campaigns",
     path: "/campaigns/",
-    title: "Paid Brand Collaborations for Influencers | FSIA Influencer",
+    title: "Paid Brand Collaborations for Influencers | Forever Influencer",
     description:
       "Apply for paid brand collaborations and barter campaigns for Instagram and YouTube creators in India, across fashion, beauty, travel, lifestyle and tech.",
     heading: "Paid Brand Campaigns for Influencers",
@@ -90,7 +90,7 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "apply",
     path: "/join/",
-    title: "Influencer Registration in India | FSIA Influencer",
+    title: "Influencer Registration in India | Forever Influencer",
     description:
       "Register as an influencer in India in three quick steps. Get verified and unlock paid brand collaborations, campaign invitations and PR opportunities.",
     heading: "Register as an Influencer and Get Verified",
@@ -103,7 +103,7 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "membership",
     path: "/membership/",
-    title: "Creator Membership Plans & Pricing | FSIA Influencer",
+    title: "Creator Membership Plans & Pricing | Forever Influencer",
     description:
       "Compare free and premium creator membership plans: verification badges, priority brand matching, portfolio shoots and dedicated talent management.",
     heading: "Creator Membership Plans",
@@ -116,12 +116,12 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "starindia",
     path: "/star-india/",
-    title: "Star India Membership & Influencer Profiles | FSIA Influencer",
+    title: "Star India Membership & Influencer Profiles | Forever Influencer",
     description:
-      "Star India is the FSIA membership for awarded creators: an Influencer ID profile page, awards on record, branding support and brand deal access.",
+      "Star India is the FSIA membership for awarded creators: an Influencer ID profile page, your award on record, branding support and brand deal access.",
     heading: "Star India Membership & Influencer Profiles",
     intro:
-      "Star India manages membership and profiles for FSIA awardees and verified creators. Every member gets an Influencer ID profile with their awards, audience and work, plus endorsement representation, digital marketing support and introductions to brands.",
+      "Star India manages membership and profiles for FSIA awardees and verified creators. Every member gets an Influencer ID profile with their award, audience and work, plus endorsement representation, digital marketing support and introductions to brands.",
     indexable: true,
     priority: "0.8",
     changefreq: "weekly"
@@ -129,7 +129,7 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "greenlight",
     path: "/green-light/",
-    title: "Green Light Blog & Explore Magazine Booking | FSIA Influencer",
+    title: "Green Light Blog & Explore Magazine Booking | Forever Influencer",
     description:
       "Green Light is the FSIA blog and magazine desk: creator guides, award news and Explore Magazine features. Book a cover or feature for your profile.",
     heading: "Green Light: Blog & Explore Magazine",
@@ -142,7 +142,7 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "faq",
     path: "/faq/",
-    title: "Influencer FAQs: GST, ASCI & Payments | FSIA Influencer",
+    title: "Influencer FAQs: GST, ASCI & Payments | Forever Influencer",
     description:
       "Answers for influencers and brands in India: registration, verification, GST, ASCI disclosure rules, payments and how brand collaborations work.",
     heading: "Influencer & Brand FAQs",
@@ -155,9 +155,9 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "contact",
     path: "/contact/",
-    title: "Contact FSIA Influencer | Support & Enquiries",
+    title: "Contact Forever Influencer | Support & Enquiries",
     description:
-      "Send a message to the FSIA Influencer support team about awards, membership, magazine bookings or brand deals. We reply by email.",
+      "Send a message to the Forever Influencer support team about awards, membership, magazine bookings or brand deals. We reply by email.",
     heading: "Contact Us",
     intro:
       "Questions about awards, Star India membership, magazine bookings or brand deals? Send us a message with the form below and our support team will reply by email.",
@@ -168,7 +168,7 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "admin",
     path: "/admin/",
-    title: "Admin | FSIA Influencer",
+    title: "Admin | Forever Influencer",
     description: "Administration workspace.",
     heading: "Admin",
     intro: "",

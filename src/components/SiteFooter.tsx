@@ -97,7 +97,7 @@ export default function SiteFooter({ footerText, onNavigate, onBrandEnquiry, com
     <footer className="surface-dark bg-[#111] text-[#F4F2EE] -mx-4 md:-mx-8 mt-16 px-6 md:px-12 pt-12 pb-10 rounded-t-3xl">
       <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr] gap-10">
         <div className="space-y-3">
-          <p className="font-serif-display text-2xl font-bold text-white">FSIA Influencer</p>
+          <p className="font-serif-display text-2xl font-bold text-white">Forever Influencer</p>
           <p className="text-sm leading-relaxed text-[#E4E0D8] max-w-xs">
             The influencer award agency for India: awards, Star India profiles, brand deals and the Explore Magazine.
           </p>

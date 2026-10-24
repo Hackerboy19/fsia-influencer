@@ -1,41 +1,40 @@
 // Content for the award agency home page, Star India and Green Light.
 // Kept here (not inside components) so copy can be edited in one place.
 
-export interface AwardCategory {
-  id: string;
-  title: string;
-  blurb: string;
-  // Creator registration category this award maps to (see creatorCategories.ts)
-  creatorCategory?: string;
-}
+// There is one award: the Forever Influencer Award. It is open to creators in every niche.
+export const AWARD_NAME = "Forever Influencer Award";
 
-// Category awards open to every creator niche
-export const TRADITIONAL_AWARDS: AwardCategory[] = [
-  { id: "fashion", title: "Best Fashion Influencer", blurb: "Style, couture and street fashion creators.", creatorCategory: "Fashion & Style" },
-  { id: "beauty", title: "Best Beauty Influencer", blurb: "Makeup, skincare and grooming voices.", creatorCategory: "Beauty & Makeup" },
-  { id: "travel", title: "Best Travel Creator", blurb: "Travel stories from India and beyond.", creatorCategory: "Travel" },
-  { id: "food", title: "Best Food Creator", blurb: "Recipes, reviews and regional food.", creatorCategory: "Food & Cooking" },
-  { id: "fitness", title: "Best Fitness Influencer", blurb: "Training, sport and healthy living.", creatorCategory: "Fitness & Health" },
-  { id: "comedy", title: "Best Comedy Creator", blurb: "Sketches, satire and entertainment.", creatorCategory: "Comedy & Entertainment" },
-  { id: "tech", title: "Best Tech Creator", blurb: "Gadgets, apps and explainers.", creatorCategory: "Technology & Gadgets" },
-  { id: "pageant", title: "Best Model & Pageant Star", blurb: "Runway, pageant and modelling talent.", creatorCategory: "Pageants & Modelling" }
-];
+export const AWARD = {
+  name: AWARD_NAME,
+  tagline: "India's award for influencers and digital creators",
+  text: "One award, judged across reach, impact and the quality of your work. Winners join Star India and get branding, marketing and brand-deal support."
+} as const;
 
-// Top honours, judged across all niches
-export const PREMIUM_AWARDS: AwardCategory[] = [
-  { id: "influencer-of-the-year", title: "Influencer of the Year", blurb: "The creator with the strongest year across reach, impact and craft." },
-  { id: "celebrity-influencer", title: "Celebrity Influencer Award", blurb: "Public figures who lead online conversations." },
-  { id: "rising-star", title: "Rising Star of India", blurb: "Fast-growing creators to watch next year." },
-  { id: "social-impact", title: "Social Impact Champion", blurb: "Creators who use their platform for change.", creatorCategory: "Social Impact" },
-  { id: "entrepreneur", title: "Creator Entrepreneur Award", blurb: "Creators who built a brand or business." , creatorCategory: "Finance & Business" },
-  { id: "brand-ambassador", title: "Brand Ambassador of the Year", blurb: "The most trusted long-term brand partner." }
-];
+// Creator niches that can apply (these are not separate award categories)
+export const ELIGIBLE_NICHES = [
+  "Fashion & Style",
+  "Beauty & Makeup",
+  "Travel",
+  "Food & Cooking",
+  "Fitness & Health",
+  "Comedy & Entertainment",
+  "Technology & Gadgets",
+  "Pageants & Modelling",
+  "Social Impact",
+  "Finance & Business"
+] as const;
+
+export const AWARD_PERKS = [
+  { title: "Star India membership", text: "An Influencer ID profile with your award, audience and work." },
+  { title: "Branding & marketing", text: "Endorsement representation and digital marketing support." },
+  { title: "Brand introductions", text: "Direct introductions when a brand brief fits your niche." }
+] as const;
 
 export const VALUE_FLOW = [
   {
     step: 1,
     title: "Apply for Award & Become a Member",
-    text: "Register for the influencer awards. Recognised applicants enter the FSIA ecosystem as Star India members."
+    text: "Apply for the Forever Influencer Award. Winners enter the ecosystem as Star India members."
   },
   {
     step: 2,
@@ -62,12 +61,12 @@ export interface BlogPost {
 export const BLOG_POSTS: BlogPost[] = [
   {
     id: "how-to-apply-for-an-influencer-award",
-    title: "How to apply for an influencer award",
-    excerpt: "What the jury looks at, which category to pick and how to present your work.",
+    title: "How to apply for the Forever Influencer Award",
+    excerpt: "What the jury looks at and how to present your work.",
     category: "Awards",
     readMinutes: 4,
     body: [
-      "Pick the category where most of your content sits. A focused application is easier for the jury to judge than one spread across niches.",
+      "Tell the jury which niche most of your content sits in. A focused application is easier to judge than one spread across many topics.",
       "Show results, not just follower counts: engagement, audience feedback, campaigns you have run and anything you have built off-platform.",
       "Keep your profile links public and up to date. The team reviews your Instagram or YouTube directly before shortlisting."
     ]
@@ -91,7 +90,7 @@ export const BLOG_POSTS: BlogPost[] = [
     category: "Awards",
     readMinutes: 3,
     body: [
-      "Awardees join Star India and get an Influencer ID profile that brands can browse.",
+      "Winners of the Forever Influencer Award join Star India and get an Influencer ID profile that brands can browse.",
       "The branding team helps refresh your bio, portfolio and media kit so they match the award.",
       "When a brand brief fits your category and city, the team introduces you directly and helps with the contract."
     ]

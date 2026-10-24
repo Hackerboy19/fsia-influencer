@@ -1,4 +1,4 @@
-// Unit checks for brand removal and contact validation, plus Node ↔ PHP parity.
+// Unit checks for the brand rename and contact validation, plus Node ↔ PHP parity.
 //   npx tsx scripts/test-unit.ts        (PHP checks are skipped when php is not installed)
 import { execFileSync } from "child_process";
 import path from "path";
@@ -14,23 +14,20 @@ const check = (name: string, ok: boolean, detail = "") => {
 };
 
 const DEBRAND_CASES: [string, string][] = [
-  ["FSIA — Forever Star India Awards", "FSIA Creators & Influencer Portal"],
-  ["FOREVER STAR INDIA", "FSIA INFLUENCER"],
-  ["Welcome to Forever Star India Association (FSIA)", "Welcome to FSIA Influencer"],
-  ["Forever Free plan", "Always Free plan"],
-  ["Stay forever young", "Stay always young"],
-  ["The Forever Gala", "The Gala"],
-  ["FOREVER Elite", "Elite"],
-  ["fOrEvEr Icons", "Icons"],
-  ["Diamonds are Forever", "Diamonds are"],
-  ["Foreverstar fashion week", "star fashion week"],
+  ["FSIA Creators & Influencer Portal", "Forever Influencer Portal"],
+  ["FSIA INFLUENCER", "FOREVER INFLUENCER"],
+  ["© 2026 FSIA Influencer. All rights reserved.", "© 2026 Forever Influencer. All rights reserved."],
+  ["Welcome to fsia influencer", "Welcome to Forever Influencer"],
+  ["FSIA Influencer Influencer awards", "Forever Influencer awards"],
+  ["Stay forever young", "Stay forever young"],
+  ["FSIA-24527 and the FSIA team", "FSIA-24527 and the FSIA team"],
   ["Nothing to change here", "Nothing to change here"]
 ];
 
 for (const [input, expected] of DEBRAND_CASES) {
   const out = debrandText(input);
   check(`debrandText(${JSON.stringify(input)})`, out === expected, `got ${JSON.stringify(out)}, expected ${JSON.stringify(expected)}`);
-  check(`debrandText(${JSON.stringify(input)}) has no retired word`, !/forever/i.test(out));
+  check(`debrandText(${JSON.stringify(input)}) has no old brand name`, !/fsia influencer/i.test(out));
 }
 
 // Must match isValidPhone() in server.ts and valid_phone() in helpers.php
