@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Search, Download, Trash2, Mail, Phone, Briefcase, Sparkles } from "lucide-react";
+import { Search, Download, Trash2, Mail, Phone, Briefcase, Sparkles, MessageSquare, BookOpen } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { downloadCsv } from "../lib/adminSession";
 
@@ -8,7 +8,7 @@ type Status = "new" | "contacted" | "confirmed" | "closed";
 
 interface Enquiry {
   id: string;
-  type: "campaign" | "membership";
+  type: "campaign" | "membership" | "contact" | "booking";
   subject: string;
   refId?: string;
   name: string;
@@ -27,7 +27,15 @@ const STATUSES: { id: Status; label: string; className: string }[] = [
   { id: "closed", label: "Closed", className: "bg-stone-100 text-stone-700 border-stone-300" }
 ];
 
+const TYPE_LABELS: Record<Enquiry["type"], { label: string; icon: typeof Briefcase }> = {
+  campaign: { label: "Campaign application", icon: Briefcase },
+  membership: { label: "Membership request", icon: Sparkles },
+  contact: { label: "Contact message", icon: MessageSquare },
+  booking: { label: "Magazine booking", icon: BookOpen }
+};
+
 const DETAIL_LABELS: Record<string, string> = {
+  message: "Message",
   instagram: "Instagram",
   pitch: "Pitch",
   plan: "Plan",
@@ -105,7 +113,7 @@ export default function AdminEnquiriesPanel({ token, onChange }: { token: string
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white/70 rounded-2xl border border-black/10 overflow-hidden">
       <div className="px-5 py-4 bg-[#F4F3F0] border-b border-black/10">
         <h4 className="font-serif-display text-base font-bold text-[#111]">Enquiries</h4>
-        <p className="text-sm text-[#47453f]">Campaign applications from creators and membership plan requests.</p>
+        <p className="text-sm text-[#47453f]">Campaign applications, membership requests, contact messages and magazine bookings.</p>
       </div>
 
       <div className="px-5 py-3 border-b border-black/10 flex flex-col md:flex-row gap-2 md:items-center">
@@ -123,6 +131,8 @@ export default function AdminEnquiriesPanel({ token, onChange }: { token: string
           <option value="all">All types</option>
           <option value="campaign">Campaign applications</option>
           <option value="membership">Membership requests</option>
+          <option value="contact">Contact messages</option>
+          <option value="booking">Magazine bookings</option>
         </select>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
           className="px-3 py-2 bg-white border border-black/15 rounded-lg text-sm">
@@ -143,14 +153,15 @@ export default function AdminEnquiriesPanel({ token, onChange }: { token: string
       <div className="divide-y divide-black/10">
         {filtered.map((e) => {
           const status = STATUSES.find((s) => s.id === e.status) || STATUSES[0];
-          const Icon = e.type === "campaign" ? Briefcase : Sparkles;
+          const typeInfo = TYPE_LABELS[e.type] || TYPE_LABELS.membership;
+          const Icon = typeInfo.icon;
           return (
             <div key={e.id} className="p-5 space-y-3">
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
                 <div className="space-y-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-[#2e2c29]">
-                      <Icon className="w-4 h-4" /> {e.type === "campaign" ? "Campaign application" : "Membership request"}
+                      <Icon className="w-4 h-4" /> {typeInfo.label}
                     </span>
                     <select
                       value={e.status}
@@ -166,8 +177,13 @@ export default function AdminEnquiriesPanel({ token, onChange }: { token: string
                   <p className="font-serif-display text-lg font-bold text-[#111]">{e.subject || "—"}</p>
                   <p className="text-sm text-[#2e2c29]">
                     <strong className="text-[#111]">{e.name}</strong> ·{" "}
-                    <a href={`mailto:${e.email}`} className="inline-flex items-center gap-1 underline underline-offset-2"><Mail className="w-3.5 h-3.5" />{e.email}</a> ·{" "}
-                    <a href={`tel:${e.phone}`} className="inline-flex items-center gap-1 underline underline-offset-2"><Phone className="w-3.5 h-3.5" />{e.phone}</a>
+                    <a href={`mailto:${e.email}`} className="inline-flex items-center gap-1 underline underline-offset-2"><Mail className="w-3.5 h-3.5" />{e.email}</a>
+                    {e.phone && (
+                      <>
+                        {" "}·{" "}
+                        <a href={`tel:${e.phone}`} className="inline-flex items-center gap-1 underline underline-offset-2"><Phone className="w-3.5 h-3.5" />{e.phone}</a>
+                      </>
+                    )}
                   </p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
@@ -183,7 +199,7 @@ export default function AdminEnquiriesPanel({ token, onChange }: { token: string
                   {Object.entries(e.details)
                     .filter(([, v]) => v)
                     .map(([k, v]) => (
-                      <div key={k} className={k === "pitch" ? "sm:col-span-2" : ""}>
+                      <div key={k} className={k === "pitch" || k === "message" ? "sm:col-span-2" : ""}>
                         <dt className="text-xs font-bold uppercase tracking-wider text-[#47453f]">{DETAIL_LABELS[k] || k}</dt>
                         <dd className="text-[#111] whitespace-pre-wrap break-words">{v}</dd>
                       </div>

@@ -200,7 +200,7 @@ export default function CampaignsTab() {
           {routeForTab("campaigns").heading}
         </h1>
         <p className="font-serif-text italic text-[#2e2c29] text-base md:text-lg leading-relaxed max-w-2xl">
-          {routeForTab("campaigns").intro} FSIA Influencer operates 100% secure escrow contracts ensuring creators receive full payment within 24 hours of campaign verification.
+          {routeForTab("campaigns").intro} Forever Influencer operates 100% secure escrow contracts ensuring creators receive full payment within 24 hours of campaign verification.
         </p>
       </div>
 
@@ -481,7 +481,7 @@ export default function CampaignsTab() {
                     </div>
 
                     <p className="text-sm text-[#2e2c29] leading-relaxed">
-                      Your application for <strong className="text-[#111]">{selectedCampaign?.brand}</strong> has been sent to the FSIA Influencer team. We'll review your profile and get in touch at <strong className="text-[#111]">{submittedEmail}</strong> or on WhatsApp.
+                      Your application for <strong className="text-[#111]">{selectedCampaign?.brand}</strong> has been sent to the Forever Influencer team. We'll review your profile and get in touch at <strong className="text-[#111]">{submittedEmail}</strong> or on WhatsApp.
                     </p>
 
                     <button

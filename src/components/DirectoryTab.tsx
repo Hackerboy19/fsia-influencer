@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Search, MapPin, Sparkles, SlidersHorizontal, CheckCircle2, Eye, Send, Users, ShieldCheck, ArrowRight } from "lucide-react";
+import { Search, MapPin, Sparkles, SlidersHorizontal, CheckCircle2, Send, Users, ArrowRight } from "lucide-react";
 import { Creator, gallerySections } from "../data";
 import { routeForTab } from "../seo";
+import ProfileCard from "./ProfileCard";
 
 const listCities = (cities: string[]) =>
   cities.length > 1 ? `${cities.slice(0, -1).join(", ")} and ${cities[cities.length - 1]}` : cities[0];
@@ -400,11 +401,9 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
       {/* 3. THE MASSIVE CREATOR GRID (Highly Responsive layout) */}
       <div className="max-w-6xl mx-auto">
         {filteredCreators.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6 px-4 md:px-0">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6 px-1 md:px-0">
             {filteredCreators.map((creator, idx) => {
               const currentCategory = getOverhaulCategory(creator.role);
-              const formattedHandle = `@${creator.name.toLowerCase().replace(/\s+/g, "")}`;
-              
               return (
                 <motion.div
                   key={`${creator.name}-${idx}`}
@@ -413,85 +412,15 @@ export default function DirectoryTab({ onOpenCollaboration, onSelectCreator, hid
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.98 }}
                   transition={{ duration: 0.4 }}
-                  onClick={() => onSelectCreator(creator)}
-                  className="relative aspect-[4/5] rounded-xl overflow-hidden group bg-stone-100 border border-stone-200/50 shadow-xs cursor-pointer select-none"
                 >
-                  {/* Dynamic Creator Portrait Image with forced lazy loading */}
-                  <img
-                    src={creator.image}
-                    alt={`${creator.name}, ${currentCategory} creator${creator.city ? ` from ${creator.city}` : ""}`}
-                    loading="lazy"
-                    decoding="async"
-                    // A removed external photo shows the site logo instead of a broken image
-                    onError={(e) => {
-                      if (!e.currentTarget.src.endsWith("/logo.png")) e.currentTarget.src = "/logo.png";
-                    }}
-                    className="w-full h-full object-cover transition-all duration-500 ease-out group-hover:scale-105"
+                  <ProfileCard
+                    creator={creator}
+                    tagline={`${currentCategory}${creator.city ? ` · ${creator.city}` : ""}`}
+                    award="Verified"
+                    ariaLabel={`View ${creator.name}'s profile`}
+                    onOpen={() => onSelectCreator(creator)}
+                    compact
                   />
-
-                  {/* Floating Gold FSIA Verified Shield Badge */}
-                  <div className="absolute top-2 right-2 md:top-3 md:right-3 z-10 bg-stone-900/90 text-[#F0D9A8] border border-[#C9A227]/50 backdrop-blur-xs px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wider flex items-center gap-1 shadow-md">
-                    <ShieldCheck className="w-3 h-3 text-[#F0D9A8] shrink-0" />
-                    <span>FSIA VERIFIED</span>
-                  </div>
-
-                  {/* Frosted glass info panel at bottom of card */}
-                  {/* On Mobile: permanently visible and compact. On Desktop: transitions smoothly */}
-                  <div className="absolute bottom-0 left-0 right-0 z-10 p-1.5 md:p-2">
-                    <div className="bg-white/95 backdrop-blur-md rounded-lg border border-stone-100 p-2.5 md:p-4 md:bg-white/90 md:border-white/20 transition-all duration-300 shadow-md">
-                      {/* Name, Handle, Niche */}
-                      <div className="space-y-0.5">
-                        <h3 className="font-serif text-stone-900 font-bold text-xs sm:text-sm md:text-base leading-tight tracking-tight truncate">
-                          {/* Keyboard and screen-reader access to the profile (the whole card is clickable with a mouse) */}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onSelectCreator(creator);
-                            }}
-                            aria-label={`View ${creator.name}'s profile`}
-                            className="max-w-full truncate text-left cursor-pointer rounded-sm"
-                          >
-                            {creator.name}
-                          </button>
-                        </h3>
-                        <span className="text-[11px] md:text-xs text-[#C9A227] block font-mono">
-                          {formattedHandle}
-                        </span>
-                        <span className="text-[11px] text-stone-500 font-semibold block uppercase tracking-wider">
-                          {currentCategory}
-                        </span>
-                      </div>
-
-                      {/* Stats Row */}
-                      <div className="flex items-center justify-between gap-2 text-[11px] text-zinc-500 font-semibold pt-1.5 mt-1.5 border-t border-stone-100">
-                        <div>
-                          <span className="block text-[11px] text-stone-400 uppercase font-bold">Followers</span>
-                          <span className="text-stone-800 font-bold">{creator.stats.reach || "500K"}</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="block text-[11px] text-stone-400 uppercase font-bold">Engagement</span>
-                          <span className="text-stone-800 font-bold">{creator.stats.engagement || "4.8%"}</span>
-                        </div>
-                      </div>
-
-                      {/* View Media Kit - Hover-to-reveal button on desktop */}
-                      <div className="hidden md:block overflow-hidden transition-all duration-300 max-h-0 group-hover:max-h-12 group-hover:mt-3">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSelectCreator(creator);
-                          }}
-                          tabIndex={-1}
-                          aria-hidden="true"
-                          className="w-full bg-stone-900 hover:bg-stone-800 text-white text-[11px] tracking-widest uppercase font-bold py-2 rounded-md flex items-center justify-center gap-1 transition-all cursor-pointer min-h-[40px]"
-                        >
-                          <span>View Media Kit</span>
-                          <span>→</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
                 </motion.div>
               );
             })}

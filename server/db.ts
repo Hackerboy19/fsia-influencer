@@ -483,11 +483,11 @@ const INITIAL_LOGS: AdminLog[] = [
 ];
 
 export const DEFAULT_SETTINGS: SystemSettings = {
-  websiteTitle: "FSIA Creators & Influencer Portal",
-  heroTitle: "FSIA INFLUENCER",
+  websiteTitle: "Forever Influencer Portal",
+  heroTitle: "FOREVER INFLUENCER",
   heroSubtitle: "Connect with verified creators, launch brand campaigns and grow your influence.",
   ctaText: "EXPLORE THE PORTAL",
-  footerText: "© 2026 FSIA Influencer. All rights reserved.",
+  footerText: "© 2026 Forever Influencer. All rights reserved.",
   logoUrl: "",
   primaryColor: "#E1C699",
   secondaryColor: "#111111",
@@ -542,23 +542,16 @@ export function needsRehash(stored: string): boolean {
 }
 
 // ----------------------------------------------------
-// BRAND DECOUPLING — the retired "Forever" brand word must never be published.
-// Applied to stored content (migrations below) and to every public API response,
-// so text typed in later by admins or applicants is covered too.
+// BRAND NAME — the public brand is "Forever Influencer" (decided 2026-10-24).
+// Older stored text that still says "FSIA Influencer" is renamed in every public
+// API response, so settings and content saved before the change read correctly.
 // Keep in sync with debrand_text() in php-backend/api/lib/helpers.php
 // ----------------------------------------------------
 // A null replacement keeps the first capture group
 const DEBRAND_RULES: [RegExp, string | null][] = [
-  [/FSIA\s*[—-]\s*Forever Star India Awards/gi, "FSIA Creators & Influencer Portal"],
-  [/Forever Star India(?: Awards| Association)?(?: \(FSIA\))?/gi, "FSIA Influencer"],
-  [/\bForever Free\b/gi, "Always Free"],
-  // Lower-case prose ("stay forever young") keeps its meaning with "always"
-  [/\bforever\b/g, "always"],
-  // Any other spelling is the old brand prefix or suffix: drop it
-  [/\bforever\s+/gi, ""],
-  [/\s*\bforever\b/gi, ""],
-  [/forever/gi, ""],
-  [/\b(FSIA Influencer) Influencer\b/gi, null]
+  [/FSIA Creators & Influencer Portal/gi, "Forever Influencer Portal"],
+  [/\bFSIA Influencer\b/gi, "Forever Influencer"],
+  [/\b(Forever Influencer) Influencer\b/gi, null]
 ];
 
 export function debrandText(text: string): string {

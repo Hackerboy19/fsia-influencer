@@ -26,6 +26,8 @@ const TEST = {
   creatorCategory: `QA Astrology ${RUN}`,
   campaignApplicant: `QA Campaign Applicant ${RUN}`,
   member: `QA Member ${RUN}`,
+  contact: `QA Contact ${RUN}`,
+  booker: `QA Booker ${RUN}`,
   email: `qa+${RUN}@example.com`,
   phone: "+91 90000 00000"
 };
@@ -75,10 +77,16 @@ for (const vp of [
   page.on("pageerror", (e) => errors.push(e.message));
 
   await page.goto(BASE + "/", { waitUntil: "networkidle" });
-  check(`${vp.name}: welcome screen shows the main heading`, /influencer/i.test(await h1(page)));
-  await page.click("#enter-exposition-btn");
+  check(`${vp.name}: home page shows the award agency heading`, /influencer\s+award agency/i.test(await h1(page)));
+  check(`${vp.name}: home page shows the header tabs`, (await page.locator("#main-nav-tabs").count()) === 1);
+  check(`${vp.name}: home page shows the one award`, (await page.locator("#the-award").innerText()).includes("Forever Influencer Award"));
+  await page.fill("#home-search", "forever");
+  check(`${vp.name}: home search finds the award`,
+    (await page.locator("#home-search-results button", { hasText: "Forever Influencer Award" }).count()) === 1);
+  await page.fill("#home-search", "");
+  await page.locator('a', { hasText: /^Walk the 3D gallery$/ }).click();
   await page.waitForTimeout(1500);
-  check(`${vp.name}: "Explore the portal" opens the explore view`, (await page.locator("#main-nav-tabs").count()) === 1);
+  check(`${vp.name}: "Walk the 3D gallery" opens /gallery/`, new URL(page.url()).pathname === "/gallery/");
   check(`${vp.name}: no admin button in the public header`,
     (await page.locator('header :is(button, a)').filter({ hasText: /admin/i }).count()) === 0 &&
     (await page.locator('header [aria-label*="admin" i], header [title*="admin" i]').count()) === 0);
@@ -94,7 +102,10 @@ for (const vp of [
   await page.waitForTimeout(2500);
   check(`${vp.name}: catwalk "previous" arrow returns to section 1`, /1 \/ \d/.test(await sectionLabel()), await sectionLabel());
 
-  const expected = { Talent: "/talent/", Campaigns: "/campaigns/", Membership: "/membership/", "Get Verified": "/join/", FAQs: "/faq/" };
+  const expected = {
+    Talent: "/talent/", Campaigns: "/campaigns/", "Star India": "/star-india/", "Green Light": "/green-light/",
+    Membership: "/membership/", "Get Verified": "/join/", Contact: "/contact/"
+  };
   for (const [label, path] of Object.entries(expected)) {
     await page.locator("#main-nav-tabs a", { hasText: new RegExp(`^${label}$`, "i") }).click();
     await page.waitForTimeout(700);
@@ -108,12 +119,12 @@ for (const vp of [
   await page.waitForTimeout(700);
   check(`${vp.name}: browser Back returns to the previous section`, new URL(page.url()).pathname === "/join/");
 
-  await page.locator('a[aria-label="FSIA Influencer — home"]').click();
+  await page.locator('a[aria-label="Forever Influencer — home"]').click();
   await page.waitForTimeout(900);
   check(`${vp.name}: logo returns to the home page`, new URL(page.url()).pathname === "/");
 
   if (vp.name !== "desktop") {
-    for (const [label, path] of [["Talent", "/talent/"], ["Join", "/join/"], ["Plans", "/membership/"], ["Explore", "/"]]) {
+    for (const [label, path] of [["Talent", "/talent/"], ["Star India", "/star-india/"], ["Join", "/join/"], ["Contact", "/contact/"], ["Home", "/"]]) {
       await page.locator('nav[aria-label="Quick links"] a', { hasText: new RegExp(`^${label}$`, "i") }).click();
       await page.waitForTimeout(700);
       check(`${vp.name}: bottom bar "${label}" → ${path}`, new URL(page.url()).pathname === path);
@@ -135,6 +146,22 @@ for (const vp of [
   check(`${vp.name}: no JavaScript errors during navigation`, errors.length === 0, errors.join(" | "));
   await context.close();
 }
+
+// ---------------------------------------------------------------------------
+// API validation first: rejected requests are never counted, but the browser forms
+// below use up the per-connection submission allowance
+// ---------------------------------------------------------------------------
+const post = (path, body, headers = {}) =>
+  fetch(BASE + path, { method: "POST", headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify(body) });
+
+const badPhone = await post("/api/registrations", { brandName: TEST.brand, contactEmail: TEST.email, contactPhone: "123" });
+check("API rejects a brand enquiry with an invalid phone (400)", badPhone.status === 400);
+const badEmail = await post("/api/enquiries", { type: "campaign", name: "QA", email: "nope", phone: TEST.phone });
+check("API rejects an enquiry with an invalid email (400)", badEmail.status === 400);
+const bookingNoPhone = await post("/api/enquiries", { type: "booking", name: "QA", email: TEST.email });
+check("API requires a phone number for magazine bookings (400)", bookingNoPhone.status === 400);
+const badApp = await post("/api/influencer-applications", { name: "QA", category: "x", email: TEST.email, phone: "phone" });
+check("API rejects a creator application with an invalid phone (400)", badApp.status === 400);
 
 // ---------------------------------------------------------------------------
 // 2. Forms (desktop + mobile)
@@ -254,6 +281,41 @@ async function membershipRequest(page, label) {
   check(`${label} membership request: success confirmation with reference`, /enq-/.test(await page.locator("#payment-portal-drawer").innerText()));
 }
 
+async function contactMessage(page, label) {
+  await page.goto(BASE + "/contact/", { waitUntil: "networkidle" });
+  check(`${label} contact: form only, no address or phone field`,
+    (await page.locator("#contact-phone").count()) === 0 && !/\b(road|street|floor|pin ?code)\b/i.test(await page.locator("main").innerText()));
+  await page.locator("button[type=submit]", { hasText: "Send message" }).click();
+  check(`${label} contact: empty submit asks for a name`, await alertMatches(page, /your name/i));
+  check(`${label} contact: focus moves to the name field`, await focusIs(page, "contact-name"));
+  await page.fill("#contact-name", TEST.contact);
+  await page.fill("#contact-email", TEST.email);
+  await page.selectOption("#contact-subject", "Brand deals");
+  await page.locator("button[type=submit]", { hasText: "Send message" }).click();
+  check(`${label} contact: a message is required`, await alertMatches(page, /short message/i));
+  await page.fill("#contact-message", "QA test message");
+  await page.locator("button[type=submit]", { hasText: "Send message" }).click();
+  await page.waitForSelector("text=Reference:", { timeout: 8000 });
+  check(`${label} contact: success shows a reference`, /enq-/.test(await page.locator("main").innerText()));
+}
+
+async function magazineBooking(page, label) {
+  await page.goto(BASE + "/green-light/", { waitUntil: "networkidle" });
+  await page.locator('button[aria-label="Book Inside Feature"]').click();
+  await page.waitForTimeout(400);
+  check(`${label} booking: "Book now" picks that package`, (await page.inputValue("#booking-subject")) === "Inside Feature");
+  await page.fill("#booking-name", TEST.booker);
+  await page.fill("#booking-email", TEST.email);
+  await page.fill("#booking-phone", "123");
+  await page.fill("#booking-message", "QA booking");
+  await page.locator("button[type=submit]", { hasText: "Send booking request" }).click();
+  check(`${label} booking: short phone number is rejected`, await alertMatches(page, /10 to 15 digits/i));
+  await page.fill("#booking-phone", TEST.phone);
+  await page.locator("button[type=submit]", { hasText: "Send booking request" }).click();
+  await page.waitForSelector("text=Reference:", { timeout: 8000 });
+  check(`${label} booking: success shows a reference`, true);
+}
+
 for (const vp of [
   { name: "desktop", width: 1440, height: 900 },
   { name: "mobile", width: 375, height: 812 }
@@ -266,6 +328,8 @@ for (const vp of [
   await creatorRegistration(page, vp.name);
   await campaignApplication(page, vp.name);
   await membershipRequest(page, vp.name);
+  await contactMessage(page, vp.name);
+  await magazineBooking(page, vp.name);
   await context.close();
 }
 await browser.close();
@@ -273,15 +337,6 @@ await browser.close();
 // ---------------------------------------------------------------------------
 // 3. API: server-side validation and persistence
 // ---------------------------------------------------------------------------
-const post = (path, body, headers = {}) =>
-  fetch(BASE + path, { method: "POST", headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify(body) });
-
-const badPhone = await post("/api/registrations", { brandName: TEST.brand, contactEmail: TEST.email, contactPhone: "123" });
-check("API rejects a brand enquiry with an invalid phone (400)", badPhone.status === 400);
-const badEmail = await post("/api/enquiries", { type: "campaign", name: "QA", email: "nope", phone: TEST.phone });
-check("API rejects an enquiry with an invalid email (400)", badEmail.status === 400);
-const badApp = await post("/api/influencer-applications", { name: "QA", category: "x", email: TEST.email, phone: "phone" });
-check("API rejects a creator application with an invalid phone (400)", badApp.status === 400);
 
 const ai = await post("/api/gemini/optimize", { prompt: "test" });
 check("AI endpoint requires an admin session (401)", ai.status === 401, `status ${ai.status}`);
@@ -328,6 +383,9 @@ if (login.ok) {
   const enquiries = await get("/api/enquiries");
   check("Campaign applications were stored", enquiries.filter((e) => e.type === "campaign" && e.name === TEST.campaignApplicant).length === 2);
   check("Membership requests were stored", enquiries.filter((e) => e.type === "membership" && e.name === TEST.member).length === 2);
+  check("Contact messages were stored without a phone number",
+    enquiries.filter((e) => e.type === "contact" && e.name === TEST.contact && !e.phone && e.subject === "Brand deals").length === 2);
+  check("Magazine bookings were stored", enquiries.filter((e) => e.type === "booking" && e.name === TEST.booker && e.subject === "Inside Feature").length === 2);
 } else {
   console.log(`SKIP  persistence checks (admin login failed with ${login.status}; pass --admin=user:password)`);
 }

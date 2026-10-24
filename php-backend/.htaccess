@@ -1,4 +1,4 @@
-# FSIA Influencer — Apache / LiteSpeed configuration
+# Forever Influencer — Apache / LiteSpeed configuration
 Options -Indexes
 DirectoryIndex index.html
 # Unknown URLs get a real 404 status (not the home page) so search engines never

@@ -115,3 +115,32 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* ------------------------------------------------------------------
+   Award agency home: sparkles, ribbon and spotlight details
+------------------------------------------------------------------- */
+@keyframes fsia-twinkle {
+  0%, 100% { opacity: 0.25; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+.fsia-twinkle { animation: fsia-twinkle 3.2s ease-in-out infinite; }
+
+@keyframes fsia-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+.fsia-gold-text {
+  background: linear-gradient(100deg, #b8893b 0%, #f3dca6 30%, #c99a4a 50%, #f3dca6 70%, #b8893b 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: fsia-shimmer 8s linear infinite;
+}
+/* Gold hairline border used on premium cards */
+.fsia-gold-border {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(#111, #111) padding-box,
+    linear-gradient(135deg, #f3dca6, #8a6a2f 45%, #f3dca6) border-box;
+}

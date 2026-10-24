@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
-import { X, ShieldCheck, MapPin, Award, Heart, Briefcase, ChevronRight } from "lucide-react";
+import { X, ShieldCheck, MapPin, Award, Heart, ChevronRight, BadgeCheck, Trophy } from "lucide-react";
+import { influencerId } from "../content/awards";
 import { Creator } from "../data";
 import toast from "react-hot-toast";
 import { useDialog, Portal } from "../lib/dialog";
@@ -11,17 +12,29 @@ interface CreatorDetailPanelProps {
   onClose: () => void;
   onOpenCollaboration: () => void;
   moodboardItems?: string[];
+  /** Award titles this creator holds (gallery sections they appear in) */
+  awards?: string[];
 }
+
+const SectionLabel: React.FC<{ id: string; children: React.ReactNode }> = ({ id, children }) => (
+  <h3 id={id} className="flex items-center gap-3 text-[12px] font-bold tracking-[0.22em] uppercase text-[#F3DCA6]">
+    {children}
+    <span aria-hidden="true" className="flex-1 h-px bg-gradient-to-r from-[#E1C699]/50 to-transparent" />
+  </h3>
+);
 
 export default function CreatorDetailPanel({
   creator,
   onClose,
   onOpenCollaboration,
   moodboardItems = [],
+  awards = [],
 }: CreatorDetailPanelProps) {
   const [lightboxImg, setLightboxImg] = React.useState<string | null>(null);
   const panelRef = useDialog<HTMLDivElement>(!!creator, onClose);
   const lightboxRef = useDialog<HTMLDivElement>(!!lightboxImg, () => setLightboxImg(null));
+
+  const [heroFailed, setHeroFailed] = useState(false);
 
   if (!creator) return null;
 
@@ -30,6 +43,9 @@ export default function CreatorDetailPanel({
   const customStats = Object.entries(creator.stats).filter(
     ([key]) => !standardStatKeys.includes(key)
   );
+
+  const verified = creator.stats?.verified !== false;
+  const statLabel = (key: string) => key.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]/g, " ");
 
   return (
     <Portal>
@@ -43,173 +59,188 @@ export default function CreatorDetailPanel({
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: "100%", opacity: 0 }}
       transition={{ type: "spring", damping: 32, stiffness: 200 }}
-      className="fixed top-0 right-0 w-full md:w-[480px] h-full bg-white/95 backdrop-blur-2xl border-l border-black/10 shadow-[0_0_50px_rgba(0,0,0,0.08)] flex flex-col z-[55] select-none overflow-hidden outline-none"
+      className="surface-dark fixed top-0 right-0 w-full md:w-[500px] h-full bg-[#0a0f1c] text-white md:border-l md:border-[#E1C699]/40 shadow-[0_0_60px_rgba(0,0,0,0.35)] flex flex-col z-[55] select-none overflow-hidden outline-none"
       id="creator-detail-panel-container"
     >
-      {/* Editorial Floating Bar */}
-      <div className="flex items-center justify-between p-6 bg-[#F4F3F0]/60 border-b border-black/5">
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#E1C699] animate-pulse" />
-          <span className="font-sans text-[11px] tracking-[0.2em] text-[#47453f] uppercase font-bold flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-champagne inline" aria-hidden="true" />
-            Verified VIP Installation
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              window.dispatchEvent(new Event("open-moodboard"));
-            }}
-            className="w-11 h-11 rounded-full border border-black/10 bg-white flex items-center justify-center hover:bg-black/5 transition-colors cursor-pointer relative shadow-sm"
-            title="View Moodboard"
-            aria-label={`Open moodboard (${moodboardItems.length} saved)`}
-          >
-            <Heart className="w-4 h-4 text-red-600" aria-hidden="true" />
-            {moodboardItems.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-black text-white text-[11px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
-                {moodboardItems.length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={onClose}
-            aria-label="Close creator profile"
-            className="w-11 h-11 rounded-full border border-black/10 flex items-center justify-center hover:bg-black/5 transition-colors cursor-pointer"
-            id="close-creator-details-btn"
-          >
-            <X className="w-5 h-5 text-[#333]" aria-hidden="true" />
-          </button>
-        </div>
-      </div>
-
       {/* Content Scroller */}
-      <div className="flex-1 overflow-y-auto p-5 md:p-8 space-y-6 md:space-y-8 custom-scrollbar">
-        {/* Name and Origin */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-xs font-sans text-[#888] tracking-widest uppercase">
-            <MapPin className="w-3.5 h-3.5 text-champagne" />
-            {creator.city}, India
-          </div>
-          <h2 id="creator-detail-name" className="font-serif-display text-3xl md:text-4xl font-bold tracking-tight text-[#111] leading-none">
-            {creator.name}
-          </h2>
-          <p className="font-serif-text italic text-base md:text-lg text-champagne">
-            {creator.role}
-          </p>
-        </div>
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
+        {/* Cover portrait */}
+        <div className="relative h-[46vh] min-h-[300px] max-h-[440px] overflow-hidden">
+          {creator.image && !heroFailed ? (
+            <img
+              src={creator.image}
+              alt=""
+              onError={() => setHeroFailed(true)}
+              className="absolute inset-0 w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-br from-[#1f2a44] via-[#141b2e] to-[#0a0f1c]" />
+          )}
+          <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#0a0f1c] via-[#0a0f1c]/30 to-black/40" />
 
-        {/* Large Vogue-Style Quotation Block */}
-        <div className="relative pl-6 py-1 border-l-2 border-champagne/40">
-          <span className="absolute -top-3 -left-2 text-6xl text-champagne/25 font-serif-display select-none">
-            “
-          </span>
-          <p className="font-serif-text italic text-base leading-relaxed text-[#444]">
-            {creator.quote}
-          </p>
-        </div>
-
-        {/* Biography Block */}
-        <div className="space-y-3">
-          <h3 className="text-[11px] font-sans font-bold tracking-[0.2em] text-[#47453f] uppercase">
-            Curated Biography
-          </h3>
-          <p className="font-sans text-sm text-[#2e2c29] leading-relaxed">
-            {creator.bio}
-          </p>
-        </div>
-
-        {/* VIP Engagement Metrics */}
-        <div className="space-y-3">
-          <h3 className="text-[11px] font-sans font-bold tracking-[0.2em] text-[#47453f] uppercase">
-            Verified Audited Metrics
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
-            {/* Reach */}
-            <div className="p-4 bg-white/50 border border-black/5 rounded-xl text-center space-y-1">
-              <span className="block text-[11px] font-sans text-[#888] uppercase tracking-wider">
-                Digital Footprint
-              </span>
-              <span className="block font-serif-display text-2xl font-bold text-[#111]">
-                {creator.stats.reach}
-              </span>
-              <span className="block text-[11px] font-sans text-champagne uppercase font-medium tracking-widest">
-                Combined Reach
-              </span>
-            </div>
-
-            {/* Engagement */}
-            <div className="p-4 bg-white/50 border border-black/5 rounded-xl text-center space-y-1">
-              <span className="block text-[11px] font-sans text-[#888] uppercase tracking-wider">
-                Audience Core
-              </span>
-              <span className="block font-serif-display text-2xl font-bold text-[#111]">
-                {creator.stats.engagement}
-              </span>
-              <span className="block text-[11px] font-sans text-champagne uppercase font-medium tracking-widest">
-                Interaction Ratio
-              </span>
+          {/* Top bar */}
+          <div className="absolute top-0 inset-x-0 flex items-center justify-between p-4 md:p-5">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-black/55 backdrop-blur-sm border border-[#E1C699]/40 px-3 py-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#F3DCA6]" aria-hidden="true" />
+              <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#F3DCA6]">{verified ? "FSIA Verified" : "Star India"}</span>
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.dispatchEvent(new Event("open-moodboard"));
+                }}
+                className="w-11 h-11 rounded-full bg-black/55 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-black/75 transition-colors cursor-pointer relative"
+                title="View Moodboard"
+                aria-label={`Open moodboard (${moodboardItems.length} saved)`}
+              >
+                <Heart className="w-4 h-4 text-[#ff8f8f]" aria-hidden="true" />
+                {moodboardItems.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-[#E1C699] text-[#111] text-[11px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
+                    {moodboardItems.length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={onClose}
+                aria-label="Close creator profile"
+                className="w-11 h-11 rounded-full bg-black/55 backdrop-blur-sm border border-white/20 flex items-center justify-center hover:bg-black/75 transition-colors cursor-pointer"
+                id="close-creator-details-btn"
+              >
+                <X className="w-5 h-5 text-white" aria-hidden="true" />
+              </button>
             </div>
           </div>
 
-          {/* Custom Section Specific Stats */}
-          {customStats.length > 0 && (
-            <div className="mt-3 p-4 bg-[#F4F3F0]/40 border border-black/5 rounded-xl space-y-2">
-              {customStats.map(([key, val]) => (
-                <div key={key} className="flex justify-between items-center text-xs">
-                  <span className="text-[#888] font-sans uppercase tracking-wider text-[11px]">
-                    {key}
-                  </span>
-                  <span className="font-serif-text font-bold text-[#222]">
-                    {String(val)}
-                  </span>
+          {/* Name block */}
+          <div className="absolute inset-x-0 bottom-0 p-5 md:p-7 space-y-2">
+            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold tracking-[0.15em] uppercase text-[#F3DCA6]">
+              <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
+              {creator.city ? `${creator.city}, India` : "India"}
+            </span>
+            <h2 id="creator-detail-name" className="font-serif-display text-4xl md:text-5xl font-bold tracking-tight text-white leading-[1.05] flex items-center gap-2 drop-shadow">
+              {creator.name}
+              {verified && <BadgeCheck className="w-7 h-7 shrink-0 text-[#F3DCA6]" aria-label="Verified" />}
+            </h2>
+            <p className="font-serif-text italic text-base md:text-lg text-[#e9e6df]">{creator.role}</p>
+          </div>
+        </div>
+
+        <div className="px-5 md:px-7 pb-8 space-y-8">
+          {/* Influencer ID strip */}
+          <div className="relative -mt-1 rounded-2xl p-[1.5px] bg-gradient-to-r from-[#f3dca6] via-[#9c7a3c] to-[#f3dca6]">
+            <div className="rounded-[14.5px] bg-gradient-to-br from-[#161e33] to-[#0d1324] px-4 py-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <span aria-hidden="true" className="w-10 h-10 shrink-0 rounded-full bg-gradient-to-b from-[#f3dca6] to-[#b8893b] flex items-center justify-center shadow">
+                  <Trophy className="w-4.5 h-4.5 text-[#3b2a0c]" />
+                </span>
+                <div className="min-w-0">
+                  <span className="block text-[11px] font-bold tracking-[0.2em] uppercase text-[#c9c4b8]">Influencer ID</span>
+                  <span className="block font-mono text-base font-semibold text-[#F3DCA6]">{influencerId(creator.name)}</span>
+                </div>
+              </div>
+              <span className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#c9c4b8] text-right">Star India<br />member</span>
+            </div>
+          </div>
+
+          {/* Awards */}
+          {awards.length > 0 && (
+            <section aria-labelledby="creator-awards" className="space-y-3">
+              <SectionLabel id="creator-awards">Awards won</SectionLabel>
+              <ul className="flex flex-wrap gap-2">
+                {awards.map((a) => (
+                  <li key={a} className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#f3dca6] to-[#d4b06a] text-[#2b1f08] text-[13px] font-bold px-3 py-1.5">
+                    <Award className="w-3.5 h-3.5" aria-hidden="true" />
+                    {a}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {/* Key metrics */}
+          <section aria-labelledby="creator-metrics" className="space-y-3">
+            <SectionLabel id="creator-metrics">Audience</SectionLabel>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: "Followers", value: creator.stats.reach, note: "Combined reach" },
+                { label: "Engagement", value: creator.stats.engagement, note: "Interaction rate" }
+              ].map((m) => (
+                <div key={m.label} className="relative overflow-hidden rounded-2xl border border-[#E1C699]/25 bg-white/[0.04] p-4">
+                  <span aria-hidden="true" className="absolute -top-8 -right-8 w-20 h-20 rounded-full bg-[radial-gradient(circle,rgba(243,220,166,0.18),transparent_70%)]" />
+                  <span className="block text-[11px] font-bold uppercase tracking-[0.18em] text-[#c9c4b8]">{m.label}</span>
+                  <span className="block font-serif-display text-3xl font-bold text-white mt-1">{String(m.value || "—")}</span>
+                  <span className="block text-[12px] text-[#F3DCA6] mt-0.5">{m.note}</span>
                 </div>
               ))}
             </div>
-          )}
-        </div>
+            {customStats.length > 0 && (
+              <dl className="rounded-2xl border border-white/10 bg-white/[0.03] divide-y divide-white/10">
+                {customStats.map(([key, val]) => (
+                  <div key={key} className="flex justify-between items-center gap-4 px-4 py-3">
+                    <dt className="text-[12px] font-semibold uppercase tracking-wider text-[#c9c4b8] capitalize">{statLabel(key)}</dt>
+                    <dd className="font-serif-text font-bold text-white text-right">{String(val)}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </section>
 
-        {/* Editorial Lookbook Mini Slider */}
-        <div className="space-y-3">
-          <h3 className="text-[11px] font-sans font-bold tracking-[0.2em] text-[#47453f] uppercase">
-            Couture Lookbook
-          </h3>
-          <div className="grid grid-cols-3 gap-2">
-            {creator.portfolio.map((imgUrl, idx) => (
-              <button
-                key={idx}
-                onClick={() => setLightboxImg(imgUrl)}
-                aria-label={`Enlarge lookbook photo ${idx + 1} of ${creator.portfolio.length}`}
-                className="relative aspect-[3/4] overflow-hidden rounded-xl bg-[#F4F3F0] border border-black/5 group cursor-pointer text-left"
-              >
-                <img
-                  src={imgUrl}
-                  alt={`${creator.name} — lookbook photo ${idx + 1}`}
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
-                  <span className="text-[11px] tracking-widest uppercase text-white font-sans font-bold bg-black/60 px-2 py-1 rounded">
-                    View
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
+          {/* Quote */}
+          {creator.quote && (
+            <figure className="relative rounded-2xl bg-gradient-to-br from-[#1b2440] to-[#10172a] border border-white/10 p-5 pl-12">
+              <span aria-hidden="true" className="absolute top-1 left-4 font-serif-display text-6xl leading-none text-[#E1C699]/70">&ldquo;</span>
+              <blockquote className="font-serif-text italic text-[17px] leading-relaxed text-[#f1ede4]">{creator.quote}</blockquote>
+            </figure>
+          )}
+
+          {/* Biography */}
+          <section aria-labelledby="creator-bio" className="space-y-3">
+            <SectionLabel id="creator-bio">Biography</SectionLabel>
+            <p className="text-[15px] text-[#e9e6df] leading-relaxed">{creator.bio}</p>
+          </section>
+
+          {/* Lookbook */}
+          {creator.portfolio?.length > 0 && (
+            <section aria-labelledby="creator-lookbook" className="space-y-3">
+              <SectionLabel id="creator-lookbook">Lookbook</SectionLabel>
+              <div className="grid grid-cols-3 gap-2">
+                {creator.portfolio.map((imgUrl, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setLightboxImg(imgUrl)}
+                    aria-label={`Enlarge lookbook photo ${idx + 1} of ${creator.portfolio.length}`}
+                    className={`relative overflow-hidden rounded-xl bg-[#141b2e] border border-[#E1C699]/25 group cursor-pointer text-left ${idx === 0 ? "col-span-2 row-span-2 aspect-square" : "aspect-square"}`}
+                  >
+                    <img
+                      src={imgUrl}
+                      alt={`${creator.name} — lookbook photo ${idx + 1}`}
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                      <span className="text-[11px] tracking-widest uppercase text-white font-bold bg-black/60 px-2 py-1 rounded">View</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </div>
 
       {/* Booking Drawer Action Trigger */}
-      <div className="p-4 md:p-6 border-t border-black/5 bg-[#FAF9F6]">
+      <div className="p-4 md:p-5 border-t border-[#E1C699]/25 bg-[#0d1324]">
         <button
           onClick={onOpenCollaboration}
-          className="w-full bg-[#111] hover:bg-[#2e2c29] text-white font-sans text-sm tracking-[0.12em] font-bold py-4 px-6 rounded-xl uppercase flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md active:scale-[0.98]"
+          className="w-full bg-gradient-to-r from-[#f3dca6] via-[#E1C699] to-[#c9a35c] hover:brightness-105 text-[#111] text-[13px] sm:text-sm tracking-[0.1em] font-bold py-4 px-5 rounded-xl uppercase whitespace-nowrap flex items-center justify-center gap-2 transition-all cursor-pointer shadow-[0_10px_30px_-10px_rgba(225,198,153,0.6)] active:scale-[0.98]"
           id="initiate-charter-btn"
         >
-          Send a brand enquiry
-          <ChevronRight className="w-4 h-4 text-champagne" aria-hidden="true" />
+          Hire {creator.name.replace(/^(Dr\.?|Mr\.?|Ms\.?|Mrs\.?)\s+/i, "").split(" ")[0]} for a campaign
+          <ChevronRight className="w-4 h-4" aria-hidden="true" />
         </button>
       </div>
 
@@ -290,7 +321,7 @@ export default function CreatorDetailPanel({
           </div>
 
           <p className="mt-12 text-xs font-serif-text italic text-[#E1C699] tracking-widest uppercase">
-            FSIA Influencer Creator Profile • Click anywhere or press Esc to close
+            Forever Influencer Creator Profile • Click anywhere or press Esc to close
           </p>
         </div>
         </Portal>

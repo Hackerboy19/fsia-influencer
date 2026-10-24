@@ -1,4 +1,4 @@
-// Automated site audit: SEO, status codes, retired branding, links and WCAG 2.2 AA.
+// Automated site audit: SEO, status codes, old brand name, links and WCAG 2.2 AA.
 //
 //   node scripts/audit-site.mjs [baseUrl] [--report=path.json] [--no-browser]
 //
@@ -13,9 +13,9 @@ const BASE = (args.find((a) => !a.startsWith("--")) || "http://127.0.0.1:8080").
 const REPORT = args.find((a) => a.startsWith("--report="))?.slice(9);
 const BROWSER = !args.includes("--no-browser");
 
-// The retired brand word. Searched case-insensitively, including HTML-entity,
+// The old brand name (the site is now "Forever Influencer"). Searched case-insensitively, including HTML-entity,
 // percent-encoded and JSON-escaped spellings.
-const PROHIBITED = "forever";
+const PROHIBITED = "fsia influencer";
 const prohibitedPattern = new RegExp(
   PROHIBITED.split("")
     .map((ch) => {
@@ -28,7 +28,7 @@ const prohibitedPattern = new RegExp(
   "i"
 );
 
-const PUBLIC_ROUTES = ["/", "/talent/", "/campaigns/", "/join/", "/membership/", "/faq/"];
+const PUBLIC_ROUTES = ["/", "/gallery/", "/talent/", "/campaigns/", "/join/", "/membership/", "/star-india/", "/green-light/", "/faq/", "/contact/"];
 const PRIVATE_ROUTES = ["/admin/"];
 const PUBLIC_APIS = ["/api/creators", "/api/campaigns", "/api/membership-plans", "/api/settings"];
 const VIEWPORTS = [
@@ -144,7 +144,7 @@ async function auditHttp() {
       if (description) descriptions.set(description, [...(descriptions.get(description) || []), path]);
     }
     const hit = findProhibited(html);
-    record("branding", `${path} HTML is free of the retired brand word`, !hit, hit);
+    record("branding", `${path} HTML does not use the old brand name`, !hit, hit);
     for (const m of html.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g)) assets.add(m[1]);
   }
 
@@ -156,14 +156,14 @@ async function auditHttp() {
     const res = await get(asset);
     record("http", `${asset} returns 200`, res.status === 200, `status ${res.status}`);
     const hit = findProhibited(res.body);
-    record("branding", `${asset} is free of the retired brand word`, !hit, hit);
+    record("branding", `${asset} does not use the old brand name`, !hit, hit);
   }
 
   for (const api of PUBLIC_APIS) {
     const res = await get(api);
     record("http", `${api} returns 200 JSON`, res.status === 200 && /json/.test(res.headers.get("content-type") || ""), `status ${res.status}`);
     const hit = findProhibited(res.body);
-    record("branding", `${api} data is free of the retired brand word`, !hit, hit);
+    record("branding", `${api} data does not use the old brand name`, !hit, hit);
   }
 
   // Soft-404 protection: unknown URLs must say 404, not serve the home page
@@ -252,28 +252,22 @@ async function auditBrowser() {
       return parts.join("\n");
     });
     const hit = findProhibited(text);
-    record("branding", `${label}: rendered page is free of the retired brand word`, !hit, hit);
+    record("branding", `${label}: rendered page does not use the old brand name`, !hit, hit);
   };
 
   for (const vp of VIEWPORTS) {
     const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, reducedMotion: "reduce" });
     // Audit traffic must never reach the site's real Google Analytics property
     await context.route(/google-analytics\.com|googletagmanager\.com/, (route) => route.abort());
-    for (const path of [...PUBLIC_ROUTES, "/__entered__/"]) {
+    for (const path of PUBLIC_ROUTES) {
       const page = await context.newPage();
       const errors = [];
       page.on("pageerror", (e) => errors.push(e.message));
       page.on("console", (m) => m.type() === "error" && !/WebGL|GPU|favicon/i.test(m.text()) &&
         !/google-analytics\.com|googletagmanager\.com/.test(m.location()?.url || "") && errors.push(m.text()));
-      const target = path === "/__entered__/" ? "/" : path;
-      const label = `${vp.name} ${path === "/__entered__/" ? "/ (explore view)" : path}`;
-      await page.goto(BASE + target, { waitUntil: "networkidle" });
-      if (path === "/__entered__/") {
-        await page.click("#enter-exposition-btn");
-        await page.waitForTimeout(1800);
-      } else {
-        await page.waitForTimeout(900);
-      }
+      const label = `${vp.name} ${path}`;
+      await page.goto(BASE + path, { waitUntil: "networkidle" });
+      await page.waitForTimeout(path === "/gallery/" ? 1800 : 900);
       const broken = await page.evaluate(() =>
         Array.from(document.images).filter((img) => img.complete && img.naturalWidth === 0 && img.getAttribute("src")).map((img) => img.getAttribute("src").slice(0, 80))
       );
@@ -288,7 +282,7 @@ async function auditBrowser() {
       await page.close();
     }
 
-    // Every overlay: accessible, free of the retired word, closes on Escape and returns focus
+    // Every overlay: accessible, free of the old brand name, closes on Escape and returns focus
     const dialogs = [
       { name: "brand enquiry", path: "/talent/", open: "#open-collaboration-form-btn, #open-collaboration-form-btn-mobile" },
       { name: "creator profile", path: "/talent/", open: 'button[aria-label^="View "]' },
