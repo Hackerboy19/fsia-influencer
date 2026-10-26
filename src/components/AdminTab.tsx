@@ -136,11 +136,11 @@ export default function AdminTab() {
 
   // Enterprise Dynamic Settings Configuration State
   const [settings, setSettings] = useState({
-    websiteTitle: "Forever Influencer Portal",
-    heroTitle: "FOREVER INFLUENCER",
+    websiteTitle: "FSIA Influencer",
+    heroTitle: "FSIA INFLUENCER",
     heroSubtitle: "THE EXQUISITE HALL OF LUXURY INFLUENCING & PRESTIGE COUTURE",
     ctaText: "SECURE VIP RUNWAY ACCESS",
-    footerText: "© 2026 Forever Influencer. All rights reserved.",
+    footerText: "© 2026 FSIA Influencer. All rights reserved.",
     logoUrl: "",
     primaryColor: "#E1C699",
     secondaryColor: "#111111",
@@ -1132,7 +1132,7 @@ export default function AdminTab() {
                         value={settings.websiteTitle} 
                         onChange={(e) => setSettings(prev => ({ ...prev, websiteTitle: e.target.value }))} 
                         className="w-full px-4 py-2.5 bg-white border border-black/10 rounded-xl text-xs" 
-                        placeholder="Forever Influencer Portal" 
+                        placeholder="FSIA Influencer" 
                       />
                     </div>
                     <div className="space-y-2">

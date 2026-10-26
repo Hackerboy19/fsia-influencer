@@ -100,6 +100,15 @@ class Store
             $this->data = $data;
             $this->save();
         }
+        if (empty($data['migrations']['debrand_v3'])) {
+            // v3: "Forever" is removed again and the site is "FSIA Influencer"
+            foreach (['creators', 'campaigns', 'membership_plans', 'system_settings'] as $key) {
+                $data[$key] = debrand_value($data[$key]);
+            }
+            $data['migrations']['debrand_v3'] = gmdate('c');
+            $this->data = $data;
+            $this->save();
+        }
         return $data;
     }
 

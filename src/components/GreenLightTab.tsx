@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { BookOpen, ChevronDown, Clock, Newspaper } from "lucide-react";
 import type { Creator } from "../data";
 import { routeForTab } from "../seo";
 import { BLOG_POSTS, MAGAZINE_PACKAGES } from "../content/awards";
@@ -7,49 +6,11 @@ import EnquiryForm from "./EnquiryForm";
 
 const PACKAGE_TITLES = MAGAZINE_PACKAGES.map((p) => p.title);
 
-function MagazineCover({ creator, onBook }: { creator?: Creator; onBook: () => void }) {
-  const [failed, setFailed] = useState(false);
-  return (
-    <figure className="group relative w-full max-w-xs mx-auto [perspective:1200px]">
-      <div className="surface-dark relative aspect-[3/4] rounded-xl overflow-hidden shadow-2xl bg-gradient-to-b from-[#123524] to-[#0b1f15] text-white transition-transform duration-700 md:[transform:rotateY(-10deg)_rotateX(2deg)] md:group-hover:[transform:rotateY(0deg)]">
-        {creator?.image && !failed && (
-          <img src={creator.image} alt="" onError={() => setFailed(true)} className="absolute inset-0 w-full h-full object-cover opacity-85" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/5 to-black/80" aria-hidden="true" />
-        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-        <div className="relative h-full flex flex-col p-5">
-          <p className="text-[9px] tracking-[0.25em] uppercase font-bold text-[#e9e6df]">FSIA Magazine · Creators &amp; Strategy</p>
-          <p className="font-serif-display text-[3.4rem] font-bold tracking-tight leading-none mt-1 fsia-gold-text">EXPLORE</p>
-          <p className="text-[11px] tracking-[0.5em] uppercase text-white text-center">Magazine</p>
-          <div className="mt-6 space-y-3 max-w-[60%]">
-            <p className="leading-tight"><span className="block font-serif-display text-base font-bold text-white">Influencer Success Stories</span><span className="block text-[10px] text-[#e9e6df]">How awardees turned recognition into brand deals</span></p>
-            <p className="leading-tight"><span className="block font-serif-display text-sm font-bold text-white">Brand Strategy</span><span className="block text-[10px] text-[#e9e6df]">What brand managers look for</span></p>
-          </div>
-          <span aria-hidden="true" className="absolute top-24 right-4 w-16 h-16 rounded-full bg-gradient-to-b from-[#f3dca6] to-[#b8893b] text-[#3b2a0c] text-[9px] font-bold uppercase leading-tight flex items-center justify-center text-center rotate-12 shadow-lg">
-            Award<br />winners<br />inside
-          </span>
-          <div className="mt-auto flex items-end justify-between gap-2">
-            {creator && <p className="text-[12px] text-[#e9e6df]">Cover: <span className="font-semibold text-white">{creator.name}</span></p>}
-            <button
-              type="button"
-              onClick={onBook}
-              aria-label="Book a cover story"
-              className="shrink-0 px-3 py-1.5 rounded-full bg-[#E1C699] hover:bg-[#f3dca6] text-[#111] text-[11px] font-bold uppercase tracking-wider cursor-pointer"
-            >
-              Book now
-            </button>
-          </div>
-        </div>
-      </div>
-      <div aria-hidden="true" className="mx-auto mt-3 h-4 w-3/4 rounded-full bg-black/20 blur-md" />
-      <figcaption className="sr-only">Explore Magazine cover preview{creator ? ` featuring ${creator.name}` : ""}</figcaption>
-    </figure>
-  );
-}
-
-export default function GreenLightTab({ coverCreator }: { coverCreator?: Creator }) {
+// Guides (expandable, all text in the page) and Explore Magazine bookings.
+// coverCreator is accepted for compatibility but no longer used: a mock magazine cover
+// with a real creator's photo implied a feature that may not exist.
+export default function GreenLightTab(_props: { coverCreator?: Creator }) {
   const route = routeForTab("greenlight");
-  const [openPost, setOpenPost] = useState<string | null>(null);
   const [bookingPackage, setBookingPackage] = useState<string>(PACKAGE_TITLES[0]);
 
   const book = (title: string) => {
@@ -59,91 +20,67 @@ export default function GreenLightTab({ coverCreator }: { coverCreator?: Creator
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto py-6 md:py-12 space-y-14">
-      <div className="space-y-2 max-w-3xl">
-        <span className="font-sans text-xs tracking-[0.3em] text-[#8E8D8A] uppercase font-bold block">Green Light</span>
-        <h1 className="font-serif-display text-3xl md:text-5xl font-bold tracking-tight text-[#111]">{route.heading}</h1>
-        <p className="font-serif-text text-[#2e2c29] text-lg leading-relaxed">{route.intro}</p>
-      </div>
+    <div className="page pt-10 md:pt-14 pb-16">
+      <header className="max-w-3xl space-y-3">
+        <p className="eyebrow">Green Light</p>
+        <h1 className="h-page">{route.heading}</h1>
+        <p className="lede">{route.intro}</p>
+      </header>
 
-      {/* Explore Magazine: cover preview and packages */}
-      <section aria-labelledby="magazine" className="relative overflow-hidden grid md:grid-cols-[1fr_1.3fr] gap-10 items-center bg-gradient-to-br from-[#FBF6EC] to-[#F1E6D0] border border-[#E1C699]/60 rounded-3xl p-6 md:p-10 shadow-sm">
-        <MagazineCover creator={coverCreator} onBook={() => book(PACKAGE_TITLES[0])} />
-        <div className="space-y-5">
-          <div>
-            <h2 id="magazine" className="font-serif-display text-2xl md:text-3xl font-bold text-[#111]">Explore Magazine</h2>
-            <p className="text-[15px] text-[#2e2c29] mt-1">
-              Influencer success stories, award winners and brand strategy. Book a feature for yourself or your brand.
-            </p>
-          </div>
-          <ul className="space-y-3">
-            {MAGAZINE_PACKAGES.map((p) => (
-              <li key={p.id} className="bg-white border border-black/10 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-                <div>
-                  <p className="font-semibold text-[#111]">{p.title}</p>
-                  <p className="text-sm text-[#2e2c29]">{p.text}</p>
+      <section aria-labelledby="blog" className="mt-12">
+        <h2 id="blog" className="h-section pb-4 border-b border-line">Guides</h2>
+        <ul className="divide-y divide-line border-b border-line">
+          {BLOG_POSTS.map((post) => (
+            <li key={post.id}>
+              <details className="group">
+                <summary className="grid gap-1 md:grid-cols-[10rem_minmax(0,1fr)_auto] md:gap-8 py-5 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                  <span className="text-[0.8125rem] text-ink-3">
+                    {post.category} · {post.readMinutes} min read
+                  </span>
+                  <span>
+                    <h3 className="font-display text-[1.3125rem] leading-snug text-ink group-hover:underline underline-offset-4 decoration-1">{post.title}</h3>
+                    <span className="block text-ink-2 mt-1">{post.excerpt}</span>
+                  </span>
+                  <span className="text-[0.875rem] font-semibold text-ink self-start md:pt-1">
+                    <span className="group-open:hidden">Read</span>
+                    <span className="hidden group-open:inline">Close</span>
+                  </span>
+                </summary>
+                <div className="md:pl-[12rem] pb-6 max-w-3xl space-y-3 text-ink-2 leading-relaxed">
+                  {post.body.map((para, i) => (
+                    <p key={i}>{para}</p>
+                  ))}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => book(p.title)}
-                  className="shrink-0 bg-[#111] hover:bg-[#222] text-white text-sm font-semibold px-4 py-2.5 rounded-xl cursor-pointer"
-                  aria-label={`Book ${p.title}`}
-                >
-                  Book now
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      {/* Blog */}
-      <section aria-labelledby="blog" className="space-y-5">
-        <h2 id="blog" className="font-serif-display text-2xl md:text-3xl font-bold text-[#111] inline-flex items-center gap-2">
-          <Newspaper className="w-6 h-6" aria-hidden="true" /> Green Light blog
-        </h2>
-        <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {BLOG_POSTS.map((post) => {
-            const isOpen = openPost === post.id;
-            return (
-              <li key={post.id} className="bg-white border border-black/10 rounded-2xl overflow-hidden hover:shadow-lg hover:border-[#1f5a3d]/40 transition-all">
-                <article>
-                  <h3 className="m-0">
-                    <button
-                      type="button"
-                      onClick={() => setOpenPost(isOpen ? null : post.id)}
-                      aria-expanded={isOpen}
-                      aria-controls={`post-${post.id}`}
-                      className="w-full text-left p-5 cursor-pointer hover:bg-[#FAF9F6] flex items-start justify-between gap-4"
-                    >
-                      <span className="space-y-1.5">
-                        <span className="flex items-center gap-3 text-[12px] font-bold uppercase tracking-wider text-[#2e2c29]">
-                          <span className="inline-flex items-center gap-1"><BookOpen className="w-3.5 h-3.5" aria-hidden="true" /> {post.category}</span>
-                          <span className="inline-flex items-center gap-1 font-medium normal-case tracking-normal"><Clock className="w-3.5 h-3.5" aria-hidden="true" /> {post.readMinutes} min read</span>
-                        </span>
-                        <span className="block font-serif-display text-lg font-bold text-[#111]">{post.title}</span>
-                        <span className="block text-sm text-[#2e2c29]">{post.excerpt}</span>
-                      </span>
-                      <ChevronDown className={`w-5 h-5 shrink-0 mt-1 transition-transform ${isOpen ? "rotate-180" : ""}`} aria-hidden="true" />
-                    </button>
-                  </h3>
-                  <div id={`post-${post.id}`} hidden={!isOpen} className="px-5 pb-5 space-y-3 text-[15px] leading-relaxed text-[#2e2c29]">
-                    {post.body.map((para, i) => (
-                      <p key={i}>{para}</p>
-                    ))}
-                  </div>
-                </article>
-              </li>
-            );
-          })}
+              </details>
+            </li>
+          ))}
         </ul>
       </section>
 
-      {/* Booking */}
-      <section id="magazine-booking" aria-labelledby="booking-heading" className="space-y-5 max-w-3xl scroll-mt-6">
-        <div>
-          <h2 id="booking-heading" className="font-serif-display text-2xl md:text-3xl font-bold text-[#111]">Book a magazine feature</h2>
-          <p className="text-[15px] text-[#2e2c29] mt-1">Tell us what you'd like to book. The Green Light team replies with dates and rates.</p>
+      <section aria-labelledby="magazine" className="mt-16 grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+        <div className="space-y-3">
+          <h2 id="magazine" className="h-section">Explore Magazine</h2>
+          <p className="text-ink-2">Book a cover story, an inside feature or a digital spotlight for yourself or your brand. We reply with dates and rates.</p>
+        </div>
+        <ul className="divide-y divide-line border-y border-line">
+          {MAGAZINE_PACKAGES.map((p) => (
+            <li key={p.id} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <p className="font-semibold text-ink">{p.title}</p>
+                <p className="text-[0.9375rem] text-ink-2">{p.text}</p>
+              </div>
+              <button type="button" onClick={() => book(p.title)} className="btn btn-sm btn-secondary shrink-0" aria-label={`Book ${p.title}`}>
+                Book
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section id="magazine-booking" aria-labelledby="booking-heading" className="mt-16 grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] scroll-mt-6">
+        <div className="space-y-3">
+          <h2 id="booking-heading" className="h-section">Booking request</h2>
+          <p className="text-ink-2">Tell us which package you are interested in and a little about you or your brand.</p>
         </div>
         <EnquiryForm
           type="booking"

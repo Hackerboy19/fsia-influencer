@@ -3,9 +3,10 @@
 // scripts/prerender-seo.ts, which writes one static HTML file per route plus
 // robots.txt and sitemap.xml so crawlers see complete metadata without JavaScript.
 import { FAQS } from "./content/faqs";
+import { BRAND_NAME } from "./content/brand";
 
 export const SITE_URL = "https://influencer.fsia.in";
-export const SITE_NAME = "Forever Influencer";
+export const SITE_NAME = BRAND_NAME;
 export const OG_IMAGE = `${SITE_URL}/og-image.png`;
 
 export type TabId =
@@ -38,12 +39,12 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "home",
     path: "/",
-    title: "Indian Influencer Award Agency & Company | Forever Influencer",
+    title: `Influencer Award & Creator Profiles in India | ${SITE_NAME}`,
     description:
-      "India's influencer award agency: apply for the Forever Influencer Award, get branding and marketing support, and connect with brands for paid deals.",
-    heading: "Best Indian Influencer Award Agency & Company",
+      "Browse reviewed profiles of Indian influencers, apply for the FSIA Influencer Award, and send brand collaboration enquiries to our team.",
+    heading: "Indian influencer profiles, reviewed before they are published",
     intro:
-      "Forever Influencer is an influencer award agency and company for India. Creators in every niche apply for one award, the Forever Influencer Award, become Star India members, receive branding and marketing support with a dedicated profile page, and connect with brands for paid business deals. Brands use FSIA to find and hire awarded, verified influencers by category and city.",
+      `${SITE_NAME} is an influencer award agency and creator directory for India. Creators apply for the ${SITE_NAME} Award and, once our team approves them, get a public profile with their category, city and work. Brands browse those profiles, see open campaigns and send collaboration enquiries, which our team follows up directly.`,
     indexable: true,
     priority: "1.0",
     changefreq: "weekly"
@@ -51,12 +52,12 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "catwalk",
     path: "/gallery/",
-    title: "3D Awardee Gallery | Forever Influencer",
+    title: `3D Profile Gallery | ${SITE_NAME}`,
     description:
-      "Walk through the FSIA 3D gallery of award winners and verified creators from India, section by section, and open any profile.",
-    heading: "3D Gallery of Awardees and Verified Creators",
+      "An interactive 3D gallery of published creator profiles. Move between sections and open any profile.",
+    heading: "3D profile gallery",
     intro:
-      "An interactive 3D gallery of FSIA award winners and verified creators. Move between gallery sections with the arrows and open any creator to see their profile and work.",
+      "An interactive 3D view of the published creator profiles. Move between sections with the arrows and open any creator to see their profile and work.",
     indexable: true,
     priority: "0.6",
     changefreq: "weekly"
@@ -64,12 +65,12 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "directory",
     path: "/talent/",
-    title: "Hire Verified Influencers in India | Forever Influencer",
+    title: `Hire Influencers in India: Creator Profiles | ${SITE_NAME}`,
     description:
-      "Find and hire verified Indian influencers and creators by category, city, reach and engagement, then send a brand collaboration request in minutes.",
-    heading: "Find and Hire Verified Influencers in India",
+      "Search reviewed Indian influencer profiles by name, category and city, open a profile to see their work, and send a brand collaboration enquiry.",
+    heading: "Creator profiles",
     intro:
-      "Browse verified influencers and creators from across India. Filter by category, city, reach and engagement, open a profile to see their work, and send a brand collaboration request. Every creator listed here has been reviewed and approved by the FSIA team.",
+      "Every profile here was submitted by the creator and approved by our team before publishing. Search by name, category or city, open a profile, and send an enquiry to hire influencers for your campaign.",
     indexable: true,
     priority: "0.9",
     changefreq: "daily"
@@ -77,12 +78,12 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "campaigns",
     path: "/campaigns/",
-    title: "Paid Brand Collaborations for Influencers | Forever Influencer",
+    title: `Paid Brand Collaborations for Influencers | ${SITE_NAME}`,
     description:
-      "Apply for paid brand collaborations and barter campaigns for Instagram and YouTube creators in India, across fashion, beauty, travel, lifestyle and tech.",
-    heading: "Paid Brand Campaigns for Influencers",
+      "Open brand collaborations for Instagram and YouTube creators in India. Each listing shows the budget, deliverables and who can apply.",
+    heading: "Open brand campaigns",
     intro:
-      "Paid brand collaborations and barter campaigns for Instagram and YouTube creators in India. Each campaign lists its budget, deliverables and eligibility, and micro influencers are welcome to apply.",
+      "Paid and barter collaborations for Instagram and YouTube creators in India. Each listing shows its budget, deliverables and eligibility. Applications go to our team, who pass shortlisted creators to the brand.",
     indexable: true,
     priority: "0.9",
     changefreq: "daily"
@@ -90,12 +91,12 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "apply",
     path: "/join/",
-    title: "Influencer Registration in India | Forever Influencer",
+    title: `Influencer Registration in India | ${SITE_NAME}`,
     description:
-      "Register as an influencer in India in three quick steps. Get verified and unlock paid brand collaborations, campaign invitations and PR opportunities.",
-    heading: "Register as an Influencer and Get Verified",
+      "Apply for the FSIA Influencer Award and a creator profile. A free, three-step form; our team reviews every application.",
+    heading: "Apply for the award and a profile",
     intro:
-      "Influencer registration takes about two minutes and is free. Tell us your category, city and audience on Instagram or YouTube, and our team reviews your profile. Once verified, you can apply for paid brand collaborations, receive campaign invitations and be listed for brands looking to hire influencers. Models, pageant contestants and creators in beauty, food, travel, tech, gaming and more are welcome from anywhere in India.",
+      "The application is free and takes about two minutes. Tell us your category, city and audience on Instagram or YouTube. Our team reviews each application; approved creators get a public profile that brands can browse, and can apply for paid brand collaborations. Creators in fashion, beauty, food, travel, tech, gaming and other niches are welcome from anywhere in India.",
     indexable: true,
     priority: "0.9",
     changefreq: "monthly"
@@ -103,12 +104,12 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "membership",
     path: "/membership/",
-    title: "Creator Membership Plans & Pricing | Forever Influencer",
+    title: `Creator Membership Plans & Pricing | ${SITE_NAME}`,
     description:
-      "Compare free and premium creator membership plans: verification badges, priority brand matching, portfolio shoots and dedicated talent management.",
-    heading: "Creator Membership Plans",
+      "Compare the free and paid creator membership plans, what each includes and how to request one.",
+    heading: "Membership plans",
     intro:
-      "Compare free and premium membership plans for influencers in India: verification badges, priority brand matching, portfolio shoots and talent management.",
+      "Compare the free and paid membership plans for creators. Choose a plan to send a request; our team replies with next steps and payment details.",
     indexable: true,
     priority: "0.7",
     changefreq: "monthly"
@@ -116,12 +117,12 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "starindia",
     path: "/star-india/",
-    title: "Star India Membership & Influencer Profiles | Forever Influencer",
+    title: `Star India Membership & Influencer Profiles | ${SITE_NAME}`,
     description:
-      "Star India is the FSIA membership for awarded creators: an Influencer ID profile page, your award on record, branding support and brand deal access.",
-    heading: "Star India Membership & Influencer Profiles",
+      "Star India is the membership for creators who receive the FSIA Influencer Award: a public profile, branding support and introductions to brands.",
+    heading: "Star India members",
     intro:
-      "Star India manages membership and profiles for FSIA awardees and verified creators. Every member gets an Influencer ID profile with their award, audience and work, plus endorsement representation, digital marketing support and introductions to brands.",
+      `Star India is the membership for creators who receive the ${SITE_NAME} Award. Members get a public profile with their award and work, help with branding and marketing, and introductions when a brand brief fits their niche.`,
     indexable: true,
     priority: "0.8",
     changefreq: "weekly"
@@ -129,12 +130,12 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "greenlight",
     path: "/green-light/",
-    title: "Green Light Blog & Explore Magazine Booking | Forever Influencer",
+    title: `Green Light Guides & Explore Magazine | ${SITE_NAME}`,
     description:
-      "Green Light is the FSIA blog and magazine desk: creator guides, award news and Explore Magazine features. Book a cover or feature for your profile.",
-    heading: "Green Light: Blog & Explore Magazine",
+      "Practical guides for Indian creators and brands, and bookings for Explore Magazine covers, features and digital spotlights.",
+    heading: "Green Light: guides and Explore Magazine",
     intro:
-      "Green Light handles the FSIA blog and Explore Magazine. Read guides for creators and brands, preview the current magazine cover, and book a cover story, feature or digital spotlight for yourself or your brand.",
+      "Green Light publishes practical guides for creators and brands and handles bookings for Explore Magazine: cover stories, inside features and digital spotlights.",
     indexable: true,
     priority: "0.7",
     changefreq: "weekly"
@@ -142,12 +143,12 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "faq",
     path: "/faq/",
-    title: "Influencer FAQs: GST, ASCI & Payments | Forever Influencer",
+    title: `Influencer FAQs: GST, ASCI & Payments | ${SITE_NAME}`,
     description:
-      "Answers for influencers and brands in India: registration, verification, GST, ASCI disclosure rules, payments and how brand collaborations work.",
-    heading: "Influencer & Brand FAQs",
+      "Answers for influencers and brands in India: registration, what the Reviewed mark means, GST, ASCI disclosure rules and pricing.",
+    heading: "Questions and answers",
     intro:
-      "Answers for creators and brands on influencer registration, verification, GST and payments, ASCI disclosure rules and how brand collaborations work.",
+      "How registration and profile review work, what the Reviewed mark means, GST and payments, ASCI disclosure rules and pricing a collaboration.",
     indexable: true,
     priority: "0.6",
     changefreq: "monthly"
@@ -155,12 +156,12 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "contact",
     path: "/contact/",
-    title: "Contact Forever Influencer | Support & Enquiries",
+    title: `Contact ${SITE_NAME} | Support & Enquiries`,
     description:
-      "Send a message to the Forever Influencer support team about awards, membership, magazine bookings or brand deals. We reply by email.",
-    heading: "Contact Us",
+      `Write to the ${SITE_NAME} team about the award, membership, magazine bookings, brand deals or a correction to a profile. We reply by email.`,
+    heading: "Contact us",
     intro:
-      "Questions about awards, Star India membership, magazine bookings or brand deals? Send us a message with the form below and our support team will reply by email.",
+      "Write to us about the award, membership, a magazine booking, a brand deal or a correction to a profile. We reply by email.",
     indexable: true,
     priority: "0.5",
     changefreq: "monthly"
@@ -168,7 +169,7 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "admin",
     path: "/admin/",
-    title: "Admin | Forever Influencer",
+    title: `Admin | ${SITE_NAME}`,
     description: "Administration workspace.",
     heading: "Admin",
     intro: "",

@@ -14,12 +14,18 @@ const check = (name: string, ok: boolean, detail = "") => {
 };
 
 const DEBRAND_CASES: [string, string][] = [
-  ["FSIA Creators & Influencer Portal", "Forever Influencer Portal"],
-  ["FSIA INFLUENCER", "FOREVER INFLUENCER"],
-  ["© 2026 FSIA Influencer. All rights reserved.", "© 2026 Forever Influencer. All rights reserved."],
-  ["Welcome to fsia influencer", "Welcome to Forever Influencer"],
-  ["FSIA Influencer Influencer awards", "Forever Influencer awards"],
-  ["Stay forever young", "Stay forever young"],
+  ["Forever Influencer Portal", "FSIA Influencer Portal"],
+  ["FOREVER INFLUENCER", "FSIA INFLUENCER"],
+  ["© 2026 Forever Influencer. All rights reserved.", "© 2026 FSIA Influencer. All rights reserved."],
+  ["The Forever Influencer Award", "The FSIA Influencer Award"],
+  ["FSIA — Forever Star India Awards", "FSIA Influencer"],
+  ["Welcome to Forever Star India Association (FSIA)", "Welcome to FSIA Influencer"],
+  ["Forever Free plan", "Always Free plan"],
+  ["Stay forever young", "Stay always young"],
+  ["The Forever Gala", "The Gala"],
+  ["fOrEvEr Icons", "Icons"],
+  ["Foreverstar fashion week", "star fashion week"],
+  ["FSIA Influencer Influencer awards", "FSIA Influencer awards"],
   ["FSIA-24527 and the FSIA team", "FSIA-24527 and the FSIA team"],
   ["Nothing to change here", "Nothing to change here"]
 ];
@@ -27,7 +33,7 @@ const DEBRAND_CASES: [string, string][] = [
 for (const [input, expected] of DEBRAND_CASES) {
   const out = debrandText(input);
   check(`debrandText(${JSON.stringify(input)})`, out === expected, `got ${JSON.stringify(out)}, expected ${JSON.stringify(expected)}`);
-  check(`debrandText(${JSON.stringify(input)}) has no old brand name`, !/fsia influencer/i.test(out));
+  check(`debrandText(${JSON.stringify(input)}) has no retired word`, !/forever/i.test(out));
 }
 
 // Must match isValidPhone() in server.ts and valid_phone() in helpers.php

@@ -1,13 +1,15 @@
 // Content for the award agency home page, Star India and Green Light.
 // Kept here (not inside components) so copy can be edited in one place.
 
-// There is one award: the Forever Influencer Award. It is open to creators in every niche.
-export const AWARD_NAME = "Forever Influencer Award";
+import { BRAND_NAME } from "./brand";
+
+// There is one award, named after the site. It is open to creators in every niche.
+export const AWARD_NAME = `${BRAND_NAME} Award`;
 
 export const AWARD = {
   name: AWARD_NAME,
   tagline: "India's award for influencers and digital creators",
-  text: "One award, judged across reach, impact and the quality of your work. Winners join Star India and get branding, marketing and brand-deal support."
+  text: "One award, open to every niche. Our team reviews each application on the quality of the work, the audience and its impact. Winners join Star India and get help with branding, marketing and brand deals."
 } as const;
 
 // Creator niches that can apply (these are not separate award categories)
@@ -25,7 +27,7 @@ export const ELIGIBLE_NICHES = [
 ] as const;
 
 export const AWARD_PERKS = [
-  { title: "Star India membership", text: "An Influencer ID profile with your award, audience and work." },
+  { title: "Star India membership", text: "A public profile with your award, category, city and work." },
   { title: "Branding & marketing", text: "Endorsement representation and digital marketing support." },
   { title: "Brand introductions", text: "Direct introductions when a brand brief fits your niche." }
 ] as const;
@@ -34,7 +36,7 @@ export const VALUE_FLOW = [
   {
     step: 1,
     title: "Apply for Award & Become a Member",
-    text: "Apply for the Forever Influencer Award. Winners enter the ecosystem as Star India members."
+    text: `Apply for the ${AWARD_NAME}. Winners become Star India members.`
   },
   {
     step: 2,
@@ -61,7 +63,7 @@ export interface BlogPost {
 export const BLOG_POSTS: BlogPost[] = [
   {
     id: "how-to-apply-for-an-influencer-award",
-    title: "How to apply for the Forever Influencer Award",
+    title: `How to apply for the ${AWARD_NAME}`,
     excerpt: "What the jury looks at and how to present your work.",
     category: "Awards",
     readMinutes: 4,
@@ -86,11 +88,11 @@ export const BLOG_POSTS: BlogPost[] = [
   {
     id: "from-award-to-brand-deal",
     title: "From award to brand deal: what happens next",
-    excerpt: "How the FSIA team turns recognition into paid collaborations.",
+    excerpt: "What members get after the award, and how brand introductions work.",
     category: "Awards",
     readMinutes: 3,
     body: [
-      "Winners of the Forever Influencer Award join Star India and get an Influencer ID profile that brands can browse.",
+      `Winners of the ${AWARD_NAME} join Star India and get a public profile that brands can browse.`,
       "The branding team helps refresh your bio, portfolio and media kit so they match the award.",
       "When a brand brief fits your category and city, the team introduces you directly and helps with the contract."
     ]
@@ -114,8 +116,8 @@ export const BLOG_POSTS: BlogPost[] = [
     category: "For Brands",
     readMinutes: 3,
     body: [
-      "Awarded creators have already been reviewed by the FSIA team, so you skip the first round of vetting.",
-      "Every Star India profile lists category, city, reach and engagement, which makes shortlisting quicker.",
+      "Awarded creators have already been reviewed by our team, which saves you a first round of screening.",
+      "Profiles list category and city, plus the audience figures each creator supplied, which makes a first shortlist quicker.",
       "Send a brand enquiry and the team suggests creators who match your brief and budget."
     ]
   }
@@ -127,7 +129,14 @@ export const MAGAZINE_PACKAGES = [
   { id: "spotlight", title: "Digital Spotlight", text: "An online profile feature shared across FSIA social channels." }
 ] as const;
 
-export const CONTACT_TOPICS = ["Awards & applications", "Star India membership", "Magazine booking", "Brand deals", "Something else"] as const;
+export const CONTACT_TOPICS = [
+  "Awards & applications",
+  "Star India membership",
+  "Magazine booking",
+  "Brand deals",
+  "Profile correction or removal",
+  "Something else"
+] as const;
 
 /** Short, stable member number shown on Influencer ID cards (derived from the name, not stored) */
 export function influencerId(name: string): string {

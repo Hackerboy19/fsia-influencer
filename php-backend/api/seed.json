@@ -235,11 +235,11 @@
   ],
   "admin_logs": [],
   "system_settings": {
-    "websiteTitle": "Forever Influencer Portal",
-    "heroTitle": "FOREVER INFLUENCER",
-    "heroSubtitle": "Connect with verified creators, launch brand campaigns and grow your influence.",
-    "ctaText": "EXPLORE THE PORTAL",
-    "footerText": "© 2026 Forever Influencer. All rights reserved.",
+    "websiteTitle": "FSIA Influencer",
+    "heroTitle": "FSIA INFLUENCER",
+    "heroSubtitle": "Reviewed profiles of Indian creators, the FSIA Influencer Award and brand enquiries.",
+    "ctaText": "BROWSE PROFILES",
+    "footerText": "© 2026 FSIA Influencer. All rights reserved.",
     "logoUrl": "",
     "primaryColor": "#E1C699",
     "secondaryColor": "#111111",
@@ -322,6 +322,7 @@
   "enquiries": [],
   "migrations": {
     "debrand_v1": "seed",
-    "debrand_v2": "seed"
+    "debrand_v2": "seed",
+    "debrand_v3": "seed"
   }
 }

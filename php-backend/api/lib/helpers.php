@@ -273,17 +273,25 @@ function require_admin(Store $store, bool $allowDefaultPassword = false): string
 }
 
 // ----------------------------------------------------
-// BRAND NAME — the public brand is "Forever Influencer" (decided 2026-10-24).
-// Older stored text that still says "FSIA Influencer" is renamed in every public
-// API response, so settings and content saved before the change read correctly.
+// BRAND NAME — the public brand is "FSIA Influencer". The word "Forever" must not appear in
+// anything visitors see (Boss, 2026-10-26; this replaces the 2026-10-24 "Forever Influencer" rename).
+// Stored text from either earlier naming is rewritten in every public API response.
 // Keep in sync with debrandText() in server/db.ts
 // ----------------------------------------------------
 function debrand_text(string $text): string
 {
     $rules = [
-        ['/FSIA Creators & Influencer Portal/iu', 'Forever Influencer Portal'],
-        ['/\bFSIA Influencer\b/iu', 'Forever Influencer'],
-        ['/\b(Forever Influencer) Influencer\b/iu', null],
+        ['/FSIA\s*[—-]\s*Forever Star India Awards/iu', 'FSIA Influencer'],
+        ['/Forever Star India(?: Awards| Association)?(?: \(FSIA\))?/iu', 'FSIA Influencer'],
+        ['/\bForever Influencer\b/iu', 'FSIA Influencer'],
+        ['/\bForever Free\b/iu', 'Always Free'],
+        // Lower-case prose ("stay forever young") keeps its meaning with "always"
+        ['/\bforever\b/u', 'always'],
+        // Any other spelling is the old brand prefix or suffix: drop it
+        ['/\bforever\s+/iu', ''],
+        ['/\s*\bforever\b/iu', ''],
+        ['/forever/iu', ''],
+        ['/\b(FSIA Influencer) Influencer\b/iu', null],
     ];
     foreach ($rules as [$pattern, $replacement]) {
         $text = preg_replace_callback($pattern, function ($m) use ($replacement) {

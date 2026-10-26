@@ -483,11 +483,11 @@ const INITIAL_LOGS: AdminLog[] = [
 ];
 
 export const DEFAULT_SETTINGS: SystemSettings = {
-  websiteTitle: "Forever Influencer Portal",
-  heroTitle: "FOREVER INFLUENCER",
-  heroSubtitle: "Connect with verified creators, launch brand campaigns and grow your influence.",
-  ctaText: "EXPLORE THE PORTAL",
-  footerText: "© 2026 Forever Influencer. All rights reserved.",
+  websiteTitle: "FSIA Influencer",
+  heroTitle: "FSIA INFLUENCER",
+  heroSubtitle: "Reviewed profiles of Indian creators, the FSIA Influencer Award and brand enquiries.",
+  ctaText: "BROWSE PROFILES",
+  footerText: "© 2026 FSIA Influencer. All rights reserved.",
   logoUrl: "",
   primaryColor: "#E1C699",
   secondaryColor: "#111111",
@@ -511,7 +511,7 @@ export function createDefaultDb(): DatabaseSchema {
     influencer_applications: [],
     membership_plans: INITIAL_PLANS,
     enquiries: [],
-    migrations: { debrand_v1: "seed", debrand_v2: "seed" }
+    migrations: { debrand_v1: "seed", debrand_v2: "seed", debrand_v3: "seed" }
   }));
 }
 
@@ -542,16 +542,24 @@ export function needsRehash(stored: string): boolean {
 }
 
 // ----------------------------------------------------
-// BRAND NAME — the public brand is "Forever Influencer" (decided 2026-10-24).
-// Older stored text that still says "FSIA Influencer" is renamed in every public
-// API response, so settings and content saved before the change read correctly.
+// BRAND NAME — the public brand is "FSIA Influencer". The word "Forever" must not appear in
+// anything visitors see (Boss, 2026-10-26; this replaces the 2026-10-24 "Forever Influencer" rename).
+// Stored text from either earlier naming is rewritten in every public API response.
 // Keep in sync with debrand_text() in php-backend/api/lib/helpers.php
 // ----------------------------------------------------
 // A null replacement keeps the first capture group
 const DEBRAND_RULES: [RegExp, string | null][] = [
-  [/FSIA Creators & Influencer Portal/gi, "Forever Influencer Portal"],
-  [/\bFSIA Influencer\b/gi, "Forever Influencer"],
-  [/\b(Forever Influencer) Influencer\b/gi, null]
+  [/FSIA\s*[—-]\s*Forever Star India Awards/gi, "FSIA Influencer"],
+  [/Forever Star India(?: Awards| Association)?(?: \(FSIA\))?/gi, "FSIA Influencer"],
+  [/\bForever Influencer\b/gi, "FSIA Influencer"],
+  [/\bForever Free\b/gi, "Always Free"],
+  // Lower-case prose ("stay forever young") keeps its meaning with "always"
+  [/\bforever\b/g, "always"],
+  // Any other spelling is the old brand prefix or suffix: drop it
+  [/\bforever\s+/gi, ""],
+  [/\s*\bforever\b/gi, ""],
+  [/forever/gi, ""],
+  [/\b(FSIA Influencer) Influencer\b/gi, null]
 ];
 
 export function debrandText(text: string): string {
@@ -641,6 +649,15 @@ export function getDb(): DatabaseSchema {
       parsed.membership_plans = debrandValue(parsed.membership_plans);
       parsed.system_settings = debrandValue(parsed.system_settings);
       parsed.migrations = { ...parsed.migrations, debrand_v2: new Date().toISOString() };
+      saveDb(parsed);
+    }
+    if (!parsed.migrations?.debrand_v3) {
+      // v3: "Forever" is removed again and the site is "FSIA Influencer"
+      parsed.creators = debrandValue(parsed.creators);
+      parsed.campaigns = debrandValue(parsed.campaigns);
+      parsed.membership_plans = debrandValue(parsed.membership_plans);
+      parsed.system_settings = debrandValue(parsed.system_settings);
+      parsed.migrations = { ...parsed.migrations, debrand_v3: new Date().toISOString() };
       saveDb(parsed);
     }
     return parsed;

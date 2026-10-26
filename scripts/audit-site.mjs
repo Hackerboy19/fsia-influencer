@@ -13,9 +13,9 @@ const BASE = (args.find((a) => !a.startsWith("--")) || "http://127.0.0.1:8080").
 const REPORT = args.find((a) => a.startsWith("--report="))?.slice(9);
 const BROWSER = !args.includes("--no-browser");
 
-// The old brand name (the site is now "Forever Influencer"). Searched case-insensitively, including HTML-entity,
+// The prohibited word (Boss, 2026-10-26: "Forever" must not appear anywhere public). Searched case-insensitively, including HTML-entity,
 // percent-encoded and JSON-escaped spellings.
-const PROHIBITED = "fsia influencer";
+const PROHIBITED = "forever";
 const prohibitedPattern = new RegExp(
   PROHIBITED.split("")
     .map((ch) => {
@@ -282,12 +282,12 @@ async function auditBrowser() {
       await page.close();
     }
 
-    // Every overlay: accessible, free of the old brand name, closes on Escape and returns focus
+    // Every overlay: accessible, free of the prohibited word, closes on Escape and returns focus
     const dialogs = [
-      { name: "brand enquiry", path: "/talent/", open: "#open-collaboration-form-btn, #open-collaboration-form-btn-mobile" },
-      { name: "creator profile", path: "/talent/", open: 'button[aria-label^="View "]' },
-      { name: "campaign application", path: "/campaigns/", open: 'button[aria-label^="Apply now for"]' },
-      { name: "membership request", path: "/membership/", open: 'button:has-text("Enroll in")' }
+      { name: "brand enquiry", path: "/", open: 'main button:has-text("Send a brand enquiry")' },
+      { name: "creator profile", path: "/talent/", open: "#influencer-directory-tab h2 a" },
+      { name: "campaign application", path: "/campaigns/", open: 'button[aria-label^="Apply for"]' },
+      { name: "membership request", path: "/membership/", open: 'button:has-text("Request ")' }
     ];
     for (const d of dialogs) {
       const page = await context.newPage();

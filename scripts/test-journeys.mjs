@@ -77,65 +77,103 @@ for (const vp of [
   page.on("pageerror", (e) => errors.push(e.message));
 
   await page.goto(BASE + "/", { waitUntil: "networkidle" });
-  check(`${vp.name}: home page shows the award agency heading`, /influencer\s+award agency/i.test(await h1(page)));
-  check(`${vp.name}: home page shows the header tabs`, (await page.locator("#main-nav-tabs").count()) === 1);
-  check(`${vp.name}: home page shows the one award`, (await page.locator("#the-award").innerText()).includes("Forever Influencer Award"));
-  await page.fill("#home-search", "forever");
-  check(`${vp.name}: home search finds the award`,
-    (await page.locator("#home-search-results button", { hasText: "Forever Influencer Award" }).count()) === 1);
-  await page.fill("#home-search", "");
-  await page.locator('a', { hasText: /^Walk the 3D gallery$/ }).click();
+  const desktop = vp.width >= 1024;
+  // Desktop uses the header links; smaller screens open the Menu dialog
+  const goVia = async (label) => {
+    if (desktop) {
+      await page.locator("#main-nav-tabs a", { hasText: new RegExp(`^${label}$`, "i") }).click();
+    } else {
+      await page.locator('button[aria-controls="site-menu"]').click();
+      await page.locator('#site-menu a', { hasText: new RegExp(`^${label}`, "i") }).first().click();
+    }
+    await page.waitForTimeout(700);
+  };
+
+  check(`${vp.name}: home page has an h1`, !!(await h1(page)));
+  check(`${vp.name}: header navigation is present`,
+    desktop ? (await page.locator("#main-nav-tabs").isVisible()) : (await page.locator('button[aria-controls="site-menu"]').isVisible()));
+  check(`${vp.name}: home page shows the one award`, (await page.locator("#the-award").innerText()).includes("FSIA Influencer Award"));
+  check(`${vp.name}: no "Forever" anywhere on the home page`, !/forever/i.test(await page.locator("body").innerText()) && !/forever/i.test(await page.title()));
+
+  // Home search opens the directory with the query applied
+  const firstName = (await page.locator("#home-profiles ~ * h3 a, section[aria-labelledby=home-profiles] h3 a").first().innerText().catch(() => "")).split(" ")[0];
+  if (firstName) {
+    await page.fill("#home-search", firstName);
+    await page.press("#home-search", "Enter");
+    await page.waitForTimeout(900);
+    check(`${vp.name}: home search opens /talent/ with the query`, new URL(page.url()).pathname === "/talent/" && (await page.inputValue("#directory-search")) === firstName);
+    check(`${vp.name}: directory shows a matching profile`, (await page.locator("#influencer-directory-tab h2 a", { hasText: firstName }).count()) >= 1);
+
+    // Profiles have their own address and the Back button closes them
+    await page.locator("#influencer-directory-tab h2 a").first().click();
+    await page.waitForTimeout(600);
+    check(`${vp.name}: opening a profile adds ?profile= to the address`, new URL(page.url()).searchParams.has("profile"));
+    check(`${vp.name}: profile dialog is open`, await page.locator('[role="dialog"][aria-labelledby="profile-name"]').isVisible());
+    await page.goBack();
+    await page.waitForTimeout(600);
+    check(`${vp.name}: Back closes the profile`, (await page.locator('[role="dialog"][aria-labelledby="profile-name"]').count()) === 0);
+    const shared = new URL(page.url());
+    await page.goto(BASE + "/talent/?profile=" + encodeURIComponent((await page.locator("#influencer-directory-tab h2 a").first().getAttribute("href")).split("profile=")[1]), { waitUntil: "networkidle" });
+    check(`${vp.name}: a shared profile link opens the profile`, await page.locator('[role="dialog"][aria-labelledby="profile-name"]').isVisible());
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(400);
+    check(`${vp.name}: Escape closes the profile`, (await page.locator('[role="dialog"][aria-labelledby="profile-name"]').count()) === 0);
+    void shared;
+  }
+
+  await page.goto(BASE + "/", { waitUntil: "networkidle" });
+  await page.locator("a", { hasText: /^3D gallery$/ }).first().click();
   await page.waitForTimeout(1500);
-  check(`${vp.name}: "Walk the 3D gallery" opens /gallery/`, new URL(page.url()).pathname === "/gallery/");
+  check(`${vp.name}: "3D gallery" opens /gallery/`, new URL(page.url()).pathname === "/gallery/");
   check(`${vp.name}: no admin button in the public header`,
     (await page.locator('header :is(button, a)').filter({ hasText: /admin/i }).count()) === 0 &&
     (await page.locator('header [aria-label*="admin" i], header [title*="admin" i]').count()) === 0);
 
-  // Catwalk arrows move between sections and stay there (the 3D scene used to snap back)
+  // Gallery arrows move between sections and stay there (the 3D scene used to snap back)
   const sectionLabel = () => page.locator('[aria-live="polite"]').innerText().then((t) => t.replace(/\s+/g, " "));
   await page.click("#next-section-btn");
-  const afterNext = await poll(sectionLabel, (t) => /2 \/ \d/.test(t), 4000);
+  const afterNext = await poll(sectionLabel, (t) => /Section 2 of \d/.test(t), 4000);
   await page.waitForTimeout(2500);
-  check(`${vp.name}: catwalk "next" arrow moves to section 2 and stays`, /2 \/ \d/.test(afterNext) && /2 \/ \d/.test(await sectionLabel()),
+  check(`${vp.name}: gallery "next" arrow moves to section 2 and stays`, /Section 2 of \d/.test(afterNext) && /Section 2 of \d/.test(await sectionLabel()),
     `${afterNext} → ${await sectionLabel()}`);
   await page.click("#prev-section-btn");
   await page.waitForTimeout(2500);
-  check(`${vp.name}: catwalk "previous" arrow returns to section 1`, /1 \/ \d/.test(await sectionLabel()), await sectionLabel());
+  check(`${vp.name}: gallery "previous" arrow returns to section 1`, /Section 1 of \d/.test(await sectionLabel()), await sectionLabel());
 
   const expected = {
-    Talent: "/talent/", Campaigns: "/campaigns/", "Star India": "/star-india/", "Green Light": "/green-light/",
-    Membership: "/membership/", "Get Verified": "/join/", Contact: "/contact/"
+    Profiles: "/talent/", "Star India": "/star-india/", Campaigns: "/campaigns/", Membership: "/membership/",
+    Magazine: "/green-light/", FAQ: "/faq/"
   };
   for (const [label, path] of Object.entries(expected)) {
-    await page.locator("#main-nav-tabs a", { hasText: new RegExp(`^${label}$`, "i") }).click();
-    await page.waitForTimeout(700);
+    await goVia(label);
     const url = new URL(page.url()).pathname;
-    check(`${vp.name}: header tab "${label}" → ${path}`, url === path, `landed on ${url}`);
+    check(`${vp.name}: navigation "${label}" → ${path}`, url === path, `landed on ${url}`);
     check(`${vp.name}: ${path} has a visible <h1>`, !!(await h1(page)));
-    check(`${vp.name}: ${path} marks its tab as current`,
-      (await page.locator('#main-nav-tabs [aria-current="page"]').innerText()).toLowerCase() === label.toLowerCase());
+    if (desktop) {
+      check(`${vp.name}: ${path} marks its link as current`,
+        (await page.locator('#main-nav-tabs [aria-current="page"]').innerText()).toLowerCase() === label.toLowerCase());
+    }
   }
   await page.goBack();
   await page.waitForTimeout(700);
-  check(`${vp.name}: browser Back returns to the previous section`, new URL(page.url()).pathname === "/join/");
+  check(`${vp.name}: browser Back returns to the previous section`, new URL(page.url()).pathname === "/green-light/");
 
-  await page.locator('a[aria-label="Forever Influencer — home"]').click();
+  await page.locator('header a[aria-label="FSIA Influencer, home"]').click();
   await page.waitForTimeout(900);
   check(`${vp.name}: logo returns to the home page`, new URL(page.url()).pathname === "/");
 
-  if (vp.name !== "desktop") {
-    for (const [label, path] of [["Talent", "/talent/"], ["Star India", "/star-india/"], ["Join", "/join/"], ["Contact", "/contact/"], ["Home", "/"]]) {
-      await page.locator('nav[aria-label="Quick links"] a', { hasText: new RegExp(`^${label}$`, "i") }).click();
-      await page.waitForTimeout(700);
-      check(`${vp.name}: bottom bar "${label}" → ${path}`, new URL(page.url()).pathname === path);
-    }
+  if (!desktop) {
+    await page.locator('button[aria-controls="site-menu"]').click();
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
+    check(`${vp.name}: Escape closes the menu`, (await page.locator("#site-menu").count()) === 0);
   }
 
   // Footer links on a content page
   await page.goto(BASE + "/faq/", { waitUntil: "networkidle" });
-  await page.locator('footer a', { hasText: "Membership Plans" }).last().click();
+  await page.locator('footer a', { hasText: "Membership plans" }).last().click();
   await page.waitForTimeout(700);
-  check(`${vp.name}: footer link "Membership Plans" → /membership/`, new URL(page.url()).pathname === "/membership/");
+  check(`${vp.name}: footer link "Membership plans" → /membership/`, new URL(page.url()).pathname === "/membership/");
 
   // Keyboard: skip link is the first thing Tab reaches
   await page.goto(BASE + "/talent/", { waitUntil: "networkidle" });
@@ -168,7 +206,12 @@ check("API rejects a creator application with an invalid phone (400)", badApp.st
 // ---------------------------------------------------------------------------
 async function brandEnquiry(page, label) {
   await page.goto(BASE + "/talent/", { waitUntil: "networkidle" });
-  await page.locator("#open-collaboration-form-btn, #open-collaboration-form-btn-mobile").filter({ visible: true }).first().click();
+  if (await page.locator("#open-collaboration-form-btn").isVisible()) {
+    await page.click("#open-collaboration-form-btn");
+  } else {
+    await page.locator('button[aria-controls="site-menu"]').click();
+    await page.locator("#site-menu button", { hasText: "Brand enquiry" }).click();
+  }
   await page.waitForSelector("#enquiry-brand");
   await page.click("#submit-collaboration-charter-btn");
   check(`${label} brand enquiry: empty submit shows an error`, await alertMatches(page, /brand or agency name/i));
@@ -251,7 +294,7 @@ async function creatorRegistration(page, label) {
 
 async function campaignApplication(page, label) {
   await page.goto(BASE + "/campaigns/", { waitUntil: "networkidle" });
-  await page.locator('button[aria-label^="Apply now for"]').first().click();
+  await page.locator('button[aria-label^="Apply for"]').first().click();
   await page.waitForSelector("#campaign-name");
   await page.locator("#campaign-application-drawer button[type=submit]").click();
   check(`${label} campaign application: empty submit shows an error`, await alertMatches(page, /full name/i));
@@ -268,7 +311,7 @@ async function campaignApplication(page, label) {
 
 async function membershipRequest(page, label) {
   await page.goto(BASE + "/membership/", { waitUntil: "networkidle" });
-  await page.locator('button:has-text("Enroll in")').first().click();
+  await page.locator('button:has-text("Request ")').first().click();
   await page.waitForSelector("#plan-name");
   await page.fill("#plan-name", TEST.member);
   await page.fill("#plan-email", TEST.email);

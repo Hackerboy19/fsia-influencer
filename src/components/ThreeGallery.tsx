@@ -48,7 +48,7 @@ export default function ThreeGallery({
 
     // 1. Scene, Camera, and WebGL Renderer Setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#FAF9F6"); // Pure luxury Alabaster
+    scene.background = new THREE.Color("#F7F5F0"); // page background
     scene.fog = new THREE.FogExp2("#FAF9F6", 0.04); // Ethereal daytime fog for depth
 
     const camera = new THREE.PerspectiveCamera(

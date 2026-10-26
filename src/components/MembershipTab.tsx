@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { routeForTab } from "../seo";
 import { motion, AnimatePresence } from "motion/react";
-import { Shield, Sparkles, Star, Award, CheckCircle2, DollarSign, ArrowRight, HelpCircle, X } from "lucide-react";
+import { CheckCircle2, ArrowRight, HelpCircle, X } from "lucide-react";
 import { useDialog, Portal } from "../lib/dialog";
 import {
   inputClass, labelClass, optionalClass, errorBoxClass,
@@ -15,90 +15,15 @@ interface Plan {
   price: string;
   period: string;
   accent: string;
-  icon: any;
+  icon?: string;
   perks: string[];
   popular?: boolean;
 }
 
-const ICON_MAP: Record<string, any> = {
-  Star,
-  Shield,
-  Award,
-  Sparkles
-};
-
-const FALLBACK_PLANS: Plan[] = [
-  {
-    id: "elite-star",
-    name: "Elite Star",
-    badge: "Standard Entry",
-    price: "₹0",
-    period: "Always Free",
-    accent: "#8E8D8A",
-    icon: Star,
-    perks: [
-      "Registry inclusion in the standard FSIA database",
-      "Basic creator profile page accessible to search queries",
-      "Apply to general public brand campaigns",
-      "Standard digital copy of your FSIA credentials"
-    ]
-  },
-  {
-    id: "silver-star",
-    name: "Silver Star",
-    badge: "Verified Status",
-    price: "₹4,999",
-    period: "per month (+18% GST)",
-    accent: "#C5C3C0", // Brushed Platinum
-    icon: Shield,
-    popular: false,
-    perks: [
-      "Verified Silver Star verification badge on your profile",
-      "Higher ranking in brand matching search inquiries",
-      "Up to 3 automated direct matchmaking recommendations per month",
-      "Invitations to state-level regional model meetups",
-      "Priority support from the FSIA helpdesk"
-    ]
-  },
-  {
-    id: "gold-star",
-    name: "Gold Star",
-    badge: "Professional Spotlight",
-    price: "₹9,999",
-    period: "per month (+18% GST)",
-    accent: "#E1C699", // Champagne Gold
-    icon: Award,
-    popular: true,
-    perks: [
-      "Verified Gold Star profile badge and priority listing",
-      "1 Professional couture portfolio shoot per year at local hub",
-      "10 Guaranteed brand match pitches submitted by FSIA team",
-      "Spotlight feature in the weekly FSIA Brand Newsletter",
-      "Dedicated access to our partner digital agency network",
-      "15% Discount on runway Brand Campaign entry vouchers"
-    ]
-  },
-  {
-    id: "royal-star",
-    name: "Royal Star Club",
-    badge: "The Ultimate Royal Crest",
-    price: "₹24,999",
-    period: "per month (+18% GST)",
-    accent: "#111111", // Deep obsidian
-    icon: Sparkles,
-    perks: [
-      "Bespoke Obsidian 'Royal Star Club' crest of excellence",
-      "Dedicated personal talent manager & collaboration counsel",
-      "1 Professional PR press release across Times of India / HT",
-      "VIP front-row seating passes to national Brand Campaigns & runway shows",
-      "Direct legal escrow protection on all brand assignments",
-      "Unlimited direct pitch access to global luxury houses"
-    ]
-  }
-];
 
 export default function MembershipTab() {
-  const [plans, setPlans] = useState<Plan[]>(FALLBACK_PLANS);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState<"form" | "success">("form");
@@ -119,18 +44,12 @@ export default function MembershipTab() {
     async function fetchPlans() {
       try {
         const res = await fetch("/api/membership-plans");
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.length > 0) {
-            const mapped = data.map((p: any) => ({
-              ...p,
-              icon: ICON_MAP[p.icon] || Star
-            }));
-            setPlans(mapped);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to fetch membership plans, falling back:", err);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        setPlans(Array.isArray(data) ? data.map((p: any) => ({ ...p, perks: Array.isArray(p.perks) ? p.perks : [] })) : []);
+        setLoadState("ready");
+      } catch {
+        setLoadState("error");
       }
     }
     fetchPlans();
@@ -197,104 +116,70 @@ export default function MembershipTab() {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 py-6 md:py-12 space-y-8" id="membership-tab-container">
-      {/* Title */}
-      <div className="text-center md:text-left space-y-2">
-        <span className="font-sans text-xs tracking-[0.3em] text-[#8E8D8A] uppercase font-bold block">
-          FSIA Premium Clubs
-        </span>
-        <h1 className="font-serif-display text-3xl md:text-5xl font-bold tracking-tight text-[#111]">
-          {routeForTab("membership").heading}
-        </h1>
-        <p className="font-serif-text italic text-[#2e2c29] text-base md:text-lg leading-relaxed max-w-2xl">
-          {routeForTab("membership").intro}
-        </p>
+    <div className="page pt-10 md:pt-14 pb-16" id="membership-tab-container">
+      <header className="max-w-3xl space-y-3">
+        <p className="eyebrow">For creators</p>
+        <h1 className="h-page">{routeForTab("membership").heading}</h1>
+        <p className="lede">{routeForTab("membership").intro}</p>
+        <p className="text-[0.9375rem] text-ink-2">No payment is taken on this website. Prices shown exclude 18% GST.</p>
+      </header>
+
+      <div className="mt-8" aria-live="polite">
+        {loadState === "loading" && <p className="text-ink-2">Loading plans…</p>}
+        {loadState === "error" && (
+          <p className="border border-line bg-surface p-6 text-ink-2">Membership plans could not be loaded right now. Please refresh the page or contact us.</p>
+        )}
+        {loadState === "ready" && plans.length === 0 && (
+          <p className="border border-line bg-surface p-6 text-ink-2">No membership plans are listed at the moment. Please contact us for details.</p>
+        )}
       </div>
 
-      {/* Grid of Plans */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {plans.map((plan) => {
-          const PlanIcon = plan.icon;
-          return (
-            <motion.div
-              key={plan.name}
-              className={`bg-white/60 border rounded-2xl p-6 flex flex-col justify-between space-y-6 hover:shadow-lg transition-all relative ${
-                plan.popular ? "border-champagne ring-2 ring-champagne/15" : "border-black/5"
-              }`}
-              whileHover={{ y: -3 }}
-              transition={{ duration: 0.3 }}
-            >
-              {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-champagne text-[#111] text-[11px] font-sans font-bold tracking-wider whitespace-nowrap px-3 py-1 rounded-full uppercase shadow">
-                  MOST POPULAR SELECTION
-                </div>
-              )}
-
-              <div className="space-y-4">
-                {/* Header */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1 min-w-0">
-                    <span className="text-[11px] font-sans text-[#8E8D8A] tracking-wider uppercase font-semibold block">
-                      {plan.badge}
-                    </span>
-                    <h3 className="font-serif-display text-2xl font-bold text-[#111]">
-                      {plan.name}
-                    </h3>
+      {plans.length > 0 && (
+        <ul className="grid gap-px bg-line border border-line sm:grid-cols-2 lg:grid-cols-4">
+          {plans.map((plan) => {
+            const free = plan.price === "₹0";
+            return (
+              <li key={plan.name} className="bg-surface p-6 flex flex-col gap-5">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    {plan.badge && <p className="text-[0.8125rem] text-ink-3">{plan.badge}</p>}
+                    {plan.popular && <p className="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-bronze">Recommended</p>}
                   </div>
-                  <div
-                    className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center border"
-                    style={{ borderColor: plan.accent + "30", backgroundColor: plan.accent + "05" }}
-                  >
-                    <PlanIcon className="w-5 h-5" style={{ color: plan.accent === "#111111" ? "#E1C699" : plan.accent }} />
-                  </div>
+                  <h2 className="font-display text-[1.5rem] text-ink">{plan.name}</h2>
                 </div>
-
-                {/* Pricing block */}
-                <div>
-                  <span className="text-3xl font-serif-display font-bold text-[#111]">{plan.price}</span>
-                  <span className="text-[11px] font-sans text-[#888] block mt-0.5">{plan.period}</span>
-                </div>
-
-                {/* Divider */}
-                <div className="w-full h-[1px] bg-black/5" />
-
-                {/* List of perks */}
-                <ul className="space-y-2.5">
+                <p>
+                  <span className="font-display text-[2rem] text-ink">{plan.price}</span>
+                  {plan.period && <span className="block text-[0.8125rem] text-ink-3">{plan.period}</span>}
+                </p>
+                <ul className="space-y-2 border-t border-line pt-4 flex-1">
                   {plan.perks.map((perk, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-[13px] leading-relaxed text-[#2e2c29]">
-                      <CheckCircle2 className="w-4 h-4 text-champagne shrink-0 mt-0.5" />
+                    <li key={idx} className="flex items-start gap-2 text-[0.9375rem] leading-snug text-ink-2">
+                      <CheckCircle2 className="w-4 h-4 text-ink-3 shrink-0 mt-0.5" aria-hidden="true" />
                       <span>{perk}</span>
                     </li>
                   ))}
                 </ul>
-              </div>
-
-              {/* Action */}
-              <button
-                onClick={() => {
-                  if (plan.price === "₹0") {
-                    // The free tier comes with standard registration
-                    window.dispatchEvent(new CustomEvent("change-tab", { detail: "apply" }));
-                  } else {
-                    setSelectedPlan(plan);
-                    setCheckoutStep("form");
-                    setRequestError("");
-                    setInvalidField("");
-                  }
-                }}
-                className={`w-full font-sans text-xs tracking-wider font-bold py-3 px-4 rounded-lg uppercase transition-all flex items-center justify-center gap-2 active:scale-95 cursor-pointer ${
-                  plan.accent === "#111111"
-                    ? "bg-[#111] hover:bg-[#2e2c29] text-[#FAF9F6]"
-                    : "bg-[#F3F3F1] border border-black/10 hover:bg-[#111] hover:text-white text-[#111]"
-                }`}
-              >
-                {plan.price === "₹0" ? "STANDARD ACCESS" : `ENROLL IN ${plan.name.toUpperCase()}`}
-                <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-              </button>
-            </motion.div>
-          );
-        })}
-      </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (free) {
+                      window.dispatchEvent(new CustomEvent("change-tab", { detail: "apply" }));
+                    } else {
+                      setSelectedPlan(plan);
+                      setCheckoutStep("form");
+                      setRequestError("");
+                      setInvalidField("");
+                    }
+                  }}
+                  className={`btn w-full ${plan.popular ? "btn-primary" : "btn-secondary"}`}
+                >
+                  {free ? "Apply for free" : `Request ${plan.name}`}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
       {/* Slide-over request drawer */}
       <Portal>
@@ -478,9 +363,7 @@ export default function MembershipTab() {
                 ) : (
                   /* Payment Success Screen */
                   <div role="status" className="p-6 md:p-8 border border-black/10 bg-white rounded-2xl shadow-xl text-center space-y-6 relative overflow-hidden">
-                    <div className="w-16 h-16 rounded-full bg-[#111] flex items-center justify-center text-champagne mx-auto">
-                      <Award className="w-8 h-8 text-champagne" />
-                    </div>
+                    <CheckCircle2 className="w-8 h-8 mx-auto text-[#2f6b45]" aria-hidden="true" />
 
                     <div className="space-y-1">
                       <span className="font-sans text-[11px] tracking-[0.2em] text-[#47453f] uppercase font-bold">
