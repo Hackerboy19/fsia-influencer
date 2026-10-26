@@ -23,8 +23,14 @@ const GROUPS: { title: string; links: FooterLinkItem[] }[] = [
     title: "For creators",
     links: [
       { label: "Join as a creator", tab: "apply" },
-      { label: "Open campaigns", tab: "campaigns" },
       { label: "Membership plans", tab: "membership" },
+      { label: "Open campaigns", tab: "campaigns" }
+    ]
+  },
+  {
+    title: "For brands",
+    links: [
+      { label: "Brand enquiry", action: "enquiry" },
       { label: "Guides and magazine", tab: "greenlight" }
     ]
   },
@@ -32,8 +38,7 @@ const GROUPS: { title: string; links: FooterLinkItem[] }[] = [
     title: "Help",
     links: [
       { label: "Questions and answers", tab: "faq" },
-      { label: "Contact us", tab: "contact" },
-      { label: "Brand enquiry", action: "enquiry" }
+      { label: "Contact us", tab: "contact" }
     ]
   }
 ];
@@ -67,9 +72,9 @@ function FooterLink({ item, onNavigate, onBrandEnquiry }: { item: FooterLinkItem
 export default function SiteFooter({ footerText, onNavigate, onBrandEnquiry }: SiteFooterProps) {
   return (
     <footer className="surface-dark bg-[#1B1A17] text-[#E7E3DA] mt-16">
-      <div className="page py-12 md:py-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-[minmax(0,4fr)_repeat(3,minmax(0,2fr))]">
-        <div className="space-y-3 max-w-sm">
-          <p className="font-display text-[1.375rem] text-white">{BRAND_NAME}</p>
+      <div className="page py-12 md:py-16 grid gap-x-8 gap-y-10 grid-cols-2 lg:grid-cols-[minmax(0,4fr)_repeat(4,minmax(0,2fr))]">
+        <div className="col-span-2 lg:col-span-1 space-y-3 max-w-sm">
+          <p className="flex items-center gap-2.5 font-display text-[1.375rem] text-white"><img src="/favicon.svg" alt="" width={28} height={28} className="w-7 h-7 rounded-[6px]" />{BRAND_NAME}</p>
           <p className="text-[0.9375rem] leading-relaxed text-[#CFCAC0]">
             A directory of creator profiles from across India, open to any creator. Every profile is reviewed by our team before it is published.
           </p>
@@ -77,8 +82,8 @@ export default function SiteFooter({ footerText, onNavigate, onBrandEnquiry }: S
         </div>
         {GROUPS.map((group) => (
           <nav key={group.title} aria-label={group.title}>
-            <p className="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[#B9B3A6] mb-3">{group.title}</p>
-            <ul className="space-y-2.5">
+            <p className="text-[0.8125rem] font-semibold uppercase tracking-[0.06em] text-[#C9C3B6] mb-3.5">{group.title}</p>
+            <ul className="space-y-3">
               {group.links.map((item) => (
                 <li key={item.label}>
                   <FooterLink item={item} onNavigate={onNavigate} onBrandEnquiry={onBrandEnquiry} />
@@ -89,7 +94,7 @@ export default function SiteFooter({ footerText, onNavigate, onBrandEnquiry }: S
         ))}
       </div>
       <div className="border-t border-white/15">
-        <div className="page py-5 flex flex-col sm:flex-row gap-2 justify-between text-[0.8125rem] text-[#B9B3A6]">
+        <div className="page py-5 flex flex-col sm:flex-row gap-2 justify-between text-[0.875rem] text-[#C9C3B6]">
           <p>{footerText}</p>
           <p>Profile details are supplied by creators. To correct one, use the contact page.</p>
         </div>

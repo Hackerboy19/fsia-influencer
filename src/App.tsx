@@ -345,7 +345,7 @@ export default function App() {
               onClick={() => setMenuOpen(true)}
               aria-expanded={menuOpen}
               aria-controls="site-menu"
-              className="lg:hidden inline-flex items-center gap-2 h-10 px-3 rounded-[4px] border border-line-strong text-ink text-[0.9375rem] font-semibold cursor-pointer"
+              className="lg:hidden inline-flex items-center gap-2 h-10 px-3 rounded-[4px] border border-field text-ink text-[0.9375rem] font-semibold cursor-pointer"
             >
               <Menu className="w-5 h-5" aria-hidden="true" /> Menu
             </button>
@@ -458,7 +458,7 @@ export default function App() {
                 disabled={activeSectionIndex === 0}
                 aria-label="Previous section"
                 id="prev-section-btn"
-                className="w-10 h-10 inline-flex items-center justify-center border border-line-strong rounded-[4px] text-ink disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                className="w-10 h-10 inline-flex items-center justify-center border border-field rounded-[4px] text-ink disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
               >
                 <ChevronLeft className="w-5 h-5" aria-hidden="true" />
               </button>
@@ -472,7 +472,7 @@ export default function App() {
                 disabled={activeSectionIndex === sections.length - 1}
                 aria-label="Next section"
                 id="next-section-btn"
-                className="w-10 h-10 inline-flex items-center justify-center border border-line-strong rounded-[4px] text-ink disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                className="w-10 h-10 inline-flex items-center justify-center border border-field rounded-[4px] text-ink disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
               >
                 <ChevronRight className="w-5 h-5" aria-hidden="true" />
               </button>

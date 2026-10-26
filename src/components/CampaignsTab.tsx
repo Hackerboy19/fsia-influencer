@@ -7,6 +7,7 @@ import {
   inputClass, labelClass, optionalClass, errorBoxClass,
   isValidEmail, isValidPhone, EMAIL_ERROR, PHONE_ERROR, focusField
 } from "../lib/forms";
+import FieldError, { errorProps } from "./FieldError";
 
 interface Campaign {
   id: string;
@@ -210,13 +211,13 @@ export default function CampaignsTab() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 180 }}
-              className="relative w-full md:max-w-xl h-full bg-[#FAF9F6] shadow-2xl flex flex-col border-l border-black/5 z-10 outline-none"
+              className="relative w-full md:max-w-xl h-full bg-paper shadow-2xl flex flex-col border-l border-line z-10 outline-none"
               id="campaign-application-drawer"
             >
               {/* Header */}
               <div className="p-5 md:p-8 border-b border-black/10 flex items-center justify-between gap-4 bg-[#F4F3F0]">
                 <div>
-                  <span className="font-sans text-[11px] tracking-[0.2em] text-[#47453f] uppercase font-bold">
+                  <span className="eyebrow">
                     Campaign application
                   </span>
                   <h2 id="campaign-dialog-title" className="font-serif-display text-lg md:text-xl text-[#111] tracking-tight mt-1">
@@ -228,7 +229,7 @@ export default function CampaignsTab() {
                   type="button"
                   onClick={closeDrawer}
                   aria-label="Close campaign application"
-                  className="w-11 h-11 shrink-0 rounded-full border border-black/15 flex items-center justify-center text-[#222] hover:bg-white transition-all cursor-pointer"
+                  className="w-11 h-11 shrink-0 rounded-[4px] flex items-center justify-center text-ink hover:bg-sunken transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" aria-hidden="true" />
                 </button>
@@ -241,7 +242,7 @@ export default function CampaignsTab() {
                     <p className="text-[0.9375rem] text-ink-2 leading-relaxed">
                       Your application goes to our team. If your profile fits the brief, we share it with the brand and contact you about terms before any work starts.
                     </p>
-                    <p className="text-[13px] text-[#47453f]">Fields marked * are required.</p>
+                    <p className="text-[0.875rem] text-ink-3">Fields marked * are required.</p>
 
                     <div>
                       <label htmlFor="campaign-name" className={labelClass}>Full name *</label>
@@ -251,12 +252,13 @@ export default function CampaignsTab() {
                         name="name"
                         autoComplete="name"
                         aria-required="true"
-                        aria-invalid={invalidField === "campaign-name" || undefined}
+                        {...errorProps("campaign-name", invalidField)}
                         value={formData.name}
                         onChange={handleInputChange}
                         
                         className={inputClass}
                       />
+                      <FieldError fieldId="campaign-name" invalidField={invalidField} message={errorMsg} />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -269,12 +271,13 @@ export default function CampaignsTab() {
                           inputMode="email"
                           autoComplete="email"
                           aria-required="true"
-                          aria-invalid={invalidField === "campaign-email" || undefined}
+                          {...errorProps("campaign-email", invalidField)}
                           value={formData.email}
                           onChange={handleInputChange}
                           placeholder="you@example.com"
                           className={inputClass}
                         />
+                        <FieldError fieldId="campaign-email" invalidField={invalidField} message={errorMsg} />
                       </div>
                       <div>
                         <label htmlFor="campaign-phone" className={labelClass}>WhatsApp number *</label>
@@ -285,12 +288,13 @@ export default function CampaignsTab() {
                           inputMode="tel"
                           autoComplete="tel"
                           aria-required="true"
-                          aria-invalid={invalidField === "campaign-phone" || undefined}
+                          {...errorProps("campaign-phone", invalidField)}
                           value={formData.phone}
                           onChange={handleInputChange}
                           placeholder="+91 98765 43210"
                           className={inputClass}
                         />
+                        <FieldError fieldId="campaign-phone" invalidField={invalidField} message={errorMsg} />
                       </div>
                     </div>
 
@@ -301,12 +305,13 @@ export default function CampaignsTab() {
                         type="text"
                         name="instagram"
                         aria-required="true"
-                        aria-invalid={invalidField === "campaign-social" || undefined}
+                        {...errorProps("campaign-social", invalidField)}
                         value={formData.instagram}
                         onChange={handleInputChange}
                         placeholder="instagram.com/username or youtube.com/@channel"
                         className={inputClass}
                       />
+                      <FieldError fieldId="campaign-social" invalidField={invalidField} message={errorMsg} />
                     </div>
 
                     <div>
@@ -324,7 +329,7 @@ export default function CampaignsTab() {
                       />
                     </div>
 
-                    {errorMsg && (
+                    {errorMsg && !invalidField && (
                       <div role="alert" className={errorBoxClass}>
                         {errorMsg}
                       </div>
@@ -335,7 +340,7 @@ export default function CampaignsTab() {
                       type="submit"
                       disabled={isSubmitting}
                       aria-busy={isSubmitting}
-                      className="w-full bg-[#111] hover:bg-[#2e2c29] text-[#FAF9F6] font-sans text-sm tracking-[0.12em] font-bold py-4 rounded-xl uppercase flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-70 disabled:cursor-wait"
+                      className="btn btn-primary w-full disabled:opacity-70 disabled:cursor-wait"
                     >
                       {isSubmitting ? (
                         <>
@@ -352,13 +357,13 @@ export default function CampaignsTab() {
                   </form>
                 ) : (
                   /* Success Screen */
-                  <div role="status" className="p-6 md:p-8 border border-black/10 bg-white rounded-2xl shadow-xl text-center space-y-6 relative overflow-hidden">
-                    <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 mx-auto">
+                  <div role="status" className="p-6 md:p-8 border border-line bg-surface text-center space-y-6 relative overflow-hidden">
+                    <div className="w-12 h-12 flex items-center justify-center text-[#2f6b45] mx-auto">
                       <CheckCircle2 className="w-8 h-8" aria-hidden="true" />
                     </div>
 
                     <div className="space-y-1">
-                      <span className="font-sans text-[11px] tracking-[0.2em] text-[#47453f] uppercase font-bold">
+                      <span className="eyebrow">
                         Application received
                       </span>
                       <h3 className="font-serif-display text-xl md:text-2xl text-[#111] font-bold">
@@ -373,7 +378,7 @@ export default function CampaignsTab() {
                     <button
                       type="button"
                       onClick={closeDrawer}
-                      className="w-full bg-[#111] hover:bg-[#2e2c29] text-[#FAF9F6] font-sans text-sm tracking-[0.12em] font-bold py-3.5 px-6 rounded-xl uppercase cursor-pointer"
+                      className="btn btn-primary w-full"
                     >
                       Back to campaigns
                     </button>

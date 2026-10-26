@@ -72,7 +72,7 @@ export default function DirectoryTab({ profiles, status, onSelectProfile, onAppl
   };
 
   const selectClass =
-    "h-11 w-full rounded-[4px] border border-line-strong bg-surface px-3 text-[0.9375rem] text-ink focus:outline-none focus:border-ink";
+    "h-11 w-full rounded-[4px] border border-field bg-surface px-3 text-[0.9375rem] text-ink focus:outline-none focus:border-ink";
 
   return (
     <div className="page pt-10 md:pt-14 pb-16" id="influencer-directory-tab">

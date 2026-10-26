@@ -11,6 +11,7 @@ import {
   PHONE_ERROR,
   focusField
 } from "../lib/forms";
+import FieldError, { errorProps } from "./FieldError";
 
 interface EnquiryFormProps {
   /** Enquiry type stored by the API (shown in Admin → Enquiries) */
@@ -62,6 +63,7 @@ export default function EnquiryForm({
   }, [initialSubject, subjectOptions]);
 
   const id = (field: string) => `${idPrefix}-${field}`;
+  const invalidId = invalid ? id(invalid) : "";
   const set = (field: keyof typeof values) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setValues((v) => ({ ...v, [field]: e.target.value }));
 
@@ -120,23 +122,27 @@ export default function EnquiryForm({
 
   return (
     <form onSubmit={submit} noValidate className="bg-surface border border-line p-5 md:p-8 space-y-5">
+      <p className="text-[0.875rem] text-ink-3">Fields marked * are required.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label htmlFor={id("name")} className={labelClass}>Name</label>
+          <label htmlFor={id("name")} className={labelClass}>Name *</label>
           <input id={id("name")} className={inputClass} autoComplete="name" value={values.name} onChange={set("name")}
-            aria-invalid={invalid === "name" || undefined} />
+            aria-required="true" {...errorProps(id("name"), invalidId)} />
+          <FieldError fieldId={id("name")} invalidField={invalidId} message={error} />
         </div>
         <div>
-          <label htmlFor={id("email")} className={labelClass}>Email</label>
-          <input id={id("email")} type="email" className={inputClass} autoComplete="email" value={values.email} onChange={set("email")}
-            aria-invalid={invalid === "email" || undefined} />
+          <label htmlFor={id("email")} className={labelClass}>Email *</label>
+          <input id={id("email")} type="email" inputMode="email" className={inputClass} autoComplete="email" value={values.email} onChange={set("email")}
+            aria-required="true" {...errorProps(id("email"), invalidId)} />
+          <FieldError fieldId={id("email")} invalidField={invalidId} message={error} />
         </div>
       </div>
       {phone === "required" && (
         <div>
-          <label htmlFor={id("phone")} className={labelClass}>Mobile number</label>
-          <input id={id("phone")} type="tel" className={inputClass} autoComplete="tel" placeholder="+91 98765 43210" value={values.phone}
-            onChange={set("phone")} aria-invalid={invalid === "phone" || undefined} />
+          <label htmlFor={id("phone")} className={labelClass}>Mobile number *</label>
+          <input id={id("phone")} type="tel" inputMode="tel" className={inputClass} autoComplete="tel" placeholder="+91 98765 43210" value={values.phone}
+            onChange={set("phone")} aria-required="true" {...errorProps(id("phone"), invalidId)} />
+          <FieldError fieldId={id("phone")} invalidField={invalidId} message={error} />
         </div>
       )}
       <div>
@@ -149,14 +155,15 @@ export default function EnquiryForm({
       </div>
       <div>
         <label htmlFor={id("message")} className={labelClass}>
-          {messageLabel}
+          {messageLabel} *
         </label>
         <textarea id={id("message")} rows={5} maxLength={2000} className={inputClass} value={values.message} onChange={set("message")}
-          aria-invalid={invalid === "message" || undefined} />
+          aria-required="true" {...errorProps(id("message"), invalidId)} />
+        <FieldError fieldId={id("message")} invalidField={invalidId} message={error} />
       </div>
-      {error && <div role="alert" className={errorBoxClass}>{error}</div>}
+      {error && !invalid && <div role="alert" className={errorBoxClass}>{error}</div>}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <p className="text-[0.8125rem] text-ink-3">
+        <p className="text-[0.875rem] text-ink-3">
           We reply by email. <span className={optionalClass}>Please don't share passwords or payment details here.</span>
         </p>
         <button

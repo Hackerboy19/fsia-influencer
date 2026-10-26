@@ -113,7 +113,7 @@ export const BLOG_POSTS: BlogPost[] = [
   {
     id: "hiring-awarded-influencers",
     title: "Why brands hire awarded influencers",
-    excerpt: "Shortlisting faster with creators who are already reviewed and verified.",
+    excerpt: "Shortlisting faster with creators our team has already reviewed.",
     category: "For Brands",
     readMinutes: 3,
     body: [
