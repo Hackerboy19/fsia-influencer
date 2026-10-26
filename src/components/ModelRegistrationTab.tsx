@@ -9,43 +9,16 @@ import { CREATOR_CATEGORIES, OTHER_CATEGORY } from "../content/creatorCategories
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "motion/react";
 import {
-  Sparkles,
   Instagram,
   CheckCircle2,
   Phone,
   ArrowRight,
   ArrowLeft,
   ShieldCheck,
-  Image as ImageIcon,
-  Briefcase,
-  Users,
   Mail,
   Upload,
   Link as LinkIcon
 } from "lucide-react";
-
-const PRESET_PORTRAITS = [
-  { 
-    name: "Sienna Brown (Editorial Noir)", 
-    url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format&fit=crop",
-    alt: "Sienna Brown - FSIA verified Indian influencer on premier brand collaboration platform"
-  },
-  { 
-    name: "Gold Glare (Couture Radiance)", 
-    url: "https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?q=80&w=600&auto=format&fit=crop",
-    alt: "Couture Radiance portrait representing creator economy monetization on the FSIA verified creator network"
-  },
-  { 
-    name: "Aria Sterling (High Fashion Minimal)", 
-    url: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=600&auto=format&fit=crop",
-    alt: "Aria Sterling - FSIA verified Indian influencer ready for elite brand collaborations"
-  },
-  { 
-    name: "Mystic Crimson (Royal Velvet)", 
-    url: "https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=600&auto=format&fit=crop",
-    alt: "Mystic Crimson portrait illustrating successful brand partnerships on the premium influencer marketing platform"
-  },
-];
 
 const CITIES = ["Mumbai", "New Delhi", "Bangalore", "Pune", "Chennai", "Kochi", "Hyderabad", "Kolkata", "Jaipur", "Ahmedabad", "Goa", "Other"];
 
@@ -88,9 +61,8 @@ export default function ModelRegistrationTab() {
   );
   const [categoryOther, setCategoryOther] = useState(draft.categoryOther || "");
   const [role, setRole] = useState(draft.role || "");
-  const [city, setCity] = useState(draft.city || "Mumbai");
-  const [imageType, setImageType] = useState<"upload" | "preset" | "custom">("upload");
-  const [presetImage, setPresetImage] = useState(PRESET_PORTRAITS[0].url);
+  const [city, setCity] = useState(draft.city || "");
+  const [imageType, setImageType] = useState<"upload" | "custom">("upload");
   const [customImage, setCustomImage] = useState("");
   const [uploadedFileName, setUploadedFileName] = useState("");
   const [isDragActive, setIsDragActive] = useState(false);
@@ -137,8 +109,7 @@ export default function ModelRegistrationTab() {
       .catch(() => toast.error("That file could not be read as an image."));
   };
 
-  const finalImage =
-    imageType === "preset" ? presetImage : customImage || (imageType === "upload" ? "" : "");
+  const finalImage = customImage;
 
   // Per-step validation: the message names the problem and focus moves to the field
   type Problem = { field: string; message: string } | null;
@@ -195,10 +166,11 @@ export default function ModelRegistrationTab() {
     setIsSubmitting(true);
     setErrorMsg("");
 
-    const image = finalImage || PRESET_PORTRAITS[0].url;
+    // No stand-in photo: a profile only ever shows the creator's own picture
+    const image = finalImage;
     const portfolio = portfolioUrls
       ? portfolioUrls.split(",").map((url) => url.trim()).filter(Boolean)
-      : [image];
+      : image ? [image] : [];
 
     fetch("/api/influencer-applications", {
       method: "POST",
@@ -239,9 +211,8 @@ export default function ModelRegistrationTab() {
     setCategory("");
     setCategoryOther("");
     setRole("");
-    setCity("Mumbai");
+    setCity("");
     setImageType("upload");
-    setPresetImage(PRESET_PORTRAITS[0].url);
     setCustomImage("");
     setUploadedFileName("");
     setBio("");
@@ -259,39 +230,19 @@ export default function ModelRegistrationTab() {
   const categoryTitle = category === OTHER_CATEGORY ? categoryOther.trim() : category;
 
   return (
-    <div className="w-full max-w-5xl mx-auto pb-8" id="influencer-registration-tab-container">
-      {/* 1. INTRO */}
-      <section className="text-center pt-8 pb-10 md:pt-14 md:pb-12 flex flex-col items-center space-y-5 max-w-3xl mx-auto px-2">
-        <span className="font-sans text-xs tracking-[0.25em] text-[#47453f] uppercase font-bold flex items-center gap-1.5">
-          <Sparkles className="w-4 h-4 text-champagne" />
-          Creator registration
-        </span>
-        <h1 className="font-serif-display text-4xl md:text-6xl text-[#111] leading-tight">
-          {routeForTab("apply").heading}
-        </h1>
-        <p className="text-base md:text-lg text-[#2e2c29] max-w-2xl leading-relaxed">{routeForTab("apply").intro}</p>
-        <div className="flex flex-col sm:flex-row gap-3 pt-2">
-          <a
-            href="#registration-form-section"
-            onClick={(e) => {
-              e.preventDefault();
-              document.getElementById("registration-form-section")?.scrollIntoView({ behavior: "smooth" });
-            }}
-            className="inline-flex items-center justify-center gap-2 bg-[#111] hover:bg-[#222] text-white font-semibold text-sm px-7 py-3.5 rounded-xl"
-          >
-            Start registration <ArrowRight className="w-4 h-4" />
-          </a>
-          <button
-            onClick={openBrandEnquiry}
-            className="inline-flex items-center justify-center gap-2 border-2 border-[#111] text-[#111] hover:bg-[#111] hover:text-white font-semibold text-sm px-6 py-3 rounded-xl cursor-pointer"
-          >
-            <Briefcase className="w-4 h-4" /> I'm a brand
-          </button>
-        </div>
-      </section>
+    <div className="page pb-16" id="influencer-registration-tab-container">
+      <header className="max-w-3xl space-y-3 pt-10 md:pt-14 pb-10">
+        <p className="eyebrow">Creator application</p>
+        <h1 className="h-page">{routeForTab("apply").heading}</h1>
+        <p className="lede">{routeForTab("apply").intro}</p>
+        <p className="text-[0.9375rem] text-ink-2">
+          Representing a brand?{" "}
+          <button type="button" onClick={openBrandEnquiry} className="link cursor-pointer">Send a brand enquiry instead</button>
+        </p>
+      </header>
 
       {/* 2. STEP-BY-STEP FORM */}
-      <section id="registration-form-section" className="max-w-2xl mx-auto scroll-mt-6">
+      <section id="registration-form-section" className="max-w-2xl scroll-mt-6">
         <AnimatePresence mode="wait">
           {!successData ? (
             <motion.div
@@ -299,7 +250,7 @@ export default function ModelRegistrationTab() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="bg-white border border-stone-300 shadow-sm rounded-2xl p-6 md:p-8"
+              className="bg-surface border border-line p-6 md:p-8"
             >
               {/* Progress */}
               <ol className="grid grid-cols-3 gap-2 mb-8" aria-label="Registration progress">
@@ -350,6 +301,7 @@ export default function ModelRegistrationTab() {
                       <div>
                         <label htmlFor="reg-city" className={labelClass}>City</label>
                         <select id="reg-city" value={city} onChange={(e) => setCity(e.target.value)} className={inputClass}>
+                          <option value="">Choose your city</option>
                           {CITIES.map((c) => (
                             <option key={c} value={c}>{c}</option>
                           ))}
@@ -358,7 +310,7 @@ export default function ModelRegistrationTab() {
                     </div>
                     <div>
                       <label htmlFor="reg-role" className={labelClass}>Title or achievement <span className={optionalClass}>(optional)</span></label>
-                      <input id="reg-role" type="text" placeholder="e.g. Fashion creator, Winner Miss India 2026"
+                      <input id="reg-role" type="text" placeholder="e.g. Fashion creator, Mumbai"
                         value={role} onChange={(e) => setRole(e.target.value)} className={inputClass} />
                     </div>
                   </>
@@ -371,7 +323,6 @@ export default function ModelRegistrationTab() {
                       <div className="flex gap-1 bg-stone-100 rounded-xl p-1 mb-3" role="tablist">
                         {([
                           ["upload", "Upload", Upload],
-                          ["preset", "Choose a sample", ImageIcon],
                           ["custom", "Paste a link", LinkIcon]
                         ] as const).map(([id, label, Icon]) => (
                           <button key={id} type="button" role="tab" aria-selected={imageType === id}
@@ -401,21 +352,6 @@ export default function ModelRegistrationTab() {
                             <p className="text-sm font-semibold text-[#111]">{customImage ? uploadedFileName || "Photo added" : "Tap to upload or drag a photo here"}</p>
                             <p className="text-[13px] text-[#47453f]">JPG or PNG. Large photos are resized automatically.</p>
                           </div>
-                        </div>
-                      )}
-
-                      {imageType === "preset" && (
-                        <div className="grid grid-cols-4 gap-2">
-                          {PRESET_PORTRAITS.map((p) => (
-                            <button key={p.name} type="button" onClick={() => setPresetImage(p.url)}
-                              aria-label={p.name} aria-pressed={presetImage === p.url}
-                              className={`relative aspect-[3/4] rounded-xl overflow-hidden border-2 cursor-pointer ${presetImage === p.url ? "border-[#111]" : "border-transparent hover:border-stone-400"}`}>
-                              <img src={p.url} alt={p.alt || p.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                              {presetImage === p.url && (
-                                <span className="absolute top-1.5 right-1.5 bg-[#111] text-white rounded-full p-0.5"><CheckCircle2 className="w-4 h-4" /></span>
-                              )}
-                            </button>
-                          ))}
                         </div>
                       )}
 
@@ -490,17 +426,21 @@ export default function ModelRegistrationTab() {
 
                     {/* Review before submitting */}
                     <div className="rounded-xl bg-stone-50 border border-stone-200 p-4 flex gap-4 items-center">
-                      <img src={finalImage || PRESET_PORTRAITS[0].url} alt="" className="w-14 h-14 rounded-lg object-cover border border-stone-200" referrerPolicy="no-referrer" />
+                      {finalImage ? (
+                        <img src={finalImage} alt="" className="w-14 h-14 rounded-[4px] object-cover border border-line" referrerPolicy="no-referrer" />
+                      ) : (
+                        <span className="w-14 h-14 rounded-[4px] bg-sunken border border-line shrink-0" aria-hidden="true" />
+                      )}
                       <div className="min-w-0 text-sm">
                         <p className="font-semibold text-[#111] truncate">{name || "—"}</p>
-                        <p className="text-[#2e2c29] truncate">{categoryTitle} · {city}{reach ? ` · ${reach} followers` : ""}</p>
+                        <p className="text-[#2e2c29] truncate">{[categoryTitle, city, reach ? `${reach} followers` : ""].filter(Boolean).join(" · ")}</p>
                         <button type="button" onClick={() => setStep(0)} className="text-[13px] font-semibold text-[#111] underline underline-offset-2 cursor-pointer">Edit details</button>
                       </div>
                     </div>
 
                     <p className="flex items-start gap-2 text-[13px] text-[#2e2c29]">
                       <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0" />
-                      Your email and phone number are only used by our team to contact you about verification.
+                      If we approve your application, your name, photo, category, city, bio, audience figures and motto are shown on a public profile. Your email and phone number are never published; our team uses them only to contact you.
                     </p>
                   </>
                 )}
@@ -539,7 +479,7 @@ export default function ModelRegistrationTab() {
               key="done"
               initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-white border border-stone-300 shadow-sm rounded-2xl p-6 md:p-8 text-center space-y-5"
+              className="bg-surface border border-line p-6 md:p-8 text-center space-y-5"
             >
               <div className="mx-auto w-14 h-14 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
                 <CheckCircle2 className="w-7 h-7" />
@@ -571,10 +511,10 @@ export default function ModelRegistrationTab() {
         </AnimatePresence>
 
         <p className="mt-6 text-center text-sm text-[#2e2c29]">
-          Want to see who's already verified?{" "}
+          Want to see published profiles first?{" "}
           <a href="/talent/" onClick={(e) => { e.preventDefault(); navigateTo("directory"); }}
             className="font-semibold text-[#111] underline underline-offset-2 inline-flex items-center gap-1">
-            <Users className="w-4 h-4" /> Browse the talent roster
+            Browse the directory
           </a>
         </p>
       </section>

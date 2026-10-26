@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { CheckCircle2, Send } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import {
   inputClass,
   labelClass,
@@ -20,6 +20,7 @@ interface EnquiryFormProps {
   subjectLabel: string;
   subjectOptions: readonly string[];
   initialSubject?: string;
+  initialMessage?: string;
   /** Contact asks only for name, email, subject and message; bookings also need a phone number */
   phone: "required" | "hidden";
   messageLabel: string;
@@ -35,6 +36,7 @@ export default function EnquiryForm({
   subjectLabel,
   subjectOptions,
   initialSubject,
+  initialMessage = "",
   phone,
   messageLabel,
   submitLabel,
@@ -45,7 +47,7 @@ export default function EnquiryForm({
     email: "",
     phone: "",
     subject: initialSubject && subjectOptions.includes(initialSubject) ? initialSubject : subjectOptions[0],
-    message: ""
+    message: initialMessage
   });
   const [invalid, setInvalid] = useState<Field | "">("");
   const [error, setError] = useState("");
@@ -105,19 +107,19 @@ export default function EnquiryForm({
 
   if (reference) {
     return (
-      <div role="status" className="bg-white border border-black/10 rounded-2xl p-6 md:p-8 text-center space-y-3">
-        <CheckCircle2 className="w-10 h-10 mx-auto text-emerald-700" aria-hidden="true" />
-        <p className="font-serif-display text-2xl font-bold text-[#111]">Thank you, {values.name.trim().split(" ")[0]}</p>
-        <p className="text-[15px] text-[#2e2c29]">{successText}</p>
-        <p className="text-sm text-[#47453f]">
-          Reference: <span className="font-mono font-semibold text-[#111]">{reference}</span>
+      <div role="status" className="bg-surface border border-line p-6 md:p-8 space-y-3">
+        <CheckCircle2 className="w-8 h-8 text-[#2f6b45]" aria-hidden="true" />
+        <p className="font-display text-[1.5rem] text-ink">Thank you, {values.name.trim().split(" ")[0]}</p>
+        <p className="text-ink-2">{successText}</p>
+        <p className="text-[0.875rem] text-ink-3">
+          Reference: <span className="font-mono font-semibold text-ink">{reference}</span>
         </p>
       </div>
     );
   }
 
   return (
-    <form onSubmit={submit} noValidate className="bg-white border border-black/10 rounded-2xl p-5 md:p-8 space-y-5 shadow-sm">
+    <form onSubmit={submit} noValidate className="bg-surface border border-line p-5 md:p-8 space-y-5">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label htmlFor={id("name")} className={labelClass}>Name</label>
@@ -154,15 +156,14 @@ export default function EnquiryForm({
       </div>
       {error && <div role="alert" className={errorBoxClass}>{error}</div>}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <p className="text-[13px] text-[#47453f]">
+        <p className="text-[0.8125rem] text-ink-3">
           We reply by email. <span className={optionalClass}>Please don't share passwords or payment details here.</span>
         </p>
         <button
           type="submit"
           disabled={sending}
-          className="inline-flex items-center justify-center gap-2 bg-[#111] hover:bg-[#222] text-white font-semibold text-sm px-6 py-3 rounded-xl cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+          className="btn btn-primary disabled:opacity-60 disabled:cursor-wait"
         >
-          <Send className="w-4 h-4" aria-hidden="true" />
           {sending ? "Sending…" : submitLabel}
         </button>
       </div>

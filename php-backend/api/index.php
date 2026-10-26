@@ -1,6 +1,6 @@
 <?php
 /**
- * Forever Influencer Platform — PHP API router.
+ * FSIA Influencer — PHP API router.
  *
  * Drop-in replacement for the Node/Express API in server.ts for shared hosting
  * (cPanel, Hostinger, LiteSpeed…). Data is stored in storage/db.json.
@@ -334,21 +334,22 @@ try {
         if ($creatorIndex($si, $creator['name']) !== null) {
             fail(400, 'A creator with this name already exists in this category.');
         }
-        $image = ($creator['image'] ?? '') ?: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format';
+        $image = (string)($creator['image'] ?? '');
         $stats = is_array($creator['stats'] ?? null) ? $creator['stats'] : [];
         $new = [
             'name' => $creator['name'],
-            'role' => ($creator['role'] ?? '') ?: 'Featured Star',
-            'city' => ($creator['city'] ?? '') ?: 'Mumbai',
+            // Only what the admin entered: no stand-in photo, city, bio or audience figures
+            'role' => (string)($creator['role'] ?? ''),
+            'city' => (string)($creator['city'] ?? ''),
             'image' => $image,
-            'bio' => ($creator['bio'] ?? '') ?: 'FSIA elite brand ambassador.',
+            'bio' => (string)($creator['bio'] ?? ''),
             'stats' => array_merge($stats, [
-                'reach' => ($stats['reach'] ?? '') ?: '100K',
-                'engagement' => ($stats['engagement'] ?? '') ?: '5.0%',
+                'reach' => (string)($stats['reach'] ?? ''),
+                'engagement' => (string)($stats['engagement'] ?? ''),
                 'verified' => ($stats['verified'] ?? true) !== false,
             ]),
-            'quote' => ($creator['quote'] ?? '') ?: 'Elegance is standard.',
-            'portfolio' => !empty($creator['portfolio']) && is_array($creator['portfolio']) ? array_values($creator['portfolio']) : [$image],
+            'quote' => (string)($creator['quote'] ?? ''),
+            'portfolio' => !empty($creator['portfolio']) && is_array($creator['portfolio']) ? array_values($creator['portfolio']) : ($image !== '' ? [$image] : []),
         ];
         $db['creators'][$si]['creators'][] = $new;
         $store->log('Added creator: ' . $new['name'] . ' to section: ' . $db['creators'][$si]['title']);
@@ -516,7 +517,7 @@ try {
         enforce_submission_limit($db);
         $registration = [
             'id' => 'reg-' . now_ms(),
-            'bookingId' => 'FSIA-VIP-' . random_int(100000, 999999),
+            'bookingId' => 'ENQ-' . random_int(100000, 999999),
             'timestamp' => display_date(),
             'brandName' => str_cut($body['brandName'], 200),
             'creatorName' => str_cut(($body['creatorName'] ?? '') ?: 'All VIP Roster', 200),
@@ -592,23 +593,24 @@ try {
         if (is_string($portfolio)) {
             $portfolio = array_values(array_filter(array_map('trim', explode(',', $portfolio))));
         }
-        $image = safe_image($body['image'] ?? '', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format');
+        $image = safe_image($body['image'] ?? '', '');
         $application = [
             'id' => 'inf-app-' . now_ms(),
             'name' => str_cut($body['name'], 200),
             'category' => str_cut($body['category'], 100),
             // Without a title, the category describes the creator (and files them on the Talent page)
-            'role' => str_cut(($body['role'] ?? '') ?: (trim((string)$body['category']) ?: 'Featured Star Model'), 200),
-            'city' => str_cut(($body['city'] ?? '') ?: 'Mumbai', 100),
+            'role' => str_cut(($body['role'] ?? '') ?: trim((string)$body['category']), 200),
+            // Blank answers stay blank: nothing is invented for the public profile
+            'city' => str_cut((string)($body['city'] ?? ''), 100),
             'image' => $image,
-            'bio' => str_cut(($body['bio'] ?? '') ?: 'Enthusiastic fashion icon looking to make an impact on the high-fashion runway.', 3000),
-            'reach' => str_cut(($body['reach'] ?? '') ?: '100K', 20),
-            'engagement' => str_cut(($body['engagement'] ?? '') ?: '5.0%', 20),
+            'bio' => str_cut((string)($body['bio'] ?? ''), 3000),
+            'reach' => str_cut((string)($body['reach'] ?? ''), 20),
+            'engagement' => str_cut((string)($body['engagement'] ?? ''), 20),
             // Portfolio entries are links; an embedded photo is only kept when it is the profile photo itself
             'portfolio' => is_array($portfolio) ? array_values(array_filter(array_map(function ($u) use ($image) {
                 return $u === $image ? $image : safe_image($u, '', false);
             }, array_slice($portfolio, 0, 12)))) : [],
-            'quote' => str_cut(($body['quote'] ?? '') ?: 'Elegance is standard.', 500),
+            'quote' => str_cut((string)($body['quote'] ?? ''), 500),
             'email' => str_cut($body['email'], 200),
             'phone' => str_cut($body['phone'], 50),
             'status' => 'pending',
@@ -639,13 +641,14 @@ try {
         } else {
             $db['creators'][$si]['creators'][] = [
                 'name' => $app['name'],
-                'role' => $app['role'] ?: 'Featured Star Model',
-                'city' => $app['city'] ?: 'Mumbai',
-                'image' => $app['image'],
-                'bio' => $app['bio'] ?: 'FSIA certified elite runway influencer.',
-                'stats' => ['reach' => $app['reach'] ?: '100K', 'engagement' => $app['engagement'] ?: '5.0%', 'verified' => true],
-                'quote' => $app['quote'] ?: 'Elegance is standard.',
-                'portfolio' => !empty($app['portfolio']) ? $app['portfolio'] : [$app['image']],
+                // Only what the creator submitted: no stand-in city, bio or audience figures
+                'role' => (string)($app['role'] ?? ''),
+                'city' => (string)($app['city'] ?? ''),
+                'image' => (string)($app['image'] ?? ''),
+                'bio' => (string)($app['bio'] ?? ''),
+                'stats' => ['reach' => (string)($app['reach'] ?? ''), 'engagement' => (string)($app['engagement'] ?? ''), 'verified' => true],
+                'quote' => (string)($app['quote'] ?? ''),
+                'portfolio' => !empty($app['portfolio']) ? $app['portfolio'] : (!empty($app['image']) ? [$app['image']] : []),
             ];
             $store->log('Approved & added model registration: ' . $app['name'] . ' to Runway: ' . $db['creators'][$si]['title']);
         }
@@ -838,7 +841,7 @@ try {
             "3. INTEGRATED OUTREACH STRATEGY (Specifically designed to showcase high engagement metrics)";
         $payload = [
             'contents' => [['parts' => [['text' => $userPrompt]]]],
-            'systemInstruction' => ['parts' => [['text' => ($settings['aiSystemPrompt'] ?? '') ?: 'You are an elite luxury media strategist for Forever Influencer. Format the output in clean markdown under 280 words.']]],
+            'systemInstruction' => ['parts' => [['text' => ($settings['aiSystemPrompt'] ?? '') ?: 'You are an experienced brand partnerships editor for Influencer Awards. Format the output in clean markdown under 280 words.']]],
             'generationConfig' => ['temperature' => (float)($settings['temperature'] ?? 0.7)],
         ];
 

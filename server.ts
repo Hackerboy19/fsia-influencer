@@ -315,18 +315,19 @@ app.post("/api/creators", authenticateAdmin, (req, res) => {
     // Build default structured stats if not supplied
     const newCreator: Creator = {
       name: creator.name,
-      role: creator.role || "Featured Star",
-      city: creator.city || "Mumbai",
-      image: creator.image || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format",
-      bio: creator.bio || "FSIA elite brand ambassador.",
+      // Only what the admin entered: no stand-in photo, city, bio or audience figures
+      role: creator.role || "",
+      city: creator.city || "",
+      image: creator.image || "",
+      bio: creator.bio || "",
       stats: {
-        reach: creator.stats?.reach || "100K",
-        engagement: creator.stats?.engagement || "5.0%",
-        verified: creator.stats?.verified !== false,
-        ...creator.stats
+        ...creator.stats,
+        reach: creator.stats?.reach || "",
+        engagement: creator.stats?.engagement || "",
+        verified: creator.stats?.verified !== false
       },
-      quote: creator.quote || "Elegance is standard.",
-      portfolio: creator.portfolio || [creator.image]
+      quote: creator.quote || "",
+      portfolio: creator.portfolio || (creator.image ? [creator.image] : [])
     };
 
     section.creators.push(newCreator);
@@ -679,7 +680,7 @@ app.post("/api/registrations", limitSubmissions, (req, res) => {
     }
 
     const db = getDb();
-    const bookingId = "FSIA-VIP-" + Math.floor(100000 + Math.random() * 900000);
+    const bookingId = "ENQ-" + Math.floor(100000 + Math.random() * 900000);
     const verificationHash = "0x" + crypto.randomBytes(4).toString("hex").toUpperCase() + "..." + crypto.randomBytes(2).toString("hex").toUpperCase();
 
     const newRegistration: Registration = {
@@ -783,7 +784,7 @@ app.post("/api/influencer-applications", limitSubmissions, (req, res) => {
     }
 
     const db = getDb();
-    const profileImage = safeImage(image, "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format");
+    const profileImage = safeImage(image, "");
     // Portfolio entries are links; an embedded photo is only kept when it is the profile photo itself
     const portfolioArray = (Array.isArray(portfolio)
       ? portfolio
@@ -797,14 +798,15 @@ app.post("/api/influencer-applications", limitSubmissions, (req, res) => {
       name,
       category: String(category).trim().slice(0, 100),
       // Without a title, the category describes the creator (and files them on the Talent page)
-      role: role || String(category).trim().slice(0, 100) || "Featured Star Model",
-      city: city || "Mumbai",
+      role: role || String(category).trim().slice(0, 100),
+      // Blank answers stay blank: nothing is invented for the public profile
+      city: city || "",
       image: profileImage,
-      bio: bio || "Enthusiastic fashion icon looking to make an impact on the high-fashion runway.",
-      reach: reach || "100K",
-      engagement: engagement || "5.0%",
+      bio: bio || "",
+      reach: reach || "",
+      engagement: engagement || "",
       portfolio: portfolioArray,
-      quote: quote || "Elegance is standard.",
+      quote: quote || "",
       email,
       phone,
       status: "pending" as const,
@@ -858,17 +860,18 @@ app.post("/api/influencer-applications/:id/approve", authenticateAdmin, (req, re
       if (!alreadyExists) {
         const newCreator: Creator = {
           name: application.name,
-          role: application.role || "Featured Star Model",
-          city: application.city || "Mumbai",
-          image: application.image || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format",
-          bio: application.bio || "FSIA certified elite runway influencer.",
+          // Only what the creator submitted: no stand-in photo, city, bio or audience figures
+          role: application.role || "",
+          city: application.city || "",
+          image: application.image || "",
+          bio: application.bio || "",
           stats: {
-            reach: application.reach || "100K",
-            engagement: application.engagement || "5.0%",
+            reach: application.reach || "",
+            engagement: application.engagement || "",
             verified: true
           },
-          quote: application.quote || "Elegance is standard.",
-          portfolio: application.portfolio && application.portfolio.length > 0 ? application.portfolio : [application.image]
+          quote: application.quote || "",
+          portfolio: application.portfolio && application.portfolio.length > 0 ? application.portfolio : application.image ? [application.image] : []
         };
         section.creators.push(newCreator);
         logAction(`Approved & added model registration: ${application.name} to Runway: ${section.title}`);
@@ -1008,7 +1011,7 @@ app.post("/api/gemini/optimize", authenticateAdmin, async (req, res) => {
 
   const modelName = settings.modelSelection || "gemini-3.5-flash";
   const systemInstruction = settings.aiSystemPrompt || `
-    You are an elite, world-class haute couture brand director and luxury media strategist for Forever Influencer.
+    You are an experienced brand partnerships editor for FSIA Influencer.
     Your job is to optimize a creator's rough pitch/concept for a luxury brand sponsorship campaign into a majestic, highly professional premium proposal.
     Format the output beautifully in clean markdown. Keep it under 280 words.
   `;

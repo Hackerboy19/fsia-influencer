@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, ShieldCheck, ArrowRight, CheckCircle2, Phone, Landmark } from "lucide-react";
+import { X, ArrowRight, CheckCircle2, Phone, Landmark } from "lucide-react";
 import { Creator, gallerySections } from "../data";
 import { useDialog, Portal } from "../lib/dialog";
 import {
@@ -158,17 +158,17 @@ export default function VipCollaborationForm({
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 180 }}
-            className="relative w-full md:max-w-xl h-full bg-[#FAF9F6] shadow-2xl flex flex-col border-l border-black/5 outline-none"
+            className="relative w-full md:max-w-xl h-full bg-paper shadow-2xl flex flex-col border-l border-line outline-none"
             id="vip-collaboration-form-container"
           >
             {/* Header */}
-            <div className="p-5 md:p-8 border-b border-black/10 flex items-center justify-between bg-[#F4F3F0]">
+            <div className="p-5 md:p-8 border-b border-line flex items-center justify-between bg-paper">
               <div>
                 <span className="font-sans text-[11px] md:text-xs tracking-[0.2em] text-[#47453f] uppercase font-bold">
-                  Brand enquiry · India desk
+                  For brands and agencies
                 </span>
-                <h2 id="enquiry-dialog-title" className="font-serif-display text-xl md:text-2xl text-[#111] tracking-tight mt-1">
-                  VIP Collaboration Charter
+                <h2 id="enquiry-dialog-title" className="font-display text-[1.5rem] text-ink mt-1">
+                  Brand enquiry
                 </h2>
               </div>
               <button
@@ -187,13 +187,9 @@ export default function VipCollaborationForm({
               {!submittedCredential ? (
                 <form onSubmit={handleSubmit} noValidate className="space-y-5">
                   {/* Intro */}
-                  <div className="p-4 md:p-5 bg-white border border-black/10 rounded-xl text-sm text-[#2e2c29] space-y-2 leading-relaxed">
-                    <div className="flex items-center gap-2 text-champagne font-bold uppercase tracking-[0.15em] text-[11px] font-sans">
-                      <ShieldCheck className="w-4 h-4" aria-hidden="true" />
-                      Secure escrow protocol &amp; VIP triage
-                    </div>
-                    By submitting this charter to the Forever Influencer brand desk, your brand requirements enter the elite curation pipeline. Our team will contact you within 4 business hours.
-                  </div>
+                  <p className="text-[0.9375rem] text-ink-2 leading-relaxed">
+                    Tell us about your campaign. Our team reads every enquiry, suggests suitable creators and replies by email or phone.
+                  </p>
                   <p className="text-[13px] text-[#47453f]">Fields marked * are required.</p>
 
                   {/* Creator Selection */}
@@ -205,10 +201,10 @@ export default function VipCollaborationForm({
                       onChange={(e) => setSelectedCreatorName(e.target.value)}
                       className={inputClass}
                     >
-                      <option value="All VIP Roster">Joint Showroom Showcase (All VIPs)</option>
+                      <option value="All VIP Roster">Not sure yet: suggest creators for me</option>
                       {allCreators.map((creator) => (
                         <option key={creator.name} value={creator.name}>
-                          {creator.name} ({creator.role.split(",")[0]})
+                          {creator.name}{creator.role ? ` (${creator.role.split(",")[0]})` : ""}
                         </option>
                       ))}
                     </select>
@@ -222,7 +218,7 @@ export default function VipCollaborationForm({
                         id="enquiry-brand"
                         type="text"
                         autoComplete="organization"
-                        placeholder="e.g., Sabyasachi, Vogue India"
+                        placeholder="Your brand or agency"
                         value={brandName}
                         onChange={(e) => setBrandName(e.target.value)}
                         aria-invalid={invalid("enquiry-brand")}
@@ -426,7 +422,7 @@ export default function VipCollaborationForm({
                     type="submit"
                     disabled={isSubmitting}
                     aria-busy={isSubmitting}
-                    className="w-full bg-[#111] hover:bg-[#2e2c29] text-[#FAF9F6] font-sans text-sm tracking-[0.12em] font-bold py-4 px-6 rounded-xl uppercase flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg active:scale-[0.98] disabled:opacity-70 disabled:cursor-wait"
+                    className="btn btn-primary w-full disabled:opacity-70 disabled:cursor-wait"
                     id="submit-collaboration-charter-btn"
                   >
                     {isSubmitting ? (
@@ -461,7 +457,7 @@ export default function VipCollaborationForm({
                         Brand enquiry received
                       </span>
                       <h3 className="font-serif-display text-xl md:text-2xl text-[#111] font-bold">
-                        Charter Dispatched
+                        Thank you, we have your enquiry
                       </h3>
                     </div>
 
@@ -469,7 +465,7 @@ export default function VipCollaborationForm({
                       {[
                         ["Reference", submittedCredential.bookingId, "font-mono font-bold"],
                         ["Brand", submittedCredential.brandName, "font-semibold"],
-                        ["Creator", submittedCredential.creatorName === "All VIP Roster" ? "Joint showcase (all VIPs)" : submittedCredential.creatorName, "font-semibold"],
+                        ["Creator", submittedCredential.creatorName === "All VIP Roster" ? "Suggest creators" : submittedCredential.creatorName, "font-semibold"],
                         ["Budget", submittedCredential.budget, "font-bold"],
                         ["City", submittedCredential.clientCity, "font-semibold"]
                       ].map(([term, value, weight]) => (
@@ -481,7 +477,7 @@ export default function VipCollaborationForm({
                     </dl>
 
                     <p className="text-sm text-[#2e2c29] leading-relaxed px-2">
-                      Thank you. Our brand desk will contact you at <strong className="text-[#111]">{contactEmail}</strong>
+                      Our team will contact you at <strong className="text-[#111]">{contactEmail}</strong>
                       {isWhatsappPreferred ? " or on WhatsApp" : ""}. Please keep your reference number for any follow-up.
                     </p>
                   </div>
