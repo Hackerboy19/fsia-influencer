@@ -58,7 +58,7 @@ async function get(path, init = {}) {
 
 const tag = (html, re) => html.match(re)?.[1]?.trim();
 const decode = (s = "") =>
-  s.replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+  s.replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;|&#x27;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
 const findProhibited = (text) => {
   const m = text.match(prohibitedPattern);
   if (!m) return "";
@@ -124,9 +124,12 @@ async function auditHttp() {
           crumbs.length === 2 && crumbs[0].item === `${new URL(canonical).origin}/` && crumbs[1].item === canonical && crumbs.every((c, i) => c.position === i + 1));
       if (path === "/faq/") {
         const faq = ofType("FAQPage")[0];
-        const visible = (html.match(/<h2>/g) || []).length;
-        record("schema", "/faq/ FAQPage lists the questions shown on the page", !!faq && faq.mainEntity.length === visible && visible > 0,
-          `${faq?.mainEntity?.length} in schema, ${visible} on the page`);
+        // Every question in the markup must be printed in the page's own HTML
+        const pageText = decode(html.split('<div id="root">')[1] || "");
+        const questions = (faq?.mainEntity || []).map((q) => q.name);
+        const missing = questions.filter((q) => !pageText.includes(q));
+        record("schema", "/faq/ FAQPage lists the questions shown on the page", questions.length > 0 && missing.length === 0,
+          `${questions.length} in schema, ${missing.length} not on the page${missing.length ? `: ${missing[0]}` : ""}`);
       }
       const fakeClaims = nodes.some((n) => ["AggregateRating", "Review", "Event"].includes(n["@type"]) || n.aggregateRating || n.review);
       record("schema", `${path} makes no rating, review or event claims`, !fakeClaims);
