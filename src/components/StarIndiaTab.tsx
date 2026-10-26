@@ -1,6 +1,5 @@
 import React from "react";
 import { routeForTab, TabId } from "../seo";
-import { AWARD_NAME } from "../content/awards";
 import type { ProfileView } from "../lib/profile";
 import ProfileCard from "./ProfileCard";
 import TabLink from "./TabLink";
@@ -11,7 +10,7 @@ const BENEFITS = [
   { title: "A public profile", text: "Your photo, niche, city, biography and work, in the directory brands use." },
   { title: "Branding and marketing help", text: "Support with your bio, media kit and digital marketing." },
   { title: "Brand introductions", text: "When a brand brief fits your niche and city, our team introduces you." },
-  { title: "Your award on record", text: `The ${AWARD_NAME}, shown with your membership.` }
+  { title: "Open to any creator", text: "You do not need to win an award to become a member." }
 ];
 
 export default function StarIndiaTab({
@@ -37,7 +36,7 @@ export default function StarIndiaTab({
           <h1 className="h-page">{route.heading}</h1>
           <p className="lede">{route.intro}</p>
           <div className="flex flex-wrap gap-3 pt-2">
-            <TabLink tab="apply" onNavigate={onNavigate} className="btn btn-primary">Apply for the award</TabLink>
+            <TabLink tab="apply" onNavigate={onNavigate} className="btn btn-primary">Join as a creator</TabLink>
             <TabLink tab="membership" onNavigate={onNavigate} className="btn btn-secondary">Membership plans</TabLink>
           </div>
         </header>

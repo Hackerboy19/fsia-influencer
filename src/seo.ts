@@ -3,7 +3,7 @@
 // scripts/prerender-seo.ts, which writes one static HTML file per route plus
 // robots.txt and sitemap.xml so crawlers see complete metadata without JavaScript.
 import { FAQS } from "./content/faqs";
-import { BRAND_NAME } from "./content/brand";
+import { AWARD_NAME, BRAND_NAME } from "./content/brand";
 
 export const SITE_URL = "https://influencer.fsia.in";
 export const SITE_NAME = BRAND_NAME;
@@ -41,10 +41,10 @@ export const ROUTES: RouteMeta[] = [
     path: "/",
     title: `Influencer Award & Creator Profiles in India | ${SITE_NAME}`,
     description:
-      "Browse reviewed profiles of Indian influencers, apply for the FSIA Influencer Award, and send brand collaboration enquiries to our team.",
+      `Browse reviewed profiles of Indian influencers, join as a creator, learn about the ${AWARD_NAME}, and send brand collaboration enquiries to our team.`,
     heading: "Indian influencer profiles, reviewed before they are published",
     intro:
-      `${SITE_NAME} is an influencer award agency and creator directory for India. Creators apply for the ${SITE_NAME} Award and, once our team approves them, get a public profile with their category, city and work. Brands browse those profiles, see open campaigns and send collaboration enquiries, which our team follows up directly.`,
+      `${SITE_NAME} is a creator directory for India. Any creator can join: once our team approves the application, they get a public profile with their category, city and work. The ${AWARD_NAME} is a separate award that creators can apply for. Brands browse those profiles, see open campaigns and send collaboration enquiries, which our team follows up directly.`,
     indexable: true,
     priority: "1.0",
     changefreq: "weekly"
@@ -93,10 +93,10 @@ export const ROUTES: RouteMeta[] = [
     path: "/join/",
     title: `Influencer Registration in India | ${SITE_NAME}`,
     description:
-      "Apply for the FSIA Influencer Award and a creator profile. A free, three-step form; our team reviews every application.",
-    heading: "Apply for the award and a profile",
+      "Join as a creator and get a public profile. A free, three-step form; our team reviews every application.",
+    heading: "Join as a creator",
     intro:
-      "The application is free and takes about two minutes. Tell us your category, city and audience on Instagram or YouTube. Our team reviews each application; approved creators get a public profile that brands can browse, and can apply for paid brand collaborations. Creators in fashion, beauty, food, travel, tech, gaming and other niches are welcome from anywhere in India.",
+      "Joining is free, open to any creator, and takes about two minutes. Tell us your category, city and audience on Instagram or YouTube. Our team reviews each application; approved creators get a public profile that brands can browse, and can apply for paid brand collaborations. Creators in fashion, beauty, food, travel, tech, gaming and other niches are welcome from anywhere in India.",
     indexable: true,
     priority: "0.9",
     changefreq: "monthly"
@@ -119,10 +119,10 @@ export const ROUTES: RouteMeta[] = [
     path: "/star-india/",
     title: `Star India Membership & Influencer Profiles | ${SITE_NAME}`,
     description:
-      "Star India is the membership for creators who receive the FSIA Influencer Award: a public profile, branding support and introductions to brands.",
+      "Star India is the creator membership: a public profile, branding support and introductions to brands.",
     heading: "Star India members",
     intro:
-      `Star India is the membership for creators who receive the ${SITE_NAME} Award. Members get a public profile with their award and work, help with branding and marketing, and introductions when a brand brief fits their niche.`,
+      "Star India is the creator membership. Members get a public profile with their work, help with branding and marketing, and introductions when a brand brief fits their niche.",
     indexable: true,
     priority: "0.8",
     changefreq: "weekly"

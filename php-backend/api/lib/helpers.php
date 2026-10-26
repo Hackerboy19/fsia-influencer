@@ -273,17 +273,22 @@ function require_admin(Store $store, bool $allowDefaultPassword = false): string
 }
 
 // ----------------------------------------------------
-// BRAND NAME — the public brand is "FSIA Influencer". The word "Forever" must not appear in
-// anything visitors see (Boss, 2026-10-26; this replaces the 2026-10-24 "Forever Influencer" rename).
-// Stored text from either earlier naming is rewritten in every public API response.
-// Keep in sync with debrandText() in server/db.ts
+// BRAND NAME — the public brand is "Influencer Awards" and the award is the "Influencer Award"
+// (PLACEHOLDERS until Boss confirms; keep in sync with src/content/brand.ts).
+// The word "Forever" must not appear in anything visitors see (Boss, 2026-10-26), and the award
+// is separate from FSIA (Boss, 2026-10-26), so stored text from every earlier naming is rewritten
+// in every public API response. Keep in sync with debrandText() in server/db.ts
 // ----------------------------------------------------
 function debrand_text(string $text): string
 {
+    $brand = 'Influencer Awards';
+    $award = 'Influencer Award';
     $rules = [
-        ['/FSIA\s*[—-]\s*Forever Star India Awards/iu', 'FSIA Influencer'],
-        ['/Forever Star India(?: Awards| Association)?(?: \(FSIA\))?/iu', 'FSIA Influencer'],
-        ['/\bForever Influencer\b/iu', 'FSIA Influencer'],
+        ['/FSIA\s*[—-]\s*Forever Star India Awards/iu', $brand],
+        ['/Forever Star India(?: Awards| Association)?(?: \(FSIA\))?/iu', $brand],
+        ['/\b(?:Forever|FSIA) Influencer Awards\b/iu', $brand],
+        ['/\b(?:Forever|FSIA) Influencer Award\b/iu', $award],
+        ['/\b(?:Forever|FSIA) Influencer\b/iu', $brand],
         ['/\bForever Free\b/iu', 'Always Free'],
         // Lower-case prose ("stay forever young") keeps its meaning with "always"
         ['/\bforever\b/u', 'always'],
@@ -291,12 +296,17 @@ function debrand_text(string $text): string
         ['/\bforever\s+/iu', ''],
         ['/\s*\bforever\b/iu', ''],
         ['/forever/iu', ''],
-        ['/\b(FSIA Influencer) Influencer\b/iu', null],
+        // Other mentions of FSIA as a name ("the FSIA team"); IDs such as FSIA-24527 and domains stay
+        ['/\bFSIA\b(?![-.]\w)/u', $brand, true],
+        ['/\b(Influencer Awards)(?: Influencer)+(?: Awards?)?\b/iu', null],
     ];
-    foreach ($rules as [$pattern, $replacement]) {
-        $text = preg_replace_callback($pattern, function ($m) use ($replacement) {
+    // An all-caps match gets an all-caps replacement unless the rule's third value (as is) is true
+    foreach ($rules as $rule) {
+        [$pattern, $replacement] = $rule;
+        $asIs = $rule[2] ?? false;
+        $text = preg_replace_callback($pattern, function ($m) use ($replacement, $asIs) {
             $out = $replacement ?? $m[1];
-            return $m[0] === strtoupper($m[0]) && preg_match('/[A-Z]/', $m[0]) ? strtoupper($out) : $out;
+            return !$asIs && $m[0] === strtoupper($m[0]) && preg_match('/[A-Z]/', $m[0]) ? strtoupper($out) : $out;
         }, $text);
     }
     return $text;

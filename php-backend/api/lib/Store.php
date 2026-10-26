@@ -109,6 +109,15 @@ class Store
             $this->data = $data;
             $this->save();
         }
+        if (empty($data['migrations']['debrand_v4'])) {
+            // v4: the award is separate from FSIA, so stored "FSIA" names are rewritten too
+            foreach (['creators', 'campaigns', 'membership_plans', 'system_settings'] as $key) {
+                $data[$key] = debrand_value($data[$key]);
+            }
+            $data['migrations']['debrand_v4'] = gmdate('c');
+            $this->data = $data;
+            $this->save();
+        }
         return $data;
     }
 

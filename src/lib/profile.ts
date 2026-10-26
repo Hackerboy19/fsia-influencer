@@ -8,6 +8,9 @@ const FILLER = new Set(
     "Featured Star",
     "FSIA certified elite runway influencer.",
     "FSIA elite brand ambassador.",
+    // The same filler after the API renamed FSIA
+    "Influencer Awards certified elite runway influencer.",
+    "Influencer Awards elite brand ambassador.",
     "Enthusiastic fashion icon looking to make an impact on the high-fashion runway.",
     "Elegance is standard."
   ].map((s) => s.toLowerCase())

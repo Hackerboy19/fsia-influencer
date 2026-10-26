@@ -414,10 +414,10 @@ const INITIAL_PLANS: MembershipPlan[] = [
     accent: "#8E8D8A",
     icon: "Star",
     perks: [
-      "Registry inclusion in the standard FSIA database",
+      "Registry inclusion in the standard creator database",
       "Basic creator profile page accessible to search queries",
       "Apply to general public brand campaigns",
-      "Standard digital copy of your FSIA credentials"
+      "Standard digital copy of your membership credentials"
     ]
   },
   {
@@ -433,7 +433,7 @@ const INITIAL_PLANS: MembershipPlan[] = [
       "Higher ranking in brand matching search inquiries",
       "Up to 3 automated direct matchmaking recommendations per month",
       "Invitations to state-level regional model meetups",
-      "Priority support from the FSIA helpdesk"
+      "Priority support from our helpdesk"
     ]
   },
   {
@@ -448,8 +448,8 @@ const INITIAL_PLANS: MembershipPlan[] = [
     perks: [
       "Verified Gold Star profile badge and priority listing",
       "1 Professional couture portfolio shoot per year at local hub",
-      "10 Guaranteed brand match pitches submitted by FSIA team",
-      "Spotlight feature in the weekly FSIA Brand Newsletter",
+      "10 Guaranteed brand match pitches submitted by our team",
+      "Spotlight feature in our weekly Brand Newsletter",
       "Dedicated access to our partner digital agency network",
       "15% Discount on runway pageant entry vouchers"
     ]
@@ -483,16 +483,16 @@ const INITIAL_LOGS: AdminLog[] = [
 ];
 
 export const DEFAULT_SETTINGS: SystemSettings = {
-  websiteTitle: "FSIA Influencer",
-  heroTitle: "FSIA INFLUENCER",
-  heroSubtitle: "Reviewed profiles of Indian creators, the FSIA Influencer Award and brand enquiries.",
+  websiteTitle: "Influencer Awards",
+  heroTitle: "INFLUENCER AWARDS",
+  heroSubtitle: "Reviewed profiles of Indian creators, open to any creator, and brand enquiries.",
   ctaText: "BROWSE PROFILES",
-  footerText: "© 2026 FSIA Influencer. All rights reserved.",
+  footerText: "© 2026 Influencer Awards. All rights reserved.",
   logoUrl: "",
   primaryColor: "#E1C699",
   secondaryColor: "#111111",
   geminiApiKey: "",
-  aiSystemPrompt: "You are an elite, world-class haute couture brand director and luxury media strategist for FSIA. Your job is to optimize a creator's rough pitch/concept for a luxury brand sponsorship campaign into a majestic, highly professional premium proposal.",
+  aiSystemPrompt: "You are an elite, world-class haute couture brand director and luxury media strategist for Influencer Awards. Your job is to optimize a creator's rough pitch/concept for a luxury brand sponsorship campaign into a majestic, highly professional premium proposal.",
   modelSelection: "gemini-2.5-flash",
   temperature: 0.7,
   topK: 40
@@ -511,7 +511,7 @@ export function createDefaultDb(): DatabaseSchema {
     influencer_applications: [],
     membership_plans: INITIAL_PLANS,
     enquiries: [],
-    migrations: { debrand_v1: "seed", debrand_v2: "seed", debrand_v3: "seed" }
+    migrations: { debrand_v1: "seed", debrand_v2: "seed", debrand_v3: "seed", debrand_v4: "seed" }
   }));
 }
 
@@ -542,16 +542,22 @@ export function needsRehash(stored: string): boolean {
 }
 
 // ----------------------------------------------------
-// BRAND NAME — the public brand is "FSIA Influencer". The word "Forever" must not appear in
-// anything visitors see (Boss, 2026-10-26; this replaces the 2026-10-24 "Forever Influencer" rename).
-// Stored text from either earlier naming is rewritten in every public API response.
-// Keep in sync with debrand_text() in php-backend/api/lib/helpers.php
+// BRAND NAME — the public brand is "Influencer Awards" and the award is the "Influencer Award"
+// (PLACEHOLDERS until Boss confirms; keep in sync with src/content/brand.ts).
+// The word "Forever" must not appear in anything visitors see (Boss, 2026-10-26), and the award
+// is separate from FSIA (Boss, 2026-10-26), so stored text from every earlier naming is rewritten
+// in every public API response. Keep in sync with debrand_text() in php-backend/api/lib/helpers.php
 // ----------------------------------------------------
-// A null replacement keeps the first capture group
-const DEBRAND_RULES: [RegExp, string | null][] = [
-  [/FSIA\s*[—-]\s*Forever Star India Awards/gi, "FSIA Influencer"],
-  [/Forever Star India(?: Awards| Association)?(?: \(FSIA\))?/gi, "FSIA Influencer"],
-  [/\bForever Influencer\b/gi, "FSIA Influencer"],
+const PUBLIC_BRAND = "Influencer Awards";
+const PUBLIC_AWARD = "Influencer Award";
+// A null replacement keeps the first capture group. An all-caps match gets an all-caps
+// replacement unless the rule is marked "asIs" (the acronym FSIA is always upper case).
+const DEBRAND_RULES: [RegExp, string | null, "asIs"?][] = [
+  [/FSIA\s*[—-]\s*Forever Star India Awards/gi, PUBLIC_BRAND],
+  [/Forever Star India(?: Awards| Association)?(?: \(FSIA\))?/gi, PUBLIC_BRAND],
+  [/\b(?:Forever|FSIA) Influencer Awards\b/gi, PUBLIC_BRAND],
+  [/\b(?:Forever|FSIA) Influencer Award\b/gi, PUBLIC_AWARD],
+  [/\b(?:Forever|FSIA) Influencer\b/gi, PUBLIC_BRAND],
   [/\bForever Free\b/gi, "Always Free"],
   // Lower-case prose ("stay forever young") keeps its meaning with "always"
   [/\bforever\b/g, "always"],
@@ -559,15 +565,17 @@ const DEBRAND_RULES: [RegExp, string | null][] = [
   [/\bforever\s+/gi, ""],
   [/\s*\bforever\b/gi, ""],
   [/forever/gi, ""],
-  [/\b(FSIA Influencer) Influencer\b/gi, null]
+  // Other mentions of FSIA as a name ("the FSIA team"); IDs such as FSIA-24527 and domains stay
+  [/\bFSIA\b(?![-.]\w)/g, PUBLIC_BRAND, "asIs"],
+  [/\b(Influencer Awards)(?: Influencer)+(?: Awards?)?\b/gi, null]
 ];
 
 export function debrandText(text: string): string {
   return DEBRAND_RULES.reduce(
-    (out, [pattern, replacement]) =>
+    (out, [pattern, replacement, asIs]) =>
       out.replace(pattern, (m: string, group?: unknown) => {
         const value = replacement ?? String(group);
-        return m === m.toUpperCase() && /[A-Z]/.test(m) ? value.toUpperCase() : value;
+        return !asIs && m === m.toUpperCase() && /[A-Z]/.test(m) ? value.toUpperCase() : value;
       }),
     text
   );
@@ -658,6 +666,15 @@ export function getDb(): DatabaseSchema {
       parsed.membership_plans = debrandValue(parsed.membership_plans);
       parsed.system_settings = debrandValue(parsed.system_settings);
       parsed.migrations = { ...parsed.migrations, debrand_v3: new Date().toISOString() };
+      saveDb(parsed);
+    }
+    if (!parsed.migrations?.debrand_v4) {
+      // v4: the award is separate from FSIA, so stored "FSIA" names are rewritten too
+      parsed.creators = debrandValue(parsed.creators);
+      parsed.campaigns = debrandValue(parsed.campaigns);
+      parsed.membership_plans = debrandValue(parsed.membership_plans);
+      parsed.system_settings = debrandValue(parsed.system_settings);
+      parsed.migrations = { ...parsed.migrations, debrand_v4: new Date().toISOString() };
       saveDb(parsed);
     }
     return parsed;

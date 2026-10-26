@@ -22,7 +22,7 @@ const GROUPS: { title: string; links: FooterLinkItem[] }[] = [
   {
     title: "For creators",
     links: [
-      { label: "Apply for the award", tab: "apply" },
+      { label: "Join as a creator", tab: "apply" },
       { label: "Open campaigns", tab: "campaigns" },
       { label: "Membership plans", tab: "membership" },
       { label: "Guides and magazine", tab: "greenlight" }
@@ -71,7 +71,7 @@ export default function SiteFooter({ footerText, onNavigate, onBrandEnquiry }: S
         <div className="space-y-3 max-w-sm">
           <p className="font-display text-[1.375rem] text-white">{BRAND_NAME}</p>
           <p className="text-[0.9375rem] leading-relaxed text-[#CFCAC0]">
-            An influencer award and a directory of creator profiles from across India. Every profile is reviewed by our team before it is published.
+            A directory of creator profiles from across India, open to any creator. Every profile is reviewed by our team before it is published.
           </p>
           <p className="text-[0.875rem] text-[#CFCAC0]">{BRAND_DOMAIN}</p>
         </div>

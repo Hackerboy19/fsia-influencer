@@ -92,7 +92,7 @@ for (const vp of [
   check(`${vp.name}: home page has an h1`, !!(await h1(page)));
   check(`${vp.name}: header navigation is present`,
     desktop ? (await page.locator("#main-nav-tabs").isVisible()) : (await page.locator('button[aria-controls="site-menu"]').isVisible()));
-  check(`${vp.name}: home page shows the one award`, (await page.locator("#the-award").innerText()).includes("FSIA Influencer Award"));
+  check(`${vp.name}: home page shows the one award`, (await page.locator("#the-award").innerText()).includes("Influencer Award"));
   check(`${vp.name}: no "Forever" anywhere on the home page`, !/forever/i.test(await page.locator("body").innerText()) && !/forever/i.test(await page.title()));
 
   // Home search opens the directory with the query applied
@@ -158,7 +158,7 @@ for (const vp of [
   await page.waitForTimeout(700);
   check(`${vp.name}: browser Back returns to the previous section`, new URL(page.url()).pathname === "/green-light/");
 
-  await page.locator('header a[aria-label="FSIA Influencer, home"]').click();
+  await page.locator('header a[aria-label="Influencer Awards, home"]').click();
   await page.waitForTimeout(900);
   check(`${vp.name}: logo returns to the home page`, new URL(page.url()).pathname === "/");
 
@@ -242,7 +242,7 @@ async function brandEnquiry(page, label) {
   page.on("request", (r) => r.method() === "POST" && r.url().endsWith("/api/registrations") && posts++);
   await page.dblclick("#submit-collaboration-charter-btn");
   await page.waitForSelector("#collaboration-success-credential", { timeout: 8000 });
-  check(`${label} brand enquiry: success shows a reference number`, /FSIA-VIP-\d{6}/.test(await page.locator("#collaboration-success-credential").innerText()));
+  check(`${label} brand enquiry: success shows a reference number`, /ENQ-\d{6}/.test(await page.locator("#collaboration-success-credential").innerText()));
   check(`${label} brand enquiry: double click sends only one request`, posts === 1, `${posts} requests`);
 }
 

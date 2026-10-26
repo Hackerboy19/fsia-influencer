@@ -517,7 +517,7 @@ try {
         enforce_submission_limit($db);
         $registration = [
             'id' => 'reg-' . now_ms(),
-            'bookingId' => 'FSIA-VIP-' . random_int(100000, 999999),
+            'bookingId' => 'ENQ-' . random_int(100000, 999999),
             'timestamp' => display_date(),
             'brandName' => str_cut($body['brandName'], 200),
             'creatorName' => str_cut(($body['creatorName'] ?? '') ?: 'All VIP Roster', 200),
@@ -841,7 +841,7 @@ try {
             "3. INTEGRATED OUTREACH STRATEGY (Specifically designed to showcase high engagement metrics)";
         $payload = [
             'contents' => [['parts' => [['text' => $userPrompt]]]],
-            'systemInstruction' => ['parts' => [['text' => ($settings['aiSystemPrompt'] ?? '') ?: 'You are an experienced brand partnerships editor for FSIA Influencer. Format the output in clean markdown under 280 words.']]],
+            'systemInstruction' => ['parts' => [['text' => ($settings['aiSystemPrompt'] ?? '') ?: 'You are an experienced brand partnerships editor for Influencer Awards. Format the output in clean markdown under 280 words.']]],
             'generationConfig' => ['temperature' => (float)($settings['temperature'] ?? 0.7)],
         ];
 

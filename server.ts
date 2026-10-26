@@ -680,7 +680,7 @@ app.post("/api/registrations", limitSubmissions, (req, res) => {
     }
 
     const db = getDb();
-    const bookingId = "FSIA-VIP-" + Math.floor(100000 + Math.random() * 900000);
+    const bookingId = "ENQ-" + Math.floor(100000 + Math.random() * 900000);
     const verificationHash = "0x" + crypto.randomBytes(4).toString("hex").toUpperCase() + "..." + crypto.randomBytes(2).toString("hex").toUpperCase();
 
     const newRegistration: Registration = {

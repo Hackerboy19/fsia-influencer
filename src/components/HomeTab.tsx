@@ -16,6 +16,7 @@ interface HomeTabProps {
   onNavigate: (tab: TabId) => void;
   onSelectProfile: (profile: ProfileView) => void;
   onBrandEnquiry: () => void;
+  onAwardEnquiry: () => void;
   /** Opens the directory with these filters applied */
   onBrowse: (filters: { q?: string; category?: string; city?: string }) => void;
   onRetry: () => void;
@@ -89,7 +90,7 @@ function HeroComposition({ profiles, onSelectProfile }: { profiles: ProfileView[
   );
 }
 
-export default function HomeTab({ profiles, status, onNavigate, onSelectProfile, onBrandEnquiry, onBrowse, onRetry }: HomeTabProps) {
+export default function HomeTab({ profiles, status, onNavigate, onSelectProfile, onBrandEnquiry, onAwardEnquiry, onBrowse, onRetry }: HomeTabProps) {
   const featured = profiles.slice(0, 8);
   const categories = useMemo(() => countBy(profiles.map((p) => p.category)), [profiles]);
   const cities = useMemo(() => countBy(profiles.map((p) => p.city)).slice(0, 10), [profiles]);
@@ -101,13 +102,13 @@ export default function HomeTab({ profiles, status, onNavigate, onSelectProfile,
       <section className="page pt-10 md:pt-16 pb-14 md:pb-20">
         <div className={`grid gap-12 items-center ${hasComposition ? "lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]" : ""}`}>
           <div className="space-y-6 max-w-2xl">
-            <p className="eyebrow">Influencer award and creator directory · India</p>
+            <p className="eyebrow">Creator directory · India</p>
             <h1 className="display text-[2.375rem] leading-[1.08] md:text-[3.25rem]">
               Indian creators, reviewed by our team before they are listed
             </h1>
             <p className="lede max-w-xl">
-              {BRAND_NAME} runs the {AWARD_NAME} and publishes a profile for each creator we approve. Brands search the
-              directory by niche and city and send us an enquiry. Creators apply to be listed.
+              Any creator in India can join {BRAND_NAME} and get a public profile once our team approves it. Brands search
+              the directory by niche and city and send us an enquiry. The {AWARD_NAME} is separate.
             </p>
             <HeroSearch onBrowse={onBrowse} />
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-1">
@@ -115,7 +116,7 @@ export default function HomeTab({ profiles, status, onNavigate, onSelectProfile,
                 Browse all profiles
               </TabLink>
               <TabLink tab="apply" onNavigate={onNavigate} className="link">
-                Apply as a creator
+                Join as a creator
               </TabLink>
             </div>
           </div>
@@ -233,8 +234,8 @@ export default function HomeTab({ profiles, status, onNavigate, onSelectProfile,
               Open to creators in {ELIGIBLE_NICHES.slice(0, -1).join(", ").toLowerCase()} and {ELIGIBLE_NICHES[ELIGIBLE_NICHES.length - 1].toLowerCase()}, among other niches.
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
-              <TabLink tab="apply" onNavigate={onNavigate} className="btn btn-primary">Apply for the award</TabLink>
-              <TabLink tab="starindia" onNavigate={onNavigate} className="btn btn-secondary">Star India members</TabLink>
+              <button type="button" onClick={onAwardEnquiry} className="btn btn-primary">Ask about the award</button>
+              <TabLink tab="apply" onNavigate={onNavigate} className="btn btn-secondary">Join as a creator</TabLink>
             </div>
           </div>
           <dl className="border-t border-line">
@@ -263,7 +264,7 @@ export default function HomeTab({ profiles, status, onNavigate, onSelectProfile,
           </div>
           <ul className="divide-y divide-line border-y border-line">
             {[
-              { tab: "starindia" as TabId, title: "Star India", text: "Membership for award winners: a public profile, branding help and brand introductions." },
+              { tab: "starindia" as TabId, title: "Star India", text: "The creator membership: a public profile, branding help and brand introductions." },
               { tab: "greenlight" as TabId, title: "Green Light and Explore Magazine", text: "Guides for creators and brands, and cover or feature bookings." },
               { tab: "membership" as TabId, title: "Membership plans", text: "What each plan includes and how to request one." },
               { tab: "catwalk" as TabId, title: "3D gallery", text: "The same profiles, arranged in an interactive 3D space." }

@@ -1,4 +1,5 @@
 // Shared by the FAQ page and the FAQPage structured data generated at build time
+import { AWARD_NAME, BRAND_NAME } from "./brand";
 export interface FAQItem {
   question: string;
   answer: string;
@@ -7,8 +8,8 @@ export interface FAQItem {
 
 export const FAQS: FAQItem[] = [
   {
-    question: "What is FSIA Influencer?",
-    answer: "FSIA Influencer is a website for Indian creators and the brands that work with them. Creators apply for the FSIA Influencer Award and, once our team approves them, get a public profile. Brands browse those profiles, see open campaigns and send collaboration enquiries, which our team follows up by email or phone.",
+    question: `What is ${BRAND_NAME}?`,
+    answer: `${BRAND_NAME} is a website for Indian creators and the brands that work with them. Any creator can join: once our team approves the application, they get a public profile. The ${AWARD_NAME} is separate, and you do not need it to join. Brands browse those profiles, see open campaigns and send collaboration enquiries, which our team follows up by email or phone.`,
     category: "General"
   },
   {
@@ -43,7 +44,7 @@ export const FAQS: FAQItem[] = [
   },
   {
     question: "What are the ASCI disclosure rules for influencers in India?",
-    answer: "The Advertising Standards Council of India (ASCI) requires influencers to clearly label any post where they have a material connection with a brand, such as payment, free products, a barter deal or a family or employment link. Use a label such as #ad, #collab, #sponsored or #partnership, or the platform's paid-partnership tag, placed where viewers see it straight away rather than hidden among other hashtags or behind 'more'. In videos and Reels the disclosure should also appear in the video itself. The government's endorsement guidelines under the Consumer Protection Act require the same, so follow these rules on every brand collaboration, including those found through FSIA.",
+    answer: "The Advertising Standards Council of India (ASCI) requires influencers to clearly label any post where they have a material connection with a brand, such as payment, free products, a barter deal or a family or employment link. Use a label such as #ad, #collab, #sponsored or #partnership, or the platform's paid-partnership tag, placed where viewers see it straight away rather than hidden among other hashtags or behind 'more'. In videos and Reels the disclosure should also appear in the video itself. The government's endorsement guidelines under the Consumer Protection Act require the same, so follow these rules on every brand collaboration, including those found through this site.",
     category: "Brands"
   },
   {

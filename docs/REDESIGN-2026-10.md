@@ -34,10 +34,10 @@ Defined in `src/index.css` (`@theme` tokens and `@layer components`).
 
 ## Business information still needed (not invented)
 
-1. Final public brand name (currently "FSIA Influencer", one constant in `src/content/brand.ts`).
+1. Final public site name and award name. The award is separate from FSIA (Boss, 2026-10-26), so both are placeholders for now: "Influencer Awards" and "Influencer Award" (`src/content/brand.ts`, plus `PUBLIC_BRAND`/`PUBLIC_AWARD` in `server/db.ts` and `$brand`/`$award` in `php-backend/api/lib/helpers.php`).
 2. Privacy policy and terms of use (none exist in the project, so the footer does not link to any).
 3. A public contact email or phone, if you want one shown (the site uses the contact form; `partner@fsia.in` appears only in a server error message).
 4. Exactly what the team checks before approving a profile, so the "Reviewed" explanation can be precise.
-5. Whether every published profile has won the award (profiles no longer claim it individually).
+5. Settled: any creator can join the platform; the award is separate (Boss, 2026-10-26). Profiles do not claim the award individually; a per-profile "award winner" field would be needed to show it.
 6. The campaigns and plans stored in the live database: the seed data names Sabyasachi, Taj, Vogue India and OnePlus and mentions escrow and "guaranteed" pitches. Delete or edit any that are not real in Admin.
 7. Whether profile owners should be able to add social links (there is no field for them today).

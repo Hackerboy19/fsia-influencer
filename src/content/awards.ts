@@ -1,15 +1,16 @@
 // Content for the award agency home page, Star India and Green Light.
 // Kept here (not inside components) so copy can be edited in one place.
 
-import { BRAND_NAME } from "./brand";
+import { AWARD_NAME } from "./brand";
 
-// There is one award, named after the site. It is open to creators in every niche.
-export const AWARD_NAME = `${BRAND_NAME} Award`;
+// There is one award. It is separate from FSIA, and separate from joining the platform:
+// any creator can join and get a profile, with or without the award.
+export { AWARD_NAME };
 
 export const AWARD = {
   name: AWARD_NAME,
   tagline: "India's award for influencers and digital creators",
-  text: "One award, open to every niche. Our team reviews each application on the quality of the work, the audience and its impact. Winners join Star India and get help with branding, marketing and brand deals."
+  text: "A separate award, open to creators in every niche. The jury looks at the quality of the work, the audience and its impact. You do not need the award to join the platform: any creator can create a profile."
 } as const;
 
 // Creator niches that can apply (these are not separate award categories)
@@ -27,7 +28,7 @@ export const ELIGIBLE_NICHES = [
 ] as const;
 
 export const AWARD_PERKS = [
-  { title: "Star India membership", text: "A public profile with your award, category, city and work." },
+  { title: "The award on your profile", text: "Winners have the award shown on their public profile." },
   { title: "Branding & marketing", text: "Endorsement representation and digital marketing support." },
   { title: "Brand introductions", text: "Direct introductions when a brand brief fits your niche." }
 ] as const;
@@ -35,18 +36,18 @@ export const AWARD_PERKS = [
 export const VALUE_FLOW = [
   {
     step: 1,
-    title: "Apply for Award & Become a Member",
-    text: `Apply for the ${AWARD_NAME}. Winners become Star India members.`
+    title: "Join the Platform",
+    text: `Any creator can join and get a profile. The ${AWARD_NAME} is separate.`
   },
   {
     step: 2,
     title: "Receive Branding & Marketing Support",
-    text: "Awardees get endorsement representation, digital marketing and a dedicated profile page."
+    text: "Members get endorsement representation, digital marketing and a dedicated profile page."
   },
   {
     step: 3,
     title: "Connect with Brands for Business Deals",
-    text: "FSIA acts as the bridge between awarded influencers and brands for direct business collaborations."
+    text: "Our team acts as the bridge between creators and brands for direct business collaborations."
   }
 ] as const;
 
@@ -88,11 +89,11 @@ export const BLOG_POSTS: BlogPost[] = [
   {
     id: "from-award-to-brand-deal",
     title: "From award to brand deal: what happens next",
-    excerpt: "What members get after the award, and how brand introductions work.",
+    excerpt: "What changes after you win, and how brand introductions work.",
     category: "Awards",
     readMinutes: 3,
     body: [
-      `Winners of the ${AWARD_NAME} join Star India and get a public profile that brands can browse.`,
+      `Winners of the ${AWARD_NAME} have the award shown on their public profile, which brands can browse.`,
       "The branding team helps refresh your bio, portfolio and media kit so they match the award.",
       "When a brand brief fits your category and city, the team introduces you directly and helps with the contract."
     ]
@@ -125,8 +126,8 @@ export const BLOG_POSTS: BlogPost[] = [
 
 export const MAGAZINE_PACKAGES = [
   { id: "cover", title: "Cover Story", text: "Your portrait on the cover of Explore Magazine with a long-form interview inside." },
-  { id: "feature", title: "Inside Feature", text: "A two-page feature with photos, your story and your award." },
-  { id: "spotlight", title: "Digital Spotlight", text: "An online profile feature shared across FSIA social channels." }
+  { id: "feature", title: "Inside Feature", text: "A two-page feature with photos and your story." },
+  { id: "spotlight", title: "Digital Spotlight", text: "An online profile feature shared on our social channels." }
 ] as const;
 
 export const CONTACT_TOPICS = [

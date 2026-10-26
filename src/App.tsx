@@ -229,6 +229,11 @@ export default function App() {
   };
   const [directoryKey, setDirectoryKey] = useState(0);
 
+  const askAboutAward = () => {
+    setContactTopic("Awards & applications");
+    navigateTo("contact");
+  };
+
   const reportProfile = () => {
     const name = selectedProfile?.name || "";
     setContactTopic(name ? `Profile correction or removal|${name}` : "Profile correction or removal");
@@ -333,7 +338,7 @@ export default function App() {
               aria-current={activeTab === "apply" ? "page" : undefined}
               className="hidden sm:inline-flex btn btn-sm btn-primary"
             >
-              Apply as a creator
+              Join as a creator
             </a>
             <button
               type="button"
@@ -403,7 +408,7 @@ export default function App() {
                     }}
                     className="btn btn-primary"
                   >
-                    Apply as a creator
+                    Join as a creator
                   </a>
                   <button
                     type="button"
@@ -503,6 +508,7 @@ export default function App() {
                 onNavigate={navigateTo}
                 onSelectProfile={openProfile}
                 onBrandEnquiry={() => setIsCollaborationOpen(true)}
+                onAwardEnquiry={askAboutAward}
                 onBrowse={browse}
                 onRetry={refreshSections}
               />
