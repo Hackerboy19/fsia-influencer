@@ -4,6 +4,7 @@
 import fs from "fs";
 import path from "path";
 import { ROUTES, SITE_URL, SITE_NAME, renderHead, renderBody, escapeHtml } from "../src/seo";
+import { renderApp } from "./render-app";
 
 const dist = path.join(process.cwd(), "dist");
 const template = fs.readFileSync(path.join(dist, "index.html"), "utf8");
@@ -14,10 +15,23 @@ if (!template.includes("<!--SEO-HEAD-->") || !template.includes("<!--SEO-BODY-->
 const gsc = (process.env.GSC_VERIFICATION || "").trim();
 const gscTag = gsc ? `<meta name="google-site-verification" content="${gsc.replace(/"/g, "")}" />` : "<!--GSC-VERIFICATION-->";
 
+// Pages rendered from the app itself. The 3D gallery is a canvas and the admin area is
+// private, so those two keep the short text summary instead.
+const APP_RENDERED = new Set(["home", "directory", "campaigns", "apply", "membership", "starindia", "greenlight", "faq", "contact"]);
+
 for (const route of ROUTES) {
+  let body = renderBody(route);
+  if (APP_RENDERED.has(route.tab)) {
+    try {
+      body = renderApp(route.path);
+    } catch (error) {
+      // Never fail the release over this: the summary is still crawlable
+      console.warn(`Prerender of ${route.path} failed, using the summary instead:`, error);
+    }
+  }
   const html = template
     .replace(/<!--SEO-HEAD-->[\s\S]*?<!--\/SEO-HEAD-->/, renderHead(route))
-    .replace("<!--SEO-BODY-->", renderBody(route))
+    .replace("<!--SEO-BODY-->", () => body)
     .replace("<!--GSC-VERIFICATION-->", gscTag);
   const dir = path.join(dist, route.path);
   fs.mkdirSync(dir, { recursive: true });

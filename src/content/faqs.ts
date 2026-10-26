@@ -34,7 +34,7 @@ export const FAQS: FAQItem[] = [
   },
   {
     question: "Can micro-influencers apply for brand campaigns?",
-    answer: "Yes. Yes, where you meet the campaign's requirements. Each campaign lists its own eligibility, so read it before you apply.",
+    answer: "Yes, where you meet the campaign's requirements. Each campaign lists its own eligibility, so read it before you apply.",
     category: "Brands"
   },
   {
