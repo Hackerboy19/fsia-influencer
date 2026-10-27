@@ -68,8 +68,9 @@ export default function ThreeGallery({
     });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // No real-time shadows: in the dark hall they were barely visible, they cost a lot on
+    // phones, and on some GPUs they showed as striped or blocky patches over the photos
+    renderer.shadowMap.enabled = false;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0;
 
@@ -79,7 +80,7 @@ export default function ThreeGallery({
 
     const sunLight = new THREE.DirectionalLight("#FFF1DC", 2.2); // sunlit high window
     sunLight.position.set(6, 12, 4);
-    sunLight.castShadow = true;
+    sunLight.castShadow = false;
     sunLight.shadow.mapSize.width = 2048;
     sunLight.shadow.mapSize.height = 2048;
     sunLight.shadow.camera.near = 0.5;
@@ -97,9 +98,28 @@ export default function ThreeGallery({
     bounceLight.position.set(-6, -2, -4);
     scene.add(bounceLight);
 
+    // Layout: each section gets enough hall for all its portraits, left and right in turn,
+    // so no two frames ever share a spot (overlapping frames flickered into each other).
+    // The stored zOffset is ignored here because sections can hold any number of creators.
+    const SPACING = 3; // between pairs of portraits
+    const sectionZ: number[] = [];
+    let hallEnd = -8; // just past the last portrait
+    {
+      let z = 0;
+      sections.forEach((sec) => {
+        sectionZ.push(z);
+        const pairs = Math.max(1, Math.ceil((sec.creators?.length || 0) / 2));
+        z -= Math.max(8, pairs * SPACING + 5);
+      });
+      hallEnd = z - 4;
+    }
+    const hallLength = 10 - hallEnd; // from behind the start to past the end
+    const hallMid = (10 + hallEnd) / 2;
+    const zOf = (idx: number) => sectionZ[idx] ?? 0;
+
     // 3. Pavilion Architecture (Floor and Columns)
     // Satin Reflective Alabaster Floor
-    const floorGeo = new THREE.PlaneGeometry(30, 80);
+    const floorGeo = new THREE.PlaneGeometry(30, hallLength + 20);
     const floorMat = new THREE.MeshStandardMaterial({
       color: "#1F1C18", // dark polished floor
       roughness: 0.28,
@@ -108,12 +128,13 @@ export default function ThreeGallery({
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
     floor.position.y = 0;
+    floor.position.z = hallMid;
     floor.receiveShadow = true;
     scene.add(floor);
 
     // Double Runway Rails (Champagne Gold)
-    const railLeftGeo = new THREE.BoxGeometry(0.04, 0.015, 60);
-    const railRightGeo = new THREE.BoxGeometry(0.04, 0.015, 60);
+    const railLeftGeo = new THREE.BoxGeometry(0.04, 0.015, hallLength);
+    const railRightGeo = new THREE.BoxGeometry(0.04, 0.015, hallLength);
     const railMat = new THREE.MeshStandardMaterial({
       color: "#E1C699", // Champagne Gold
       roughness: 0.2,
@@ -121,12 +142,12 @@ export default function ThreeGallery({
     });
 
     const railLeft = new THREE.Mesh(railLeftGeo, railMat);
-    railLeft.position.set(-1.4, 0.008, -15);
+    railLeft.position.set(-1.4, 0.008, hallMid);
     railLeft.receiveShadow = true;
     scene.add(railLeft);
 
     const railRight = new THREE.Mesh(railRightGeo, railMat);
-    railRight.position.set(1.4, 0.008, -15);
+    railRight.position.set(1.4, 0.008, hallMid);
     railRight.receiveShadow = true;
     scene.add(railRight);
 
@@ -139,7 +160,7 @@ export default function ThreeGallery({
     const columns: THREE.Mesh[] = [];
 
     // Place columns along the corridor
-    for (let z = 5; z >= -25; z -= 4) {
+    for (let z = 5; z >= hallEnd; z -= 4) {
       // Left Column
       const colL = new THREE.Mesh(columnGeo, columnMat);
       colL.position.set(-4.5, 2.5, z);
@@ -207,11 +228,11 @@ export default function ThreeGallery({
       section.creators.forEach((creator, cIdx) => {
         const creatorGroup = new THREE.Group();
 
-        // Stagger positions: Left (cIdx=0) and Right (cIdx=1)
-        const isLeft = cIdx === 0;
+        // Alternate left and right; each pair sits further down the hall
+        const isLeft = cIdx % 2 === 0;
         const xPos = isLeft ? -2.4 : 2.4;
         const yPos = 1.45; // suspended at eyes level
-        const zPos = section.zOffset + (isLeft ? 0 : -1.5); // staggered along runway
+        const zPos = zOf(sIdx) - Math.floor(cIdx / 2) * SPACING + (isLeft ? 0 : -1.5); // staggered along runway
 
         creatorGroup.position.set(xPos, yPos, zPos);
 
@@ -220,38 +241,40 @@ export default function ThreeGallery({
 
         // --- PART A: Backing Frosted Glass Panel ---
         const glassGeo = new THREE.PlaneGeometry(2.1, 3.1);
-        const glassMat = new THREE.MeshPhysicalMaterial({
-          color: "#2E2A25",
-          transparent: true,
-          opacity: 0.75,
-          transmission: 0.8, // luxury glassmorphism transparency
-          roughness: 0.22,
-          metalness: 0.05,
-          clearcoat: 0.6,
-          clearcoatRoughness: 0.1,
+        // Solid dark backing (no transmission): a see-through panel behind the photo
+        // showed through it as dark blocks on some GPUs, and cost an extra render pass
+        const glassMat = new THREE.MeshStandardMaterial({
+          color: "#26221D",
+          roughness: 0.45,
+          metalness: 0.25,
           side: THREE.DoubleSide,
         });
         const glassPanel = new THREE.Mesh(glassGeo, glassMat);
-        glassPanel.receiveShadow = true;
+        glassPanel.position.z = -0.02; // kept well behind the photo
+        glassPanel.receiveShadow = false;
         glassPanel.castShadow = true;
         creatorGroup.add(glassPanel);
 
         // --- PART B: Champagne Gold Back-Border ---
         const goldBackGeo = new THREE.PlaneGeometry(1.86, 2.56);
         const goldBack = new THREE.Mesh(goldBackGeo, railMat);
-        goldBack.position.z = 0.01; // offset forward
+        goldBack.position.z = 0.03; // offset forward (clear gap avoids depth flicker)
         creatorGroup.add(goldBack);
 
         // --- PART C: Portrait Photo Image ---
         const portraitGeo = new THREE.PlaneGeometry(1.8, 2.5);
         // Temporary elegant satin background while loading
-        const portraitMat = new THREE.MeshStandardMaterial({
+        // Unlit, so photos keep their true colours and never pick up shadow patterns
+        const portraitMat = new THREE.MeshBasicMaterial({
           color: "#3A352E",
-          roughness: 0.4,
           side: THREE.DoubleSide,
+          // Always drawn in front of its own frame, even where depth precision is low (some laptop GPUs)
+          polygonOffset: true,
+          polygonOffsetFactor: -2,
+          polygonOffsetUnits: -4,
         });
         const portraitMesh = new THREE.Mesh(portraitGeo, portraitMat);
-        portraitMesh.position.z = 0.02; // further forward
+        portraitMesh.position.z = 0.06; // further forward
         creatorGroup.add(portraitMesh);
 
         // Load the actual portrait texture asynchronously
@@ -259,6 +282,8 @@ export default function ThreeGallery({
           creator.image,
           (texture) => {
             texture.colorSpace = THREE.SRGBColorSpace;
+            // Sharper photos on frames seen at an angle (no moiré stripes)
+            texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
             // Crop fit adjustments if needed, though Unsplash handles nicely
             portraitMat.map = texture;
             portraitMat.color = new THREE.Color("#ffffff");
@@ -279,7 +304,7 @@ export default function ThreeGallery({
           side: THREE.DoubleSide,
         });
         const labelMesh = new THREE.Mesh(labelGeo, labelMat);
-        labelMesh.position.set(0, -1.68, 0.03); // suspended elegantly below the frame
+        labelMesh.position.set(0, -1.68, 0.06); // suspended elegantly below the frame
         creatorGroup.add(labelMesh);
 
         // Store mappings for mouse raycasting
@@ -406,7 +431,7 @@ export default function ThreeGallery({
         glidingToSection = false;
         targetRunwayZ += deltaY * 0.02;
         // Boundary constraints
-        targetRunwayZ = Math.min(3.8, Math.max(-20, targetRunwayZ));
+        targetRunwayZ = Math.min(3.8, Math.max(hallEnd + 6, targetRunwayZ));
       }
     };
 
@@ -497,7 +522,7 @@ export default function ThreeGallery({
       if (selectedCreatorRef.current) return; // scroll disabled in focused modal
       glidingToSection = false;
       targetRunwayZ -= e.deltaY * 0.005;
-      targetRunwayZ = Math.min(3.8, Math.max(-20, targetRunwayZ));
+      targetRunwayZ = Math.min(3.8, Math.max(hallEnd + 6, targetRunwayZ));
     };
 
     // Clicking / Tap to focus on a creator
@@ -602,7 +627,7 @@ export default function ThreeGallery({
         // RUNWAY NAVIGATION MODE
         // Keep Runway positions sync'd with external section clicks
         const activeIdx = activeSectionIndexRef.current;
-        const targetSectionZ = (sections[activeIdx] || sections[0] || { zOffset: 0 }).zOffset + 3.8;
+        const targetSectionZ = zOf(sections[activeIdx] ? activeIdx : 0) + 3.8;
 
         if (activeIdx !== lastSeenSectionIdx) {
           // Changed outside the scene (arrows, station list, swipe): glide to that section
@@ -625,7 +650,7 @@ export default function ThreeGallery({
         camera.position.z = THREE.MathUtils.lerp(camera.position.z, runwayZ, 0.07);
 
         // Majestic guide crystal slides dynamically to the active region
-        const guideZ = (sections[activeIdx] || sections[0] || { zOffset: 0 }).zOffset;
+        const guideZ = zOf(sections[activeIdx] ? activeIdx : 0);
         crystal.position.z = THREE.MathUtils.lerp(crystal.position.z, guideZ, 0.06);
 
         // Dynamic lookAt slightly down the hallway path
@@ -641,7 +666,7 @@ export default function ThreeGallery({
         let closestIdx = 0;
         let minDiff = Infinity;
         sections.forEach((sec, idx) => {
-          const diff = Math.abs(currentZ - (sec.zOffset + 3.8));
+          const diff = Math.abs(currentZ - (zOf(idx) + 3.8));
           if (diff < minDiff) {
             minDiff = diff;
             closestIdx = idx;

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { X, Link2, Check, ChevronLeft, ChevronRight, Heart, Info } from "lucide-react";
+import { X, Link2, Check, ChevronLeft, ChevronRight, Heart, Info, CalendarCheck } from "lucide-react";
 import toast from "react-hot-toast";
 import type { ProfileView } from "../lib/profile";
 import { profileHref } from "../lib/profileLink";
@@ -82,6 +82,10 @@ export default function CreatorDetailPanel({ profile, onClose, onOpenCollaborati
               </ol>
             </nav>
             <div className="flex items-center gap-1 shrink-0">
+              {/* Always visible while scrolling: the main action on a profile */}
+              <button type="button" onClick={onOpenCollaboration} className="btn btn-sm btn-primary mr-1" id="profile-book-top-btn">
+                <CalendarCheck className="w-4 h-4" aria-hidden="true" /> <span className="hidden sm:inline">Book {firstName(p.name)}</span><span className="sm:hidden">Book</span>
+              </button>
               {moodboardItems.length > 0 && (
                 <button
                   type="button"
@@ -134,6 +138,16 @@ export default function CreatorDetailPanel({ profile, onClose, onOpenCollaborati
                     </span>
                   </p>
                 ) : null}
+                <div className="flex flex-wrap items-center gap-3 pt-2">
+                  <button type="button" onClick={onOpenCollaboration} className="btn btn-primary h-12 px-6" id="profile-book-btn">
+                    <CalendarCheck className="w-4 h-4" aria-hidden="true" /> Book or enquire
+                  </button>
+                  <button type="button" onClick={copyLink} className="btn btn-secondary h-12">
+                    {copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Link2 className="w-4 h-4" aria-hidden="true" />}
+                    {copied ? "Link copied" : "Share profile"}
+                  </button>
+                </div>
+                <p className="text-[0.8125rem] text-ink-3">Our team contacts the creator for you and replies by email or phone.</p>
               </header>
 
               {hasAudience && (

@@ -14,7 +14,7 @@ export const FAQS: FAQItem[] = [
   },
   {
     question: "How do I register as an influencer in India?",
-    answer: `Right now you register by applying for the ${AWARD_NAME}. Open the Apply page and complete the three-step form with your category, city, audience size, engagement rate and contact details. Registration is free and takes about two minutes. Our team reviews each application; once approved, your profile is published in the profile directory where brands look for influencers to hire, and you can apply for paid brand collaborations. After the awards, registration opens to every creator.`,
+    answer: `Right now you register by applying for the ${AWARD_NAME}. Open the Apply page and complete the three-step form with your category, city, audience size, engagement rate and contact details. The form takes about two minutes. Our team reviews each application and calls you to explain the award fee and next steps; once approved, your profile is published in the profile directory where brands look for influencers to hire, and you can apply for paid brand collaborations. After the awards, registration opens to every creator.`,
     category: "General"
   },
   {

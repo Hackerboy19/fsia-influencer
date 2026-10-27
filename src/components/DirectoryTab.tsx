@@ -202,7 +202,7 @@ export default function DirectoryTab({ profiles, status, onSelectProfile, onAppl
       <aside className="mt-16 grid gap-6 md:grid-cols-[1fr_auto] items-center border-t border-line pt-8">
         <div className="space-y-1">
           <h2 className="font-display text-[1.375rem] text-ink">Are you a creator?</h2>
-          <p className="text-ink-2">{JOIN_RULE} Applying is free, and our team reviews every application.</p>
+          <p className="text-ink-2">{JOIN_RULE} Our team reviews every application.</p>
         </div>
         <button type="button" onClick={onApply} className="btn btn-primary justify-self-start">{APPLY_LABEL}</button>
       </aside>

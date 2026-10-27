@@ -41,12 +41,12 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "home",
     path: "/",
-    title: `Influencer Award India: Apply Free, Registration Open | ${SITE_NAME}`,
+    title: `Influencer Award India: Registration Open, Apply Now | ${SITE_NAME}`,
     description:
-      `Apply free for the ${AWARD_NAME}, open to Indian creators in every niche. Registration is open. Approved creators get a reviewed profile that brands can search.`,
+      `Apply for the ${AWARD_NAME}, open to Indian creators in every niche. Registration is open. Approved creators get a reviewed profile that brands can search.`,
     heading: `${AWARD_NAME} for Indian creators`,
     intro:
-      `The ${AWARD_NAME} is open to creators in every niche across India, and registration is open now. Applying is free. Our team reviews every application; approved creators get a public profile in the ${SITE_NAME} directory, where brands search by niche and city and send collaboration enquiries. After the awards, the platform opens to every creator.`,
+      `The ${AWARD_NAME} is open to creators in every niche across India, and registration is open now. Our team reviews every application; approved creators get a public profile in the ${SITE_NAME} directory, where brands search by niche and city and send collaboration enquiries. After the awards, the platform opens to every creator.`,
     indexable: true,
     priority: "1.0",
     changefreq: "weekly"
@@ -95,10 +95,10 @@ export const ROUTES: RouteMeta[] = [
     path: "/join/",
     title: `${AWARD_NAME} Application & Registration | ${SITE_NAME}`,
     description:
-      `Apply for the ${AWARD_NAME} to join and get a public profile. A free, three-step form; our team reviews every application.`,
+      `Apply for the ${AWARD_NAME} to join and get a public profile. A three-step form; our team reviews every application.`,
     heading: `Apply for the ${AWARD_NAME}`,
     intro:
-      `Creators join by applying for the ${AWARD_NAME}; after the awards, the platform opens to every creator. Applying is free and takes about two minutes. Tell us your category, city and audience on Instagram or YouTube. Our team reviews each application; approved creators get a public profile that brands can browse, and can apply for paid brand collaborations. Creators in fashion, beauty, food, travel, tech, gaming and other niches are welcome from anywhere in India.`,
+      `Creators join by applying for the ${AWARD_NAME}; after the awards, the platform opens to every creator. The form takes about two minutes. Tell us your category, city and audience on Instagram or YouTube. Our team reviews each application; approved creators get a public profile that brands can browse, and can apply for paid brand collaborations. Creators in fashion, beauty, food, travel, tech, gaming and other niches are welcome from anywhere in India.`,
     indexable: true,
     priority: "0.9",
     changefreq: "monthly"

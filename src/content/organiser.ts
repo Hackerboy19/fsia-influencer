@@ -16,4 +16,7 @@ export const ORGANISER = {
 export const APPLICATIONS_OPEN = true;
 
 /** Shown wherever money or applications come up: the most common award scam is a fake agent asking for a fee. */
-export const ANTI_FRAUD_NOTE = `Applying for the award is free. If anyone asks you to pay to apply or to be selected, check with us first at ${ORGANISER.email} or ${ORGANISER.phoneDisplay}.`;
+/** The award fee is not fixed yet (Boss, 2026-10-27): the team explains it on a call. Never state an amount. */
+export const FEE_NOTE = "Our team will call you to explain the award fee and next steps.";
+
+export const ANTI_FRAUD_NOTE = `${FEE_NOTE} Pay only using the details our team sends you from ${ORGANISER.email} or ${ORGANISER.phoneDisplay}. If anyone else asks you to pay to apply or to be selected, check with us first.`;

@@ -28,13 +28,13 @@ interface SiteHeaderProps {
 // Every item points at a page or section that exists. "Awards" is the award section on the
 // home page; "Categories" lists the categories that have published profiles.
 const BRANDS: MenuItem[] = [
-  { label: "Send a brand enquiry", action: "enquiry", note: "Free. Our team replies by email or phone." },
+  { label: "Send a brand enquiry", action: "enquiry", note: "Our team replies by email or phone." },
   { label: "Search creators", action: "search", note: "By name, niche or city" },
   { label: "How enquiries work", target: { tab: "home", hash: "for-brands" } },
   { label: "Open campaigns", target: { tab: "campaigns" } }
 ];
 const CREATORS: MenuItem[] = [
-  { label: APPLY_LABEL, target: { tab: "apply" }, note: "Free. Approved creators get a public profile." },
+  { label: APPLY_LABEL, target: { tab: "apply" }, note: "Our team reviews it. Approved creators get a public profile." },
   { label: "How applying works", target: { tab: "home", hash: "for-creators" } },
   { label: "Membership plans", target: { tab: "membership" } },
   { label: "Star India members", target: { tab: "starindia" } }

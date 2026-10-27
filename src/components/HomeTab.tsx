@@ -13,7 +13,6 @@ import {
   Trophy,
   Users,
   Youtube,
-  Gift,
   CircleCheck
 } from "lucide-react";
 import { TabId } from "../seo";
@@ -46,9 +45,9 @@ interface HomeTabProps {
 
 // Only what the application workflow actually does (see ModelRegistrationTab and server approve step)
 const CREATOR_STEPS = [
-  { title: "Fill in the application", text: "Niche, city, audience figures, a photo and contact details. It is free and takes about two minutes." },
+  { title: "Fill in the application", text: "Niche, city, audience figures, a photo and contact details. It takes about two minutes." },
   { title: "Get a reference number", text: "You see it straight away. Your email and mobile are used only to contact you and are never published." },
-  { title: "Our team reviews it", text: "We read the application and look at your public social profiles. We contact you by email or WhatsApp." },
+  { title: "Our team reviews it and calls you", text: "We read the application and look at your public social profiles, then call you to explain the award fee and next steps." },
   { title: "Your profile goes live", text: "If approved, your profile is published in the directory, and you can apply for open brand campaigns." }
 ];
 
@@ -121,7 +120,7 @@ function BrandCreatorCards({ onBrandEnquiry, onNavigate, className = "" }: { onB
       </div>
       <div className="surface-dark bg-[#1B1A17]/92 text-white p-5 rounded-[4px] border border-white/10">
         <p className="flex items-center gap-2.5 font-semibold text-[1.0625rem]"><Trophy className="w-5 h-5 text-[#E1C699]" aria-hidden="true" /> For creators</p>
-        <p className="mt-1.5 text-[0.9375rem] leading-snug text-[#CFCAC0]">Apply free for the {AWARD_NAME}. Approved creators get a public profile.</p>
+        <p className="mt-1.5 text-[0.9375rem] leading-snug text-[#CFCAC0]">Apply for the {AWARD_NAME}. Approved creators get a public profile.</p>
         <TabLink tab="apply" onNavigate={onNavigate} className="btn btn-sm btn-primary mt-4 w-full">
           {APPLY_LABEL} <ArrowRight className="w-4 h-4" aria-hidden="true" />
         </TabLink>
@@ -163,7 +162,7 @@ function Hero({
           { icon: <LayoutGrid className="w-[18px] h-[18px]" />, value: String(categories.length), label: categories.length === 1 ? "Category" : "Categories" },
           { icon: <MapPin className="w-[18px] h-[18px]" />, value: String(cities.length), label: cities.length === 1 ? "City" : "Cities" }
         ];
-  facts.push({ icon: <Gift className="w-[18px] h-[18px]" />, value: "Free", label: "To apply" });
+  facts.push({ icon: <BadgeCheck className="w-[18px] h-[18px]" />, value: "Reviewed", label: "By our team" });
   if (APPLICATIONS_OPEN) facts.push({ icon: <CircleCheck className="w-[18px] h-[18px]" />, value: "Open", label: "Registration" });
 
   return (
@@ -210,7 +209,7 @@ function Hero({
             </span>
           </h1>
           <p className="text-[1.0625rem] leading-relaxed text-ink-2 max-w-[34rem]">
-            Explore reviewed creator profiles from across India and send us an enquiry to collaborate. Creators join by applying free for the {AWARD_NAME}.
+            Explore reviewed creator profiles from across India and send us an enquiry to collaborate. Creators join by applying for the {AWARD_NAME}.
           </p>
 
           <HeroSearch onBrowse={onBrowse} />
@@ -722,7 +721,7 @@ export default function HomeTab({ profiles, status, onNavigate, onGo, onSelectPr
             <Trophy className="absolute -right-4 -bottom-6 w-44 h-44 text-[#E1C699]/15" aria-hidden="true" strokeWidth={1.25} />
             <p className="text-[0.8125rem] font-semibold uppercase tracking-[0.08em] text-[#E1C699]">{APPLICATIONS_OPEN ? "Registration open" : "The award"}</p>
             <h2 className="mt-2 font-semibold text-[1.375rem] leading-tight">{AWARD_NAME}, first edition</h2>
-            <p className="mt-2 text-[0.9375rem] text-[#CFCAC0] max-w-md">Open to Indian creators in every niche. Free to apply; our team reviews every application.</p>
+            <p className="mt-2 text-[0.9375rem] text-[#CFCAC0] max-w-md">Open to Indian creators in every niche. Our team reviews every application and calls you about the fee and next steps.</p>
             <div className="mt-5 flex flex-wrap gap-3 relative">
               <TabLink tab="apply" onNavigate={onNavigate} className="btn btn-primary">{APPLY_LABEL}</TabLink>
               <a href="/#the-award" onClick={inApp(() => onGo({ tab: "home", hash: "the-award" }))} className="btn btn-ghost-light">How the award works</a>

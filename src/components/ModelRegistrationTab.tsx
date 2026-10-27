@@ -548,7 +548,7 @@ export default function ModelRegistrationTab() {
           <ol className="divide-y divide-line">
             {[
               "You get a reference number straight away.",
-              "Our team reviews your application.",
+              "Our team reviews your application and calls you to explain the fee and next steps.",
               "If it is approved, your profile is published in the directory.",
               "You can ask us to correct or remove it at any time."
             ].map((text, i) => (
