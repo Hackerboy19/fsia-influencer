@@ -100,7 +100,7 @@ function HeroSearch({ onBrowse }: { onBrowse: HomeTabProps["onBrowse"] }) {
         type="search"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="Search creators by name, niche or city"
+        placeholder="Name, niche or city"
         autoComplete="off"
         className="flex-1 min-w-0 bg-transparent px-3 text-[1rem] text-ink outline-none"
       />
@@ -188,7 +188,7 @@ function Hero({
               {withPhoto.slice(0, 3).map((p) => (
                 <li key={p.slug}>
                   <a href={profileHref(p.slug)} onClick={inApp(() => onSelectProfile(p))} className="block relative overflow-hidden rounded-[3px]">
-                    <Photo src={p.image} name={p.name} eager ratio="aspect-[3/4]" sizes="33vw" />
+                    <Photo src={p.image} name={p.name} eager ratio="aspect-[3/4] sm:aspect-[4/3]" sizes="33vw" />
                     <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pb-1.5 pt-6 text-[0.75rem] font-semibold text-white truncate">{p.name}</span>
                     {sample && <span className="tag absolute top-1.5 left-1.5 !text-[0.6875rem]">Sample</span>}
                   </a>
@@ -293,14 +293,14 @@ function FeatureStrip({ profiles, onGo }: { profiles: ProfileView[]; onGo: HomeT
   const items: { title: string; text: string; target: NavTarget; href: string; thumb: React.ReactNode }[] = [
     {
       title: "Discover Creators",
-      text: "Search reviewed profiles",
+      text: "Search profiles",
       target: { tab: "directory" },
       href: "/talent/",
       thumb: photos[0] ? <Photo src={photos[0]} name="" eager ratio="h-full w-full" sizes="88px" /> : <Users className="w-6 h-6" />
     },
     {
       title: "3D Gallery",
-      text: "Walk through profiles in 3D",
+      text: "Profiles in 3D",
       target: { tab: "catwalk" },
       href: "/gallery/",
       thumb: (
@@ -313,7 +313,7 @@ function FeatureStrip({ profiles, onGo }: { profiles: ProfileView[]; onGo: HomeT
     },
     {
       title: "Magazine",
-      text: "Guides and magazine features",
+      text: "Guides and features",
       target: { tab: "greenlight" },
       href: "/green-light/",
       thumb: (
@@ -325,7 +325,7 @@ function FeatureStrip({ profiles, onGo }: { profiles: ProfileView[]; onGo: HomeT
     },
     {
       title: "Awards",
-      text: APPLICATIONS_OPEN ? "Registration is open" : `The ${AWARD_NAME}`,
+      text: APPLICATIONS_OPEN ? "Registration open" : AWARD_NAME,
       target: { tab: "home", hash: "the-award" },
       href: "/#the-award",
       thumb: (
@@ -348,13 +348,13 @@ function FeatureStrip({ profiles, onGo }: { profiles: ProfileView[]; onGo: HomeT
   ];
   return (
     <nav aria-label="Explore the site" className="page-wide relative z-[1] -mt-px pt-5">
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {items.map((it) => (
-          <li key={it.title}>
-            <a href={it.href} onClick={inApp(() => onGo(it.target))} className="card group flex items-center gap-3.5 p-2 pr-3 h-full">
-              <span className="w-[5.5rem] lg:w-16 xl:w-[5.5rem] h-16 shrink-0 overflow-hidden rounded-[3px] bg-sunken text-ink-3 flex items-center justify-center">{it.thumb}</span>
+      <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {items.map((it, i) => (
+          <li key={it.title} className={i === items.length - 1 ? "sm:max-xl:col-span-2" : undefined}>
+            <a href={it.href} onClick={inApp(() => onGo(it.target))} className="card group flex items-center gap-3.5 xl:gap-3 p-2 pr-3 xl:pr-2 h-full">
+              <span className="w-[5.5rem] xl:w-14 xl:h-14 h-16 shrink-0 overflow-hidden rounded-[3px] bg-sunken text-ink-3 flex items-center justify-center">{it.thumb}</span>
               <span className="min-w-0 flex-1">
-                <span className="block font-semibold text-ink leading-tight lg:text-[0.9375rem] xl:text-[1rem]">{it.title}</span>
+                <span className="block font-semibold text-ink leading-tight xl:text-[0.9375rem]">{it.title}</span>
                 <span className="block text-[0.8125rem] text-ink-3 leading-snug mt-0.5">{it.text}</span>
               </span>
               <ChevronRight className="w-4 h-4 text-ink-3 group-hover:text-ink group-hover:translate-x-0.5 transition-transform shrink-0" aria-hidden="true" />

@@ -403,7 +403,7 @@ function SearchDialog({ open, onClose, categories, onBrowse }: { open: boolean; 
           </div>
           <form
             role="search"
-            className="mt-3 flex gap-2"
+            className="mt-3 flex flex-col min-[400px]:flex-row gap-2"
             onSubmit={(e) => {
               e.preventDefault();
               onBrowse({ q: q.trim() });
