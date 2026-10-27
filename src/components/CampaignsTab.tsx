@@ -9,6 +9,7 @@ import {
 } from "../lib/forms";
 import FieldError, { errorProps } from "./FieldError";
 import { isPreviewHost } from "../lib/preview";
+import { SAMPLE_CAMPAIGNS } from "../content/sampleCampaigns";
 
 interface Campaign {
   id: string;
@@ -38,7 +39,7 @@ export default function CampaignsTab() {
   const [submittedEmail, setSubmittedEmail] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [activeCampaigns, setActiveCampaigns] = useState<Campaign[]>([]);
-  const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
+  const [loadState, setLoadState] = useState<"loading" | "ready" | "error" | "sample">("loading");
   const [invalidField, setInvalidField] = useState("");
   const closeDrawer = () => setSelectedCampaign(null);
   const dialogRef = useDialog<HTMLDivElement>(!!selectedCampaign, closeDrawer);
@@ -53,7 +54,14 @@ export default function CampaignsTab() {
         setActiveCampaigns(Array.isArray(data) ? data : []);
         setLoadState("ready");
       })
-      .catch(() => setLoadState("error"));
+      .catch(() => {
+        if (isPreviewHost()) {
+          setActiveCampaigns(SAMPLE_CAMPAIGNS);
+          setLoadState("sample");
+        } else {
+          setLoadState("error");
+        }
+      });
   }, []);
 
   const handleApplyClick = (campaign: Campaign) => {
@@ -127,9 +135,12 @@ export default function CampaignsTab() {
         {loadState === "loading" && <p className="text-ink-2">Loading campaigns…</p>}
         {loadState === "error" && (
           <p className="border border-line bg-surface p-6 text-ink-2">
-            {isPreviewHost()
-              ? "Open campaigns are listed on the live site. This preview does not include campaign data."
-              : "Campaigns could not be loaded right now. Please refresh the page or try again later."}
+            Campaigns could not be loaded right now. Please refresh the page or try again later.
+          </p>
+        )}
+        {loadState === "sample" && (
+          <p className="border border-line bg-surface p-6 text-ink-2">
+            Preview: these are sample briefs to show the layout. Real campaigns are listed on the live site, and applying works there.
           </p>
         )}
         {loadState === "ready" && activeCampaigns.length === 0 && (
@@ -176,7 +187,9 @@ export default function CampaignsTab() {
                       </div>
                     ))}
                   </dl>
-                  {isApplied ? (
+                  {loadState === "sample" ? (
+                    <p className="text-[0.9375rem] text-ink-3">Applications open on the live site.</p>
+                  ) : isApplied ? (
                     <p className="inline-flex items-center gap-2 text-[0.9375rem] font-semibold text-[#2f6b45]">
                       <CheckCircle2 className="w-4 h-4" aria-hidden="true" /> Application sent
                     </p>
