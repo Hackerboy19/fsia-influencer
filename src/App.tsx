@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo, lazy, Suspense, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Compass, ChevronLeft, ChevronRight, Menu, X } from "lucide-react";
+import { Compass, ChevronLeft, ChevronRight } from "lucide-react";
 import { gallerySections, Creator } from "./data";
 import CreatorDetailPanel from "./components/CreatorDetailPanel";
 import VipCollaborationForm from "./components/VipCollaborationForm";
@@ -13,6 +13,7 @@ import FaqTab from "./components/FaqTab";
 import CursorParticleTrail from "./components/CursorParticleTrail";
 import SiteFooter from "./components/SiteFooter";
 import HomeTab from "./components/HomeTab";
+import SiteHeader, { NavTarget } from "./components/SiteHeader";
 import StarIndiaTab from "./components/StarIndiaTab";
 import GreenLightTab from "./components/GreenLightTab";
 import ContactTab from "./components/ContactTab";
@@ -21,50 +22,14 @@ import type { RosterStatus } from "./components/RosterNotice";
 import { Toaster } from "react-hot-toast";
 import { TabId, routeForPath, routeForTab, applyRouteMeta } from "./seo";
 import { BRAND_NAME } from "./content/brand";
-import { APPLY_LABEL } from "./content/awards";
 import { readableAccent } from "./lib/color";
 import { ProfileView, profilesFromSections } from "./lib/profile";
 import { PROFILE_PARAM, profileSlugFromLocation } from "./lib/profileLink";
-import { useDialog } from "./lib/dialog";
 
 // The 3D scene (Three.js) and the admin workspace are loaded on demand, so the
 // home page and content pages don't wait for code most visitors never run
 const ThreeGallery = lazy(() => import("./components/ThreeGallery"));
 const AdminTab = lazy(() => import("./components/AdminTab"));
-
-// Main navigation: what people come for, in plain words. The 3D gallery and contact
-// page are linked from the home page, the menu and the footer.
-const NAV: { id: TabId; label: string }[] = [
-  { id: "directory", label: "Profiles" },
-  { id: "starindia", label: "Star India" },
-  { id: "campaigns", label: "Campaigns" },
-  { id: "membership", label: "Membership" },
-  { id: "greenlight", label: "Magazine" },
-  { id: "faq", label: "FAQ" }
-];
-const MENU_EXTRA: { id: TabId; label: string }[] = [
-  { id: "home", label: "Home" },
-  { id: "catwalk", label: "3D gallery" },
-  { id: "contact", label: "Contact" }
-];
-
-function Wordmark({ onHome }: { onHome: () => void }) {
-  return (
-    <a
-      href="/"
-      onClick={(e) => {
-        if (e.metaKey || e.ctrlKey || e.shiftKey) return;
-        e.preventDefault();
-        onHome();
-      }}
-      aria-label={`${BRAND_NAME}, home`}
-      className="flex items-center gap-2.5 shrink-0"
-    >
-      <img src="/favicon.svg" alt="" width={28} height={28} className="w-7 h-7 rounded-[6px]" />
-      <span className="font-display text-[1.25rem] leading-none tracking-[-0.01em] text-ink whitespace-nowrap">{BRAND_NAME}</span>
-    </a>
-  );
-}
 
 export default function App() {
   const initialTab = routeForPath(window.location.pathname).tab;
@@ -72,7 +37,6 @@ export default function App() {
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
   const [selectedSlug, setSelectedSlug] = useState<string>(() => profileSlugFromLocation());
   const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [contactTopic, setContactTopic] = useState("");
   // Three.js loads the first time someone opens the 3D gallery, not on every page
   const [galleryMounted, setGalleryMounted] = useState(initialTab === "catwalk");
@@ -88,6 +52,11 @@ export default function App() {
   const [sections, setSections] = useState<any[]>([]);
   const [rosterStatus, setRosterStatus] = useState<RosterStatus>("loading");
   const profiles = useMemo(() => profilesFromSections(sections), [sections]);
+  const categories = useMemo(() => {
+    const m = new Map<string, number>();
+    profiles.forEach((p) => p.category && m.set(p.category, (m.get(p.category) || 0) + 1));
+    return Array.from(m.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }, [profiles]);
   const selectedProfile = useMemo(() => profiles.find((p) => p.slug === selectedSlug) || null, [profiles, selectedSlug]);
 
   const [settings, setSettings] = useState<any>({
@@ -183,6 +152,14 @@ export default function App() {
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
+  // Arriving on a link to a section (e.g. /#the-award): scroll to it once the page is drawn
+  const initialHash = useRef(typeof window !== "undefined" ? window.location.hash.slice(1) : "");
+  useEffect(() => {
+    if (rosterStatus === "loading" || !initialHash.current) return;
+    scrollToHash(initialHash.current, false);
+    initialHash.current = "";
+  }, [rosterStatus]);
+
   // A profile someone linked to that no longer exists: drop the parameter quietly
   useEffect(() => {
     if (rosterStatus !== "loading" && selectedSlug && !selectedProfile) closeProfile();
@@ -200,7 +177,30 @@ export default function App() {
   const navigateTo = (tab: TabId) => {
     setActiveTab(tab);
     setSelectedSlug("");
-    setMenuOpen(false);
+  };
+
+  // Go to a page, or to a section on a page (/#the-award). The section is scrolled into
+  // view once the page has rendered.
+  const scrollToHash = (hash: string, smooth = true) => {
+    let tries = 0;
+    const attempt = () => {
+      const el = document.getElementById(hash);
+      if (el) {
+        // A guide link opens that guide
+        if (el instanceof HTMLDetailsElement) el.open = true;
+        el.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" });
+      }
+      else if (tries++ < 20) window.setTimeout(attempt, 60);
+    };
+    window.setTimeout(attempt, 60);
+  };
+  const goTo = (t: NavTarget) => {
+    if (t.tab !== activeTab || selectedSlug) navigateTo(t.tab);
+    if (!t.hash) return;
+    window.setTimeout(() => {
+      window.history.replaceState(window.history.state, "", routeForTab(t.tab).path + "#" + t.hash);
+      scrollToHash(t.hash!, t.tab === activeTab);
+    }, t.tab === activeTab ? 0 : 260);
   };
 
   // Profiles open over the current page and get their own address (?profile=…), so the
@@ -246,7 +246,6 @@ export default function App() {
     navigateTo("contact");
   };
 
-  const menuRef = useDialog<HTMLDivElement>(menuOpen, () => setMenuOpen(false));
 
   // The gallery works with the raw creator records
   const galleryCreator: Creator | null = activeTab === "catwalk" ? selectedProfile?.creator ?? null : null;
@@ -307,138 +306,20 @@ export default function App() {
         <CursorParticleTrail active={activeTab === "catwalk"} color={readableAccent(settings.primaryColor)} />
       </div>
 
-      {/* Header */}
-      <header className="absolute top-0 inset-x-0 z-30 h-16 bg-paper/95 backdrop-blur border-b border-line">
-        <div className="page h-full flex items-center justify-between gap-6">
-          <Wordmark onHome={() => navigateTo("home")} />
-
-          <nav aria-label="Main" id="main-nav-tabs" className="hidden lg:flex items-center gap-6 h-full">
-            {NAV.map(({ id, label }) => (
-              <a
-                key={id}
-                href={routeForTab(id).path}
-                aria-current={activeTab === id ? "page" : undefined}
-                onClick={(e) => {
-                  if (e.metaKey || e.ctrlKey || e.shiftKey) return;
-                  e.preventDefault();
-                  navigateTo(id);
-                }}
-                className={navLinkClass(id)}
-              >
-                {label}
-              </a>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setIsCollaborationOpen(true)} className="hidden md:inline-flex btn btn-sm btn-secondary" id="open-collaboration-form-btn">
-              Brand enquiry
-            </button>
-            <a
-              href={routeForTab("apply").path}
-              onClick={(e) => {
-                if (e.metaKey || e.ctrlKey || e.shiftKey) return;
-                e.preventDefault();
-                navigateTo("apply");
-              }}
-              aria-current={activeTab === "apply" ? "page" : undefined}
-              className="hidden sm:inline-flex btn btn-sm btn-primary"
-            >
-              {APPLY_LABEL}
-            </a>
-            <button
-              type="button"
-              onClick={() => setMenuOpen(true)}
-              aria-expanded={menuOpen}
-              aria-controls="site-menu"
-              className="lg:hidden inline-flex items-center gap-2 h-10 px-3 rounded-[4px] border border-field text-ink text-[0.9375rem] font-semibold cursor-pointer"
-            >
-              <Menu className="w-5 h-5" aria-hidden="true" /> Menu
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Menu for phones and tablets */}
-      <AnimatePresence>
-        {menuOpen && (
-          <div className="fixed inset-0 z-[60] lg:hidden" onClick={() => setMenuOpen(false)}>
-            <div className="absolute inset-0 bg-ink/30" aria-hidden="true" />
-            <motion.div
-              ref={menuRef}
-              id="site-menu"
-              role="dialog"
-              aria-modal="true"
-              aria-label="Menu"
-              tabIndex={-1}
-              onClick={(e) => e.stopPropagation()}
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.15 }}
-              className="absolute inset-x-0 top-0 bg-paper border-b border-line shadow-[0_12px_30px_-12px_rgba(27,26,23,0.3)] outline-none max-h-[100dvh] overflow-y-auto"
-            >
-              <div className="page h-16 flex items-center justify-between">
-                <Wordmark onHome={() => navigateTo("home")} />
-                <button type="button" onClick={() => setMenuOpen(false)} aria-label="Close menu" className="w-10 h-10 inline-flex items-center justify-center rounded-[4px] text-ink hover:bg-sunken cursor-pointer">
-                  <X className="w-5 h-5" aria-hidden="true" />
-                </button>
-              </div>
-              <nav aria-label="Menu" className="page pb-6">
-                <ul className="divide-y divide-line border-y border-line">
-                  {[...MENU_EXTRA.slice(0, 1), ...NAV, ...MENU_EXTRA.slice(1)].map(({ id, label }) => (
-                    <li key={id}>
-                      <a
-                        href={routeForTab(id).path}
-                        aria-current={activeTab === id ? "page" : undefined}
-                        onClick={(e) => {
-                          if (e.metaKey || e.ctrlKey || e.shiftKey) return;
-                          e.preventDefault();
-                          navigateTo(id);
-                        }}
-                        className={`flex items-center justify-between py-3.5 text-[1.0625rem] ${activeTab === id ? "font-semibold text-ink" : "text-ink-2"}`}
-                      >
-                        {label}
-                        {activeTab === id && <span className="text-[0.8125rem] text-ink-3 font-normal">Current page</span>}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-                <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                  <a
-                    href={routeForTab("apply").path}
-                    onClick={(e) => {
-                      if (e.metaKey || e.ctrlKey || e.shiftKey) return;
-                      e.preventDefault();
-                      navigateTo("apply");
-                    }}
-                    className="btn btn-primary"
-                  >
-                    {APPLY_LABEL}
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setIsCollaborationOpen(true);
-                    }}
-                    className="btn btn-secondary"
-                  >
-                    Brand enquiry
-                  </button>
-                </div>
-              </nav>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <SiteHeader
+        activeTab={activeTab}
+        categories={categories}
+        onGo={goTo}
+        onBrowse={browse}
+        onBrandEnquiry={() => setIsCollaborationOpen(true)}
+      />
 
       {/* 3D gallery controls */}
       {activeTab === "catwalk" && sections.length > 0 && (
         <>
           <nav aria-label="Gallery sections" className="absolute left-6 top-1/2 -translate-y-1/2 hidden lg:block z-10 max-h-[70vh] overflow-y-auto scrollbar-none">
-            <div className="bg-paper/95 border border-line p-5 w-56 space-y-1">
-              <p className="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-ink-3 pb-2 mb-1 border-b border-line">Sections</p>
+            <div className="surface-dark bg-[#1B1A17]/90 border border-white/15 p-5 w-56 space-y-1">
+              <p className="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[#D9C29A] pb-2 mb-1 border-b border-white/15">Sections</p>
               {sections.map((sec, idx) => (
                 <button
                   key={`${sec.id}-${idx}`}
@@ -448,7 +329,7 @@ export default function App() {
                     closeProfile();
                   }}
                   aria-current={idx === activeSectionIndex ? "true" : undefined}
-                  className={`block w-full text-left py-1.5 text-[0.9375rem] cursor-pointer ${idx === activeSectionIndex ? "font-semibold text-ink" : "text-ink-2 hover:text-ink"}`}
+                  className={`block w-full text-left py-1.5 text-[0.9375rem] cursor-pointer ${idx === activeSectionIndex ? "font-semibold text-white" : "text-[#CFCAC0] hover:text-white"}`}
                 >
                   {sec.title}
                 </button>
@@ -457,20 +338,20 @@ export default function App() {
           </nav>
 
           <div className="absolute bottom-0 inset-x-0 p-4 md:p-6 flex justify-center z-10 pointer-events-none">
-            <div className="pointer-events-auto w-full max-w-xl bg-paper/95 border border-line px-4 py-3 flex items-center justify-between gap-3">
+            <div className="surface-dark pointer-events-auto w-full max-w-xl bg-[#1B1A17]/90 border border-white/15 px-4 py-3 flex items-center justify-between gap-3">
               <button
                 type="button"
                 onClick={() => setActiveSectionIndex(Math.max(0, activeSectionIndex - 1))}
                 disabled={activeSectionIndex === 0}
                 aria-label="Previous section"
                 id="prev-section-btn"
-                className="w-10 h-10 inline-flex items-center justify-center border border-field rounded-[4px] text-ink disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                className="w-11 h-11 inline-flex items-center justify-center border border-white/40 rounded-[4px] text-white hover:border-white disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
               >
                 <ChevronLeft className="w-5 h-5" aria-hidden="true" />
               </button>
               <div className="text-center min-w-0" aria-live="polite">
-                <span className="block text-[0.75rem] text-ink-3 tabular-nums">Section {activeSectionIndex + 1} of {sections.length}</span>
-                <span className="block font-semibold text-ink truncate">{activeSection.title}</span>
+                <span className="block text-[0.75rem] text-[#CFCAC0] tabular-nums">Section {activeSectionIndex + 1} of {sections.length}</span>
+                <span className="block font-semibold text-white truncate">{activeSection.title}</span>
               </div>
               <button
                 type="button"
@@ -478,7 +359,7 @@ export default function App() {
                 disabled={activeSectionIndex === sections.length - 1}
                 aria-label="Next section"
                 id="next-section-btn"
-                className="w-10 h-10 inline-flex items-center justify-center border border-field rounded-[4px] text-ink disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                className="w-11 h-11 inline-flex items-center justify-center border border-white/40 rounded-[4px] text-white hover:border-white disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
               >
                 <ChevronRight className="w-5 h-5" aria-hidden="true" />
               </button>
@@ -486,7 +367,7 @@ export default function App() {
           </div>
 
           {!selectedProfile && (
-            <p className="absolute top-20 inset-x-0 mx-auto w-fit z-10 bg-paper/95 border border-line px-3 py-1.5 text-[0.8125rem] text-ink-2 flex items-center gap-2 pointer-events-none">
+            <p className="absolute top-20 inset-x-0 mx-auto w-fit max-w-[calc(100%-2rem)] z-10 bg-[#1B1A17]/90 border border-white/15 px-3 py-1.5 text-[0.8125rem] text-[#E7E3DA] flex items-center gap-2 pointer-events-none">
               <Compass className="w-4 h-4" aria-hidden="true" /> Scroll or drag to move; select a portrait to open the profile
             </p>
           )}
@@ -512,11 +393,13 @@ export default function App() {
                 profiles={profiles}
                 status={rosterStatus}
                 onNavigate={navigateTo}
+                onGo={goTo}
                 onSelectProfile={openProfile}
                 onBrandEnquiry={() => setIsCollaborationOpen(true)}
                 onAwardEnquiry={askAboutAward}
                 onBrowse={browse}
                 onRetry={refreshSections}
+                moodboardItems={moodboardItems}
               />
             )}
             {activeTab === "directory" && (

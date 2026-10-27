@@ -81,7 +81,17 @@ for (const vp of [
   // Desktop uses the header links; smaller screens open the Menu dialog
   const goVia = async (label) => {
     if (desktop) {
-      await page.locator("#main-nav-tabs a", { hasText: new RegExp(`^${label}$`, "i") }).click();
+      // Main links are in the bar; the rest sit in its dropdowns (For Creators, Resources…)
+      const direct = page.locator("#main-nav-tabs > a", { hasText: new RegExp(`^${label}$`, "i") });
+      if (await direct.count()) await direct.click();
+      else {
+        for (const btn of await page.locator("#main-nav-tabs button[aria-expanded]").all()) {
+          await btn.click();
+          const item = page.locator("#main-nav-tabs a:visible", { hasText: new RegExp(`^${label}`, "i") });
+          if (await item.count()) { await item.first().click(); break; }
+          await btn.click();
+        }
+      }
     } else {
       await page.locator('button[aria-controls="site-menu"]').click();
       await page.locator('#site-menu a', { hasText: new RegExp(`^${label}`, "i") }).first().click();
@@ -141,8 +151,8 @@ for (const vp of [
   check(`${vp.name}: gallery "previous" arrow returns to section 1`, /Section 1 of \d/.test(await sectionLabel()), await sectionLabel());
 
   const expected = {
-    Profiles: "/talent/", "Star India": "/star-india/", Campaigns: "/campaigns/", Membership: "/membership/",
-    Magazine: "/green-light/", FAQ: "/faq/"
+    "Discover Creators": "/talent/", "Star India members": "/star-india/", Campaigns: "/campaigns/", "Membership plans": "/membership/",
+    Magazine: "/green-light/", "Questions and answers": "/faq/"
   };
   for (const [label, path] of Object.entries(expected)) {
     await goVia(label);
@@ -150,8 +160,9 @@ for (const vp of [
     check(`${vp.name}: navigation "${label}" → ${path}`, url === path, `landed on ${url}`);
     check(`${vp.name}: ${path} has a visible <h1>`, !!(await h1(page)));
     if (desktop) {
-      check(`${vp.name}: ${path} marks its link as current`,
-        (await page.locator('#main-nav-tabs [aria-current="page"]').innerText()).toLowerCase() === label.toLowerCase());
+      // Direct links are marked as the current page; dropdown pages mark their dropdown button
+      const current = (await page.locator('#main-nav-tabs > [aria-current="page"], #main-nav-tabs .is-active').first().innerText()).trim().toLowerCase();
+      check(`${vp.name}: ${path} marks its link as current`, current === label.toLowerCase() || ["for creators", "resources"].includes(current), current);
     }
   }
   await page.goBack();
@@ -206,11 +217,12 @@ check("API rejects a creator application with an invalid phone (400)", badApp.st
 // ---------------------------------------------------------------------------
 async function brandEnquiry(page, label) {
   await page.goto(BASE + "/talent/", { waitUntil: "networkidle" });
-  if (await page.locator("#open-collaboration-form-btn").isVisible()) {
-    await page.click("#open-collaboration-form-btn");
+  if (await page.locator("#main-nav-tabs").isVisible()) {
+    await page.locator("#main-nav-tabs button", { hasText: "For Brands" }).click();
+    await page.locator("#main-nav-tabs button", { hasText: "Send a brand enquiry" }).click();
   } else {
     await page.locator('button[aria-controls="site-menu"]').click();
-    await page.locator("#site-menu button", { hasText: "Brand enquiry" }).click();
+    await page.locator("#site-menu button", { hasText: /^Brand enquiry$/ }).click();
   }
   await page.waitForSelector("#enquiry-brand");
   await page.click("#submit-collaboration-charter-btn");

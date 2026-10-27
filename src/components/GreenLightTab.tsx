@@ -11,6 +11,7 @@ const PACKAGE_TITLES = MAGAZINE_PACKAGES.map((p) => p.title);
 // with a real creator's photo implied a feature that may not exist.
 export default function GreenLightTab(_props: { coverCreator?: Creator }) {
   const route = routeForTab("greenlight");
+  const [lead, ...rest] = BLOG_POSTS;
   const [bookingPackage, setBookingPackage] = useState<string>(PACKAGE_TITLES[0]);
 
   const book = (title: string) => {
@@ -22,33 +23,57 @@ export default function GreenLightTab(_props: { coverCreator?: Creator }) {
   return (
     <div className="page pt-10 md:pt-14 pb-16">
       <header className="max-w-3xl space-y-3">
-        <p className="eyebrow">Green Light</p>
+        <p className="eyebrow">Magazine</p>
         <h1 className="h-page">{route.heading}</h1>
         <p className="lede">{route.intro}</p>
       </header>
 
-      <section aria-labelledby="blog" className="mt-12">
-        <h2 id="blog" className="h-section pb-4 border-b border-line">Guides</h2>
-        <ul className="divide-y divide-line border-b border-line">
-          {BLOG_POSTS.map((post) => (
-            <li key={post.id}>
-              <details className="group">
-                <summary className="grid gap-1 md:grid-cols-[10rem_minmax(0,1fr)_auto] md:gap-8 py-5 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                  <span className="text-[0.8125rem] text-ink-3">
-                    {post.category} · {post.readMinutes} min read
+      {/* Featured guide, shown in full; the others open in place */}
+      {lead && (
+        <article id={`guide-${lead.id}`} aria-labelledby="featured-guide" className="mt-10 grid gap-8 lg:gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] items-stretch scroll-mt-6">
+          <div className="surface-dark relative flex flex-col justify-between bg-[linear-gradient(160deg,#2A241C,#14120F)] text-white p-6 sm:p-8 rounded-[4px] min-h-[20rem]">
+            <p className="font-display leading-[0.9] text-[#E1C699]" aria-hidden="true">
+              <span className="block text-[0.8125rem] tracking-[0.3em] uppercase text-[#CFCAC0] font-sans font-semibold">Green Light</span>
+              <span className="block text-[3.5rem] sm:text-[4.5rem] italic mt-2">Guides</span>
+            </p>
+            <p className="text-[0.8125rem] uppercase tracking-[0.12em] text-[#CFCAC0]">Featured · {lead.category} · {lead.readMinutes} min read</p>
+          </div>
+          <div className="flex flex-col justify-center">
+            <p className="eyebrow">Featured guide</p>
+            <h2 id="featured-guide" className="h-section mt-2">{lead.title}</h2>
+            <p className="lede mt-3">{lead.excerpt}</p>
+            <div className="mt-5 space-y-3 text-ink-2 leading-relaxed border-t border-line pt-5">
+              {lead.body.map((para, i) => (
+                <p key={i}>{para}</p>
+              ))}
+            </div>
+          </div>
+        </article>
+      )}
+
+      <section aria-labelledby="blog-heading" className="mt-16 scroll-mt-6" id="blog">
+        <div className="flex items-end justify-between gap-4 pb-4 border-b-2 border-ink">
+          <h2 id="blog-heading" className="h-section">More guides</h2>
+          <p className="text-[0.875rem] text-ink-3">{rest.length} guides · select one to read it here</p>
+        </div>
+        <ul className="grid md:grid-cols-2 gap-x-10">
+          {rest.map((post, i) => (
+            <li key={post.id} className="border-b border-line">
+              <details id={`guide-${post.id}`} className="group scroll-mt-6">
+                <summary className="py-6 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                  <span className="text-[0.8125rem] text-bronze font-semibold uppercase tracking-[0.06em]">
+                    {post.category} <span className="text-ink-3 font-normal normal-case tracking-normal">· {post.readMinutes} min read</span>
                   </span>
-                  <span>
-                    <h3 className="font-display text-[1.3125rem] leading-snug text-ink group-hover:underline underline-offset-4 decoration-1">{post.title}</h3>
-                    <span className="block text-ink-2 mt-1">{post.excerpt}</span>
-                  </span>
-                  <span className="text-[0.875rem] font-semibold text-ink self-start md:pt-1">
-                    <span className="group-open:hidden">Read</span>
+                  <h3 className={`font-display leading-snug text-ink group-hover:underline underline-offset-4 decoration-1 mt-1.5 text-[1.5rem]`}>{post.title}</h3>
+                  <span className="block text-ink-2 mt-1.5 max-w-2xl">{post.excerpt}</span>
+                  <span className="mt-3 inline-block text-[0.875rem] font-semibold text-ink">
+                    <span className="group-open:hidden">Read guide</span>
                     <span className="hidden group-open:inline">Close</span>
                   </span>
                 </summary>
-                <div className="md:pl-[12rem] pb-6 max-w-3xl space-y-3 text-ink-2 leading-relaxed">
-                  {post.body.map((para, i) => (
-                    <p key={i}>{para}</p>
+                <div className="pb-6 max-w-3xl space-y-3 text-ink-2 leading-relaxed">
+                  {post.body.map((para, j) => (
+                    <p key={j}>{para}</p>
                   ))}
                 </div>
               </details>

@@ -48,8 +48,8 @@ export default function ThreeGallery({
 
     // 1. Scene, Camera, and WebGL Renderer Setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#F7F5F0"); // page background
-    scene.fog = new THREE.FogExp2("#FAF9F6", 0.04); // Ethereal daytime fog for depth
+    scene.background = new THREE.Color("#14120F"); // dark gallery hall
+    scene.fog = new THREE.FogExp2("#14120F", 0.06); // depth fade into the dark hall
 
     const camera = new THREE.PerspectiveCamera(
       45,
@@ -74,10 +74,10 @@ export default function ThreeGallery({
     renderer.toneMappingExposure = 1.0;
 
     // 2. Physical Global & Directional Illumination (Daylight Museum shadows)
-    const ambientLight = new THREE.AmbientLight("#FFFDF9", 1.8); // soft warm ceiling fill
+    const ambientLight = new THREE.AmbientLight("#FFF3E0", 1.4); // soft warm ceiling fill
     scene.add(ambientLight);
 
-    const sunLight = new THREE.DirectionalLight("#FFF7EA", 2.5); // sunlit high window
+    const sunLight = new THREE.DirectionalLight("#FFF1DC", 2.2); // sunlit high window
     sunLight.position.set(6, 12, 4);
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 2048;
@@ -93,7 +93,7 @@ export default function ThreeGallery({
     scene.add(sunLight);
 
     // Subtle golden bounce light from the floor
-    const bounceLight = new THREE.DirectionalLight("#E1C699", 0.4);
+    const bounceLight = new THREE.DirectionalLight("#E1C699", 0.7);
     bounceLight.position.set(-6, -2, -4);
     scene.add(bounceLight);
 
@@ -101,9 +101,9 @@ export default function ThreeGallery({
     // Satin Reflective Alabaster Floor
     const floorGeo = new THREE.PlaneGeometry(30, 80);
     const floorMat = new THREE.MeshStandardMaterial({
-      color: "#F4F3F0", // cashmere white tint
-      roughness: 0.18,
-      metalness: 0.05,
+      color: "#1F1C18", // dark polished floor
+      roughness: 0.28,
+      metalness: 0.35,
     });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
@@ -133,7 +133,7 @@ export default function ThreeGallery({
     // Architectural Sleek Columns (Slabs)
     const columnGeo = new THREE.BoxGeometry(0.15, 5.0, 0.6);
     const columnMat = new THREE.MeshStandardMaterial({
-      color: "#FAFAFA",
+      color: "#2B2722",
       roughness: 0.3,
     });
     const columns: THREE.Mesh[] = [];
@@ -189,13 +189,13 @@ export default function ThreeGallery({
 
         // Name
         ctx.font = "italic 500 32px 'Playfair Display', Georgia, serif";
-        ctx.fillStyle = "#111111";
+        ctx.fillStyle = "#F6F1E7";
         ctx.textAlign = "center";
         ctx.fillText(name.toUpperCase(), labelCanvas.width / 2, 52);
 
         // Role
         ctx.font = "20px 'Cormorant Garamond', Georgia, serif";
-        ctx.fillStyle = "#8E8D8A";
+        ctx.fillStyle = "#D9C29A";
         ctx.fillText(role, labelCanvas.width / 2, 95);
       }
       const labelTexture = new THREE.CanvasTexture(labelCanvas);
@@ -221,7 +221,7 @@ export default function ThreeGallery({
         // --- PART A: Backing Frosted Glass Panel ---
         const glassGeo = new THREE.PlaneGeometry(2.1, 3.1);
         const glassMat = new THREE.MeshPhysicalMaterial({
-          color: "#FAFAFA",
+          color: "#2E2A25",
           transparent: true,
           opacity: 0.75,
           transmission: 0.8, // luxury glassmorphism transparency
@@ -246,7 +246,7 @@ export default function ThreeGallery({
         const portraitGeo = new THREE.PlaneGeometry(1.8, 2.5);
         // Temporary elegant satin background while loading
         const portraitMat = new THREE.MeshStandardMaterial({
-          color: "#EAE9E5",
+          color: "#3A352E",
           roughness: 0.4,
           side: THREE.DoubleSide,
         });
@@ -533,6 +533,7 @@ export default function ThreeGallery({
 
     // 7. Core Animation Engine
     const clock = new THREE.Clock();
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
     let animFrameId = 0;
 
     // We will smoothly interpolate values for cinematics
@@ -543,7 +544,8 @@ export default function ThreeGallery({
       animFrameId = requestAnimationFrame(animate);
       if (pausedRef.current) return;
 
-      const time = clock.getElapsedTime();
+      // Visitors who prefer reduced motion get a still scene (camera moves only when they navigate)
+      const time = reduceMotion ? 0 : clock.getElapsedTime();
 
       // Slow floating animation for all glassmorphic creator panels
       interactiveGroups.forEach((group) => {
@@ -566,7 +568,7 @@ export default function ThreeGallery({
       for (let i = 0; i < particleCount; i++) {
         // Slowly drift particles down the runway
         let z = positionsAttr.getZ(i);
-        z += 0.008;
+        z += reduceMotion ? 0 : 0.008;
         if (z > 5) z = -35; // wrap around
         positionsAttr.setZ(i, z);
 
@@ -709,16 +711,16 @@ export default function ThreeGallery({
   }, [onSelectCreator, onSectionChange, sections]);
 
   return (
-    <div ref={containerRef} className="relative w-full h-full overflow-hidden select-none bg-alabaster">
+    <div ref={containerRef} className="relative w-full h-full overflow-hidden select-none bg-[#14120F]">
       <canvas ref={canvasRef} className="block w-full h-full" />
 
       {/* Glassmorphic Interaction Hint Overlay (Follows 3D interactions) */}
       {hoveredCreator && !selectedCreator && (
         <div className="absolute bottom-16 left-1/2 -translate-x-1/2 pointer-events-none transition-all duration-300">
-          <div className="px-5 py-2.5 bg-white/70 backdrop-blur-md border border-black/5 rounded-full shadow-lg flex items-center gap-3 animate-pulse">
-            <span className="w-2 h-2 rounded-full bg-champagne animate-ping" />
-            <span className="font-serif-text text-sm tracking-widest text-[#222] font-medium uppercase">
-              Click to Explore Portrait
+          <div className="px-5 py-2.5 bg-[#1B1A17]/90 border border-white/15 rounded-[4px] flex items-center gap-3">
+            <span className="w-2 h-2 rounded-full bg-[#E1C699]" aria-hidden="true" />
+            <span className="text-[0.8125rem] font-semibold text-white">
+              Select to open the profile
             </span>
           </div>
         </div>
