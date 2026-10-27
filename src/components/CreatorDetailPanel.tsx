@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { X, Link2, Check, ChevronLeft, ChevronRight, Heart } from "lucide-react";
+import { X, Link2, Check, ChevronLeft, ChevronRight, Heart, Info } from "lucide-react";
 import toast from "react-hot-toast";
 import type { ProfileView } from "../lib/profile";
 import { profileHref } from "../lib/profileLink";
 import { useDialog, Portal } from "../lib/dialog";
 import Photo from "./Photo";
+import ProfileCard from "./ProfileCard";
+import { initials } from "../lib/profile";
 
 interface CreatorDetailPanelProps {
   key?: string;
@@ -14,13 +16,18 @@ interface CreatorDetailPanelProps {
   onOpenCollaboration: () => void;
   onReport: () => void;
   moodboardItems?: string[];
+  /** Other profiles in the same category, shown at the end */
+  related?: ProfileView[];
+  /** True when the built-in sample list is shown (no live directory) */
+  sample?: boolean;
+  onOpenProfile?: (profile: ProfileView) => void;
 }
 
 const firstName = (name: string) => name.replace(/^(Dr\.?|Mr\.?|Ms\.?|Mrs\.?)\s+/i, "").split(" ")[0] || name;
 
 // The public profile. Its layout follows the content: sections without data are left out
 // rather than shown empty, and nothing is added that the creator or the team did not enter.
-export default function CreatorDetailPanel({ profile, onClose, onOpenCollaboration, onReport, moodboardItems = [] }: CreatorDetailPanelProps) {
+export default function CreatorDetailPanel({ profile, onClose, onOpenCollaboration, onReport, moodboardItems = [], related = [], sample = false, onOpenProfile }: CreatorDetailPanelProps) {
   const reduced = useReducedMotion();
   const panelRef = useDialog<HTMLDivElement>(true, onClose);
   const [photoIndex, setPhotoIndex] = useState<number | null>(null);
@@ -66,8 +73,8 @@ export default function CreatorDetailPanel({ profile, onClose, onOpenCollaborati
             <nav aria-label="Breadcrumb" className="min-w-0 text-[0.875rem] text-ink-3">
               <ol className="flex items-center gap-1.5 min-w-0">
                 <li>
-                  <button type="button" onClick={onClose} className="hover:text-ink underline-offset-4 hover:underline cursor-pointer">
-                    Profiles
+                  <button type="button" onClick={onClose} className="inline-flex items-center gap-1 text-ink-2 hover:text-ink underline-offset-4 hover:underline cursor-pointer">
+                    <ChevronLeft className="w-4 h-4" aria-hidden="true" /> All profiles
                   </button>
                 </li>
                 <li aria-hidden="true">/</li>
@@ -84,11 +91,6 @@ export default function CreatorDetailPanel({ profile, onClose, onOpenCollaborati
                   <Heart className="w-4 h-4" aria-hidden="true" /> Saved ({moodboardItems.length})
                 </button>
               )}
-              <button type="button" onClick={copyLink} className="btn btn-sm text-ink-2 hover:text-ink" aria-live="polite">
-                {copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Link2 className="w-4 h-4" aria-hidden="true" />}
-                <span className="hidden sm:inline">{copied ? "Link copied" : "Copy link"}</span>
-                <span className="sm:hidden sr-only">{copied ? "Link copied" : "Copy profile link"}</span>
-              </button>
               <button
                 type="button"
                 onClick={onClose}
@@ -101,72 +103,90 @@ export default function CreatorDetailPanel({ profile, onClose, onOpenCollaborati
             </div>
           </div>
 
-          <div className="grid md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-8 md:gap-12 px-5 md:px-8 py-8 md:py-10">
-            <div className="md:sticky md:top-20 self-start">
-              <Photo src={p.image} name={p.name} eager alt={`Portrait of ${p.name}`} className="rounded-[2px]" sizes="(min-width: 768px) 400px, 100vw" />
-            </div>
+          <div className={`grid gap-8 md:gap-12 px-5 md:px-10 py-8 md:py-10 ${p.image ? "md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]" : ""}`}>
+            {/* A strong portrait when there is one; profiles without a photo get a compact monogram instead of an empty frame */}
+            {p.image && (
+              <div className="md:sticky md:top-20 self-start">
+                <Photo src={p.image} name={p.name} eager alt={`Portrait of ${p.name}`} ratio="aspect-[4/5]" className="rounded-[2px]" sizes="(min-width: 768px) 420px, 100vw" />
+              </div>
+            )}
 
-            <div className="space-y-8 min-w-0">
+            <div className="space-y-9 min-w-0 max-w-2xl">
               <header className="space-y-3">
+                {!p.image && (
+                  <span aria-hidden="true" className="w-20 h-20 mb-2 inline-flex items-center justify-center bg-sunken font-display text-[1.75rem] text-ink-3 rounded-[2px]">{initials(p.name)}</span>
+                )}
                 {p.category && <p className="eyebrow">{p.category}</p>}
-                <h2 id="profile-name" className="display text-[2.25rem] md:text-[2.75rem] leading-[1.05]">{p.name}</h2>
-                {subtitle && <p className="text-[1.0625rem] text-ink-2">{subtitle}</p>}
-                {p.reviewed && (
-                  <p className="text-[0.875rem] text-ink-3 flex items-start gap-2">
+                <h2 id="profile-name" className="display text-[2.25rem] md:text-[3rem] leading-[1.02]">{p.name}</h2>
+                {subtitle && <p className="text-[1.125rem] text-ink-2">{subtitle}</p>}
+                {sample ? (
+                  <p className="flex items-start gap-2 border border-line-strong bg-bronze-soft px-3 py-2 text-[0.875rem] text-ink">
+                    <Info className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
+                    <span>Sample profile for this preview. It is not a real creator.</span>
+                  </p>
+                ) : p.reviewed ? (
+                  <p className="text-[0.875rem] text-ink-2 flex items-start gap-2">
                     <Check className="w-4 h-4 mt-0.5 text-bronze shrink-0" aria-hidden="true" />
                     <span>
-                      Reviewed: our team approved this profile before it was published.{" "}
+                      <strong className="font-semibold text-ink">Reviewed:</strong> our team read the application and approved this profile before it was published.
+                      Audience figures are not audited.{" "}
                       <a href="/faq/" className="link font-normal">What this means</a>
                     </span>
                   </p>
-                )}
+                ) : null}
               </header>
+
+              {hasAudience && (
+                <section aria-labelledby="profile-audience" className="space-y-2">
+                  <h3 id="profile-audience" className="sr-only">Audience</h3>
+                  <dl className="grid grid-cols-2 border-y border-line divide-x divide-line">
+                    {p.reach && (
+                      <div className="py-4 pr-4">
+                        <dt className="text-[0.8125rem] text-ink-3">Followers</dt>
+                        <dd className="font-display text-[2rem] leading-tight text-ink tabular-nums">{p.reach}</dd>
+                      </div>
+                    )}
+                    {p.engagement && (
+                      <div className={`py-4 ${p.reach ? "pl-4" : "pr-4"}`}>
+                        <dt className="text-[0.8125rem] text-ink-3">Engagement rate</dt>
+                        <dd className="font-display text-[2rem] leading-tight text-ink tabular-nums">{p.engagement}</dd>
+                      </div>
+                    )}
+                  </dl>
+                  <p className="text-[0.8125rem] text-ink-3">Supplied by the creator; not independently audited.</p>
+                </section>
+              )}
 
               {p.bio && (
                 <section aria-labelledby="profile-about" className="space-y-2">
-                  <h3 id="profile-about" className="text-[0.8125rem] font-semibold uppercase tracking-[0.08em] text-ink-3">About</h3>
+                  <h3 id="profile-about" className="label-caps">About</h3>
                   <p className="text-[1.0625rem] leading-relaxed text-ink-2 whitespace-pre-line">{p.bio}</p>
                 </section>
               )}
 
               {p.quote && (
                 <figure className="border-l-2 border-bronze pl-5">
-                  <blockquote className="font-display text-[1.25rem] leading-snug text-ink">“{p.quote}”</blockquote>
+                  <blockquote className="font-display text-[1.375rem] leading-snug text-ink">“{p.quote}”</blockquote>
                 </figure>
               )}
 
-              {(hasAudience || p.facts.length > 0) && (
-                <section aria-labelledby="profile-facts" className="space-y-3">
-                  <h3 id="profile-facts" className="text-[0.8125rem] font-semibold uppercase tracking-[0.08em] text-ink-3">At a glance</h3>
+              {p.facts.length > 0 && (
+                <section aria-labelledby="profile-facts" className="space-y-2">
+                  <h3 id="profile-facts" className="label-caps">Details</h3>
                   <dl className="divide-y divide-line border-y border-line">
-                    {p.reach && (
-                      <div className="flex justify-between gap-6 py-3">
-                        <dt className="text-ink-2">Followers</dt>
-                        <dd className="font-semibold text-ink text-right">{p.reach}</dd>
-                      </div>
-                    )}
-                    {p.engagement && (
-                      <div className="flex justify-between gap-6 py-3">
-                        <dt className="text-ink-2">Engagement rate</dt>
-                        <dd className="font-semibold text-ink text-right">{p.engagement}</dd>
-                      </div>
-                    )}
                     {p.facts.map((f) => (
-                      <div key={f.label} className="flex justify-between gap-6 py-3">
-                        <dt className="text-ink-2">{f.label}</dt>
-                        <dd className="font-semibold text-ink text-right">{f.value}</dd>
+                      <div key={f.label} className="grid grid-cols-[9rem_1fr] gap-4 py-3">
+                        <dt className="text-ink-3">{f.label}</dt>
+                        <dd className="text-ink">{f.value}</dd>
                       </div>
                     ))}
                   </dl>
-                  {hasAudience && (
-                    <p className="text-[0.8125rem] text-ink-3">Audience figures are supplied by the creator and are not independently audited.</p>
-                  )}
                 </section>
               )}
 
               {photos.length > 0 && (
                 <section aria-labelledby="profile-work" className="space-y-3">
-                  <h3 id="profile-work" className="text-[0.8125rem] font-semibold uppercase tracking-[0.08em] text-ink-3">Work</h3>
+                  <h3 id="profile-work" className="label-caps">Selected work</h3>
                   <ul className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {photos.map((src, i) => (
                       <li key={src}>
@@ -176,7 +196,7 @@ export default function CreatorDetailPanel({ profile, onClose, onOpenCollaborati
                           aria-label={`Open photo ${i + 1} of ${photos.length}`}
                           className="block w-full cursor-zoom-in"
                         >
-                          <Photo src={src} name={p.name} ratio="aspect-square" className="rounded-[2px]" />
+                          <Photo src={src} name={p.name} ratio="aspect-[4/5]" className="rounded-[2px]" />
                         </button>
                       </li>
                     ))}
@@ -184,19 +204,44 @@ export default function CreatorDetailPanel({ profile, onClose, onOpenCollaborati
                 </section>
               )}
 
-              <div className="border-t border-line pt-6 space-y-4">
-                <div className="flex flex-col sm:flex-row gap-3">
+              <section aria-labelledby="profile-enquire" className="panel p-5 md:p-6 space-y-3">
+                <h3 id="profile-enquire" className="font-display text-[1.375rem] leading-snug text-ink">Work with {firstName(p.name)}</h3>
+                <p className="text-[0.9375rem] text-ink-2">
+                  Enquiries go to our team, who contact the creator for you. Creators' email and phone numbers are never published.
+                </p>
+                <div className="flex flex-wrap gap-3 pt-1">
                   <button type="button" onClick={onOpenCollaboration} className="btn btn-primary" id="initiate-charter-btn">
-                    Enquire about working with {firstName(p.name)}
+                    Send an enquiry
+                  </button>
+                  <button type="button" onClick={copyLink} className="btn btn-secondary" aria-live="polite">
+                    {copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Link2 className="w-4 h-4" aria-hidden="true" />}
+                    {copied ? "Link copied" : "Copy profile link"}
                   </button>
                 </div>
-                <p className="text-[0.8125rem] text-ink-3">
-                  Enquiries go to our team, who contact the creator. Is something on this profile wrong?{" "}
-                  <button type="button" onClick={onReport} className="link font-normal cursor-pointer">Ask for a correction</button>
-                </p>
-              </div>
+              </section>
+
+              <p className="text-[0.875rem] text-ink-3">
+                Is something on this profile wrong?{" "}
+                <button type="button" onClick={onReport} className="link font-normal cursor-pointer">Ask for a correction</button>
+              </p>
             </div>
           </div>
+
+          {related.length > 0 && onOpenProfile && (
+            <section aria-labelledby="profile-related" className="border-t border-line bg-surface px-5 md:px-10 py-8 md:py-10">
+              <div className="flex flex-wrap items-baseline justify-between gap-3">
+                <h3 id="profile-related" className="font-display text-[1.5rem] text-ink">More in {p.category}</h3>
+                <button type="button" onClick={onClose} className="link cursor-pointer">Back to all profiles</button>
+              </div>
+              <ul className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-8">
+                {related.map((r) => (
+                  <li key={r.slug}>
+                    <ProfileCard profile={r} onOpen={onOpenProfile} headingLevel="h3" sizes="(min-width: 768px) 220px, 45vw" />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </motion.div>
       </div>
 

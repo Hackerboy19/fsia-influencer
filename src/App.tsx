@@ -95,7 +95,10 @@ export default function App() {
   });
 
   const refreshSections = useCallback(() => {
-    fetch("/api/creators")
+    // Never leave pages on "Loading profiles…": give up after 12 seconds and say so
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 12000);
+    fetch("/api/creators", { signal: controller.signal })
       .then((res) => {
         if (res.ok) return res.json();
         throw new Error();
@@ -108,7 +111,8 @@ export default function App() {
       .catch(() => {
         setSections(gallerySections);
         setRosterStatus("sample");
-      });
+      })
+      .finally(() => window.clearTimeout(timer));
   }, []);
 
   useEffect(() => {
@@ -261,7 +265,7 @@ export default function App() {
 
   const navLinkClass = (tab: TabId) =>
     `relative inline-flex items-center h-16 px-1 text-[0.9375rem] transition-colors ${
-      activeTab === tab ? "text-ink font-semibold after:absolute after:inset-x-1 after:bottom-0 after:h-[2px] after:bg-ink" : "text-ink-2 hover:text-ink"
+      activeTab === tab ? "text-ink font-semibold after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:bg-bronze" : "text-ink-2 hover:text-ink"
     }`;
 
   return (
@@ -550,6 +554,9 @@ export default function App() {
           <CreatorDetailPanel
             key={selectedProfile.slug}
             profile={selectedProfile}
+            related={profiles.filter((p) => p.slug !== selectedProfile.slug && p.category && p.category === selectedProfile.category).slice(0, 4)}
+            sample={rosterStatus === "sample"}
+            onOpenProfile={openProfile}
             onClose={closeProfile}
             onOpenCollaboration={() => setIsCollaborationOpen(true)}
             onReport={reportProfile}

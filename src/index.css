@@ -6,7 +6,11 @@
    Type: Newsreader (editorial display, headings only) + Instrument Sans (everything else).
    Colour: warm paper, charcoal ink, one accent (bronze, from the champagne logo mark).
    Shape: square-ish surfaces (2–8px), hairline borders, almost no shadow.
-   Spacing: 4px base; sections step 64 / 96px; content width 1200px.
+   Spacing: 4px base; sections step 64 / 96px (.section); content width 1200px (.page).
+   Type scale: .h-hero 36–54px → .h-page 36/48 → .h-section 28/34 → .lede 17/18 → body 16 → .label-caps 13.
+   Surfaces: paper (page), surface (white bands, .panel), sunken (quiet band), .band-ink (dark band, footer).
+   Controls: .btn (primary / secondary / light / ghost-light, 44px), .field + .field-label, .chip (filters), .link.
+   Breakpoints: phone < 640, tablet 640–1023, desktop ≥ 1024.
 ------------------------------------------------------------------- */
 @theme {
   --font-display: "Newsreader", Georgia, "Times New Roman", serif;
@@ -70,6 +74,36 @@ p, li, dd { text-wrap: pretty; }
   .link:hover { text-decoration-color: var(--color-ink); }
 
   .rule { border-top: 1px solid var(--color-line); }
+
+  /* ---- Additions, 27 Oct: one scale for big type, surfaces, chips, fields ---- */
+  /* Hero headline: large but never shouting (36px phone, 54px desktop) */
+  .h-hero { font-family: var(--font-display); font-weight: 500; letter-spacing: -0.02em; color: var(--color-ink); font-size: clamp(2.25rem, 1.6rem + 2.4vw, 3.375rem); line-height: 1.04; }
+  .h-hero em { font-style: italic; color: var(--color-bronze); }
+  /* Card and panel surface: white, hairline, one soft shadow. Used sparingly. */
+  .panel { background: var(--color-surface); border: 1px solid var(--color-line); box-shadow: 0 1px 2px rgba(27,26,23,.04), 0 12px 32px -20px rgba(27,26,23,.22); }
+  /* Text field and select, same height as .btn */
+  .field { height: 2.75rem; width: 100%; border-radius: 4px; border: 1px solid var(--color-field); background: var(--color-surface); padding-inline: 0.75rem; font-size: 0.9375rem; color: var(--color-ink); }
+  .field:focus { outline: 2px solid var(--color-bronze); outline-offset: 0; border-color: var(--color-ink); }
+  .field-label { display: block; margin-bottom: 0.375rem; font-size: 0.8125rem; font-weight: 600; color: var(--color-ink-2); }
+  /* Filter chips (category tabs). Square-ish, never pills. */
+  .chip { display: inline-flex; align-items: center; gap: 0.375rem; min-height: 2.25rem; padding: 0.375rem 0.875rem; border-radius: 4px; border: 1px solid var(--color-line-strong); background: transparent; color: var(--color-ink-2); font-size: 0.875rem; font-weight: 500; white-space: nowrap; cursor: pointer; transition: border-color .15s, background-color .15s, color .15s; }
+  .chip:hover { border-color: var(--color-ink); color: var(--color-ink); }
+  .chip[aria-pressed="true"], .chip[aria-current="true"] { background: var(--color-ink); border-color: var(--color-ink); color: #fff; }
+  .chip .count { font-variant-numeric: tabular-nums; opacity: .7; font-size: 0.8125rem; }
+  /* Dark band for the brand section and footer */
+  .band-ink { background: #1B1A17; color: #E7E3DA; }
+  .band-ink .h-section, .band-ink h2, .band-ink h3 { color: #FFFFFF; }
+  .btn-light { background: #FFFFFF; color: var(--color-ink); border: 1px solid #FFFFFF; }
+  .btn-light:hover { background: var(--color-paper); }
+  .btn-ghost-light { background: transparent; color: #FFFFFF; border: 1px solid rgba(255,255,255,.45); }
+  .btn-ghost-light:hover { border-color: #FFFFFF; }
+  .link-light { color: #FFFFFF; font-weight: 600; text-decoration: underline; text-decoration-color: rgba(255,255,255,.4); text-underline-offset: 4px; }
+  .link-light:hover { text-decoration-color: #FFFFFF; }
+  /* Small tag on a photo ("Sample", category) */
+  .tag { display: inline-flex; align-items: center; padding: 0.125rem 0.5rem; border-radius: 2px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.02em; background: rgba(255,255,255,.92); color: var(--color-ink); }
+  /* Section rhythm: 64px phone, 96px desktop */
+  .section { padding-block: 4rem; }
+  @media (min-width: 1024px) { .section { padding-block: 6rem; } }
 }
 
 /* Custom styles for editorial glassmorphism and ambient elements */

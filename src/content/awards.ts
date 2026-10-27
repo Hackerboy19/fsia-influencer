@@ -32,10 +32,26 @@ export const ELIGIBLE_NICHES = [
   "Finance & Business"
 ] as const;
 
-export const AWARD_PERKS = [
-  { title: "The award on your profile", text: "Winners have the award shown on their public profile." },
-  { title: "Branding & marketing", text: "Endorsement representation and digital marketing support." },
-  { title: "Brand introductions", text: "Direct introductions when a brand brief fits your niche." }
+// What the award brings, split so nothing optional reads as promised.
+// "Confirmed" = what the site itself does today; "Optional" = services the team offers on request.
+// Boss: change these lists if the award terms differ.
+export const AWARD_BENEFITS = [
+  {
+    title: "Confirmed",
+    note: "Part of applying and winning.",
+    items: [
+      { title: "A reviewed public profile", text: "Approved applicants are listed in the directory, where brands search by niche and city." },
+      { title: "The award on your profile", text: "Winners have the award shown on their public profile." }
+    ]
+  },
+  {
+    title: "Optional, on request",
+    note: "Not guaranteed. Some are part of paid membership plans.",
+    items: [
+      { title: "Branding and marketing support", text: "Help with your bio, portfolio and media kit, and endorsement representation." },
+      { title: "Brand introductions", text: "When a brand brief fits your niche and city, our team may introduce you." }
+    ]
+  }
 ] as const;
 
 export const VALUE_FLOW = [

@@ -35,6 +35,11 @@ export default function DirectoryTab({ profiles, status, onSelectProfile, onAppl
     () => Array.from(new Set(profiles.map((p) => p.category).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
     [profiles]
   );
+  const categoryCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    profiles.forEach((p) => p.category && m.set(p.category, (m.get(p.category) || 0) + 1));
+    return m;
+  }, [profiles]);
   const cities = useMemo(
     () => Array.from(new Set(profiles.map((p) => p.city).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
     [profiles]
@@ -72,8 +77,7 @@ export default function DirectoryTab({ profiles, status, onSelectProfile, onAppl
     setCity("");
   };
 
-  const selectClass =
-    "h-11 w-full rounded-[4px] border border-field bg-surface px-3 text-[0.9375rem] text-ink focus:outline-none focus:border-ink";
+  const selectClass = "field";
 
   return (
     <div className="page pt-10 md:pt-14 pb-16" id="influencer-directory-tab">
@@ -87,10 +91,10 @@ export default function DirectoryTab({ profiles, status, onSelectProfile, onAppl
         role="search"
         aria-label="Search profiles"
         onSubmit={(e) => e.preventDefault()}
-        className="mt-8 grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] items-end border-y border-line py-5"
+        className="mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] items-end panel rounded-[4px] p-4 sm:p-5"
       >
-        <div>
-          <label htmlFor="directory-search" className="block text-[0.8125rem] font-semibold text-ink-2 mb-1.5">Search</label>
+        <div className="sm:col-span-2 md:col-span-1">
+          <label htmlFor="directory-search" className="field-label">Search</label>
           <div className="relative">
             <Search className="w-4 h-4 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
             <input
@@ -105,16 +109,7 @@ export default function DirectoryTab({ profiles, status, onSelectProfile, onAppl
           </div>
         </div>
         <div>
-          <label htmlFor="directory-category" className="block text-[0.8125rem] font-semibold text-ink-2 mb-1.5">Category</label>
-          <select id="directory-category" value={category} onChange={(e) => setCategory(e.target.value)} className={selectClass} disabled={!categories.length}>
-            <option value="">All categories</option>
-            {categories.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="directory-city" className="block text-[0.8125rem] font-semibold text-ink-2 mb-1.5">City</label>
+          <label htmlFor="directory-city" className="field-label">City</label>
           <select id="directory-city" value={city} onChange={(e) => setCity(e.target.value)} className={selectClass} disabled={!cities.length}>
             <option value="">All cities</option>
             {cities.map((c) => (
@@ -123,7 +118,7 @@ export default function DirectoryTab({ profiles, status, onSelectProfile, onAppl
           </select>
         </div>
         <div>
-          <label htmlFor="directory-sort" className="block text-[0.8125rem] font-semibold text-ink-2 mb-1.5">Sort</label>
+          <label htmlFor="directory-sort" className="field-label">Sort</label>
           <select id="directory-sort" value={sort} onChange={(e) => setSort(e.target.value as Sort)} className={selectClass}>
             <option value="listed">As listed</option>
             <option value="name">Name, A to Z</option>
@@ -131,9 +126,32 @@ export default function DirectoryTab({ profiles, status, onSelectProfile, onAppl
         </div>
       </form>
 
+      {categories.length > 0 && (
+        <div className="mt-5 -mx-5 px-5 md:mx-0 md:px-0 overflow-x-auto scrollbar-none">
+          <div role="group" aria-label="Category" className="flex gap-2 w-max md:w-auto md:flex-wrap">
+            <button type="button" className="chip" aria-pressed={!category} onClick={() => setCategory("")}>
+              All categories <span className="count">{profiles.length}</span>
+            </button>
+            {categories.map((c) => (
+              <button key={c} type="button" className="chip" aria-pressed={category === c} onClick={() => setCategory(category === c ? "" : c)}>
+                {c} <span className="count">{categoryCounts.get(c) || 0}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 min-h-9">
         <p className="text-[0.9375rem] text-ink-2" role="status" aria-live="polite">
-          {status === "loading" ? "Loading profiles…" : `${results.length} ${results.length === 1 ? "profile" : "profiles"}${filtered ? " match" : ""}`}
+          {status === "loading" ? (
+            "Loading profiles…"
+          ) : (
+            <>
+              <strong className="font-semibold text-ink">{results.length}</strong> {results.length === 1 ? "profile" : "profiles"}
+              {filtered ? ` match${results.length === 1 ? "es" : ""}` : ""}
+              {results.length > visible ? `, showing ${visible}` : ""}
+            </>
+          )}
         </p>
         {filtered && (
           <button type="button" onClick={clear} className="btn btn-sm btn-secondary">
