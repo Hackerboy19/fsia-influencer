@@ -4,6 +4,7 @@
 // robots.txt and sitemap.xml so crawlers see complete metadata without JavaScript.
 import { FAQS } from "./content/faqs";
 import { AWARD_NAME, BRAND_NAME } from "./content/brand";
+import { ORGANISER } from "./content/organiser";
 
 export const SITE_URL = "https://influencer.fsia.in";
 export const SITE_NAME = BRAND_NAME;
@@ -20,6 +21,7 @@ export type TabId =
   | "greenlight"
   | "faq"
   | "contact"
+  | "privacy"
   | "admin";
 
 export interface RouteMeta {
@@ -167,6 +169,19 @@ export const ROUTES: RouteMeta[] = [
     changefreq: "monthly"
   },
   {
+    tab: "privacy",
+    path: "/privacy/",
+    title: `Privacy Notice | ${SITE_NAME}`,
+    description:
+      `What personal information ${SITE_NAME} collects through its forms, what is published on profiles, and how to correct or remove your data.`,
+    heading: "Privacy notice",
+    intro:
+      "What we collect when you apply or write to us, what appears on a public profile, and how to have your information corrected or removed.",
+    indexable: true,
+    priority: "0.3",
+    changefreq: "monthly"
+  },
+  {
     tab: "admin",
     path: "/admin/",
     title: `Admin | ${SITE_NAME}`,
@@ -201,7 +216,10 @@ export function structuredData(route: RouteMeta): object[] {
     "@id": `${SITE_URL}/#organization`,
     name: SITE_NAME,
     url: `${SITE_URL}/`,
-    logo: `${SITE_URL}/logo.png`
+    logo: `${SITE_URL}/logo.png`,
+    email: ORGANISER.email,
+    telephone: ORGANISER.phoneHref.replace("tel:", ""),
+    address: { "@type": "PostalAddress", addressLocality: ORGANISER.locality, addressRegion: ORGANISER.region, addressCountry: ORGANISER.country }
   };
   const blocks: object[] = [
     {

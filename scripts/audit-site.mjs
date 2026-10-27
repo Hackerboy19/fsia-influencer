@@ -28,7 +28,7 @@ const prohibitedPattern = new RegExp(
   "i"
 );
 
-const PUBLIC_ROUTES = ["/", "/gallery/", "/talent/", "/campaigns/", "/join/", "/membership/", "/star-india/", "/green-light/", "/faq/", "/contact/"];
+const PUBLIC_ROUTES = ["/", "/gallery/", "/talent/", "/campaigns/", "/join/", "/membership/", "/star-india/", "/green-light/", "/faq/", "/contact/", "/privacy/"];
 const PRIVATE_ROUTES = ["/admin/"];
 const PUBLIC_APIS = ["/api/creators", "/api/campaigns", "/api/membership-plans", "/api/settings"];
 const VIEWPORTS = [

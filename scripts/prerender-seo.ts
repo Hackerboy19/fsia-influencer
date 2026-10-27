@@ -17,7 +17,7 @@ const gscTag = gsc ? `<meta name="google-site-verification" content="${gsc.repla
 
 // Pages rendered from the app itself. The 3D gallery is a canvas and the admin area is
 // private, so those two keep the short text summary instead.
-const APP_RENDERED = new Set(["home", "directory", "campaigns", "apply", "membership", "starindia", "greenlight", "faq", "contact"]);
+const APP_RENDERED = new Set(["home", "directory", "campaigns", "apply", "membership", "starindia", "greenlight", "faq", "contact", "privacy"]);
 
 for (const route of ROUTES) {
   let body = renderBody(route);

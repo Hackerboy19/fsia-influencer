@@ -10,6 +10,7 @@ import Photo from "./Photo";
 import TabLink from "./TabLink";
 import type { RosterStatus } from "./RosterNotice";
 import RosterNotice from "./RosterNotice";
+import { ORGANISER, APPLICATIONS_OPEN, ANTI_FRAUD_NOTE } from "../content/organiser";
 
 interface HomeTabProps {
   profiles: ProfileView[];
@@ -139,7 +140,14 @@ export default function HomeTab({ profiles, status, onNavigate, onSelectProfile,
       <section className="page pt-8 md:pt-14 pb-14 md:pb-20">
         <div className={`grid gap-10 lg:gap-14 items-center ${hasHeroProfiles ? "lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]" : ""}`}>
           <div className="space-y-6 min-w-0">
-            <p className="eyebrow">Creator directory · India</p>
+            <p className="eyebrow flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span>Creator directory · India</span>
+              {APPLICATIONS_OPEN && (
+                <span className="inline-flex items-center gap-1.5 normal-case tracking-normal font-semibold text-[#2f6b45]">
+                  <span className="w-2 h-2 rounded-full bg-[#2f6b45]" aria-hidden="true" /> Award applications open
+                </span>
+              )}
+            </p>
             <h1 className="h-hero max-w-[16ch]">
               Find Indian creators, <em>reviewed</em> before they are listed
             </h1>
@@ -343,6 +351,10 @@ export default function HomeTab({ profiles, status, onNavigate, onSelectProfile,
           <div className="space-y-4">
             <p className="eyebrow">The award</p>
             <h2 id="the-award" className="h-section">{AWARD.name}</h2>
+            <p className="text-[0.9375rem] text-ink-2">
+              {APPLICATIONS_OPEN && <><strong className="font-semibold text-[#2f6b45]">Registration is open.</strong>{" "}</>}
+              A new award, run by {ORGANISER.name} from {ORGANISER.locality}.
+            </p>
             <p className="text-ink-2">{AWARD.text}</p>
             <p className="text-[0.9375rem] text-ink-2">
               <span className="font-semibold text-ink">Niches include</span> {ELIGIBLE_NICHES.slice(0, 6).join(", ").toLowerCase()} and more.
@@ -351,6 +363,7 @@ export default function HomeTab({ profiles, status, onNavigate, onSelectProfile,
               <TabLink tab="apply" onNavigate={onNavigate} className="btn btn-primary">{APPLY_LABEL}</TabLink>
               <button type="button" onClick={onAwardEnquiry} className="btn btn-secondary">Ask about the award</button>
             </div>
+            <p className="text-[0.875rem] text-ink-3 border-l-2 border-line-strong pl-3">{ANTI_FRAUD_NOTE}</p>
           </div>
           <div className="grid gap-8 sm:grid-cols-2">
             {AWARD_BENEFITS.map((group) => (

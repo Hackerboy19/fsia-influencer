@@ -8,6 +8,7 @@ import {
 import FieldError, { errorProps } from "./FieldError";
 import { CREATOR_CATEGORIES, OTHER_CATEGORY } from "../content/creatorCategories";
 import { toast } from "react-hot-toast";
+import { ANTI_FRAUD_NOTE } from "../content/organiser";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Instagram,
@@ -557,6 +558,7 @@ export default function ModelRegistrationTab() {
               </li>
             ))}
           </ol>
+          <p className="mt-4 text-[0.875rem] text-ink-3 border-l-2 border-line-strong pl-3">{ANTI_FRAUD_NOTE}</p>
         </div>
       </aside>
       </div>

@@ -3,6 +3,7 @@ import { routeForTab, TabId } from "../seo";
 import { CONTACT_TOPICS } from "../content/awards";
 import EnquiryForm from "./EnquiryForm";
 import TabLink from "./TabLink";
+import { ORGANISER } from "../content/organiser";
 
 const HELP: { topic: string; text: string }[] = [
   { topic: "Award applications", text: "Eligibility, how to apply and where your application stands." },
@@ -29,6 +30,12 @@ export default function ContactTab({ onNavigate, initialTopic = "" }: { key?: Re
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] items-start">
         <aside aria-labelledby="contact-help" className="space-y-5">
+          <div className="panel rounded-[4px] p-5 space-y-2">
+            <h2 className="label-caps">Reach us directly</h2>
+            <p><a href={`mailto:${ORGANISER.email}`} className="link">{ORGANISER.email}</a></p>
+            <p><a href={ORGANISER.phoneHref} className="link">{ORGANISER.phoneDisplay}</a> · <a href={ORGANISER.whatsappHref} target="_blank" rel="noopener noreferrer" className="link">WhatsApp</a></p>
+            <p className="text-[0.9375rem] text-ink-2">{ORGANISER.name}, {ORGANISER.location}</p>
+          </div>
           <h2 id="contact-help" className="text-[0.8125rem] font-semibold uppercase tracking-[0.08em] text-ink-3">What you can write to us about</h2>
           <dl className="divide-y divide-line border-y border-line">
             {HELP.map((h) => (

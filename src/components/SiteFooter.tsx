@@ -1,7 +1,8 @@
 import React from "react";
 import { routeForTab, TabId } from "../seo";
-import { BRAND_NAME, BRAND_DOMAIN } from "../content/brand";
+import { BRAND_NAME } from "../content/brand";
 import { APPLY_LABEL } from "../content/awards";
+import { ORGANISER, ANTI_FRAUD_NOTE } from "../content/organiser";
 
 interface SiteFooterProps {
   footerText: string;
@@ -39,7 +40,8 @@ const GROUPS: { title: string; links: FooterLinkItem[] }[] = [
     title: "Help",
     links: [
       { label: "Questions and answers", tab: "faq" },
-      { label: "Contact us", tab: "contact" }
+      { label: "Contact us", tab: "contact" },
+      { label: "Privacy notice", tab: "privacy" }
     ]
   }
 ];
@@ -79,7 +81,12 @@ export default function SiteFooter({ footerText, onNavigate, onBrandEnquiry }: S
           <p className="text-[0.9375rem] leading-relaxed text-[#CFCAC0]">
             A directory of creator profiles from across India. Creators join by applying for the award, and every profile is reviewed by our team before it is published.
           </p>
-          <p className="text-[0.875rem] text-[#CFCAC0]">{BRAND_DOMAIN}</p>
+          <p className="text-[0.875rem] text-[#CFCAC0]">Run by {ORGANISER.name}, {ORGANISER.location}.</p>
+          <address className="not-italic text-[0.9375rem] space-y-1.5 pt-1">
+            <a href={`mailto:${ORGANISER.email}`} className="block text-white underline-offset-4 hover:underline">{ORGANISER.email}</a>
+            <a href={ORGANISER.phoneHref} className="block text-white underline-offset-4 hover:underline">{ORGANISER.phoneDisplay}</a>
+            <a href={ORGANISER.whatsappHref} target="_blank" rel="noopener noreferrer" className="block text-[#E7E3DA] underline-offset-4 hover:underline">WhatsApp us</a>
+          </address>
         </div>
         {GROUPS.map((group) => (
           <nav key={group.title} aria-label={group.title}>
@@ -97,7 +104,7 @@ export default function SiteFooter({ footerText, onNavigate, onBrandEnquiry }: S
       <div className="border-t border-white/15">
         <div className="page py-5 flex flex-col sm:flex-row gap-2 justify-between text-[0.875rem] text-[#C9C3B6]">
           <p>{footerText}</p>
-          <p>Profile details are supplied by creators. To correct one, use the contact page.</p>
+          <p className="max-w-2xl sm:text-right">{ANTI_FRAUD_NOTE}</p>
         </div>
       </div>
     </footer>
