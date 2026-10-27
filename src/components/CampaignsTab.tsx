@@ -8,6 +8,7 @@ import {
   isValidEmail, isValidPhone, EMAIL_ERROR, PHONE_ERROR, focusField
 } from "../lib/forms";
 import FieldError, { errorProps } from "./FieldError";
+import { isPreviewHost } from "../lib/preview";
 
 interface Campaign {
   id: string;
@@ -126,7 +127,9 @@ export default function CampaignsTab() {
         {loadState === "loading" && <p className="text-ink-2">Loading campaigns…</p>}
         {loadState === "error" && (
           <p className="border border-line bg-surface p-6 text-ink-2">
-            Campaigns could not be loaded right now. Please refresh the page or try again later.
+            {isPreviewHost()
+              ? "Open campaigns are listed on the live site. This preview does not include campaign data."
+              : "Campaigns could not be loaded right now. Please refresh the page or try again later."}
           </p>
         )}
         {loadState === "ready" && activeCampaigns.length === 0 && (

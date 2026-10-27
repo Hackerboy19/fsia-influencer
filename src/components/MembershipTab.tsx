@@ -8,6 +8,7 @@ import {
   isValidEmail, isValidPhone, EMAIL_ERROR, PHONE_ERROR, focusField
 } from "../lib/forms";
 import FieldError, { errorProps } from "./FieldError";
+import { isPreviewHost } from "../lib/preview";
 
 interface Plan {
   id?: string;
@@ -128,7 +129,11 @@ export default function MembershipTab() {
       <div className="mt-8" aria-live="polite">
         {loadState === "loading" && <p className="text-ink-2">Loading plans…</p>}
         {loadState === "error" && (
-          <p className="border border-line bg-surface p-6 text-ink-2">Membership plans could not be loaded right now. Please refresh the page or contact us.</p>
+          <p className="border border-line bg-surface p-6 text-ink-2">
+            {isPreviewHost()
+              ? "Membership plans are listed on the live site. This preview does not include plan data."
+              : "Membership plans could not be loaded right now. Please refresh the page or contact us."}
+          </p>
         )}
         {loadState === "ready" && plans.length === 0 && (
           <p className="border border-line bg-surface p-6 text-ink-2">No membership plans are listed at the moment. Please contact us for details.</p>

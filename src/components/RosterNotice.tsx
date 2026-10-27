@@ -1,4 +1,5 @@
 import React from "react";
+import { isPreviewHost } from "../lib/preview";
 
 export type RosterStatus = "loading" | "live" | "sample";
 
@@ -8,8 +9,10 @@ export default function RosterNotice({ status, onRetry, className = "" }: { stat
   if (status !== "sample") return null;
   return (
     <p role="note" className={`border border-line-strong bg-bronze-soft px-4 py-3 text-[0.875rem] text-ink ${className}`}>
-      The live profile list could not be loaded, so sample profiles are shown.{" "}
-      {onRetry && (
+      {isPreviewHost()
+        ? "Preview: these are sample profiles. The live site shows the real directory."
+        : "The live profile list could not be loaded, so sample profiles are shown."}{" "}
+      {onRetry && !isPreviewHost() && (
         <button type="button" onClick={onRetry} className="link cursor-pointer">Try again</button>
       )}
     </p>
