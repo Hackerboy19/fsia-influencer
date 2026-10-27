@@ -483,7 +483,7 @@ const INITIAL_LOGS: AdminLog[] = [
 export const DEFAULT_SETTINGS: SystemSettings = {
   websiteTitle: "Influencer Awards",
   heroTitle: "INFLUENCER AWARDS",
-  heroSubtitle: "Reviewed profiles of Indian creators, open to any creator, and brand enquiries.",
+  heroSubtitle: "Reviewed profiles of Indian creators, Influencer Award applications and brand enquiries.",
   ctaText: "BROWSE PROFILES",
   footerText: "© 2026 Influencer Awards. All rights reserved.",
   logoUrl: "",

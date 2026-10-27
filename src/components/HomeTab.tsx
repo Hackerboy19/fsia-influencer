@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { ArrowRight, Search } from "lucide-react";
 import { TabId } from "../seo";
 import { BRAND_NAME } from "../content/brand";
-import { AWARD, AWARD_NAME, AWARD_PERKS, ELIGIBLE_NICHES } from "../content/awards";
+import { APPLY_LABEL, AWARD, AWARD_NAME, AWARD_PERKS, ELIGIBLE_NICHES } from "../content/awards";
 import type { ProfileView } from "../lib/profile";
 import ProfileCard from "./ProfileCard";
 import Photo from "./Photo";
@@ -23,7 +23,7 @@ interface HomeTabProps {
 }
 
 const STEPS = [
-  { title: "A creator applies", text: "The form asks for their niche, city, audience figures, photos and contact details. Applying is free." },
+  { title: "A creator applies for the award", text: "The form asks for their niche, city, audience figures, photos and contact details. Applying is free." },
   { title: "Our team reviews it", text: "We read every application and check the creator's public social profiles before approving it." },
   { title: "The profile is published", text: "Approved creators appear in the directory with what they submitted. We do not add numbers or claims of our own." },
   { title: "Corrections are welcome", text: "Creators can ask us to update or remove their profile at any time through the contact page." }
@@ -107,8 +107,9 @@ export default function HomeTab({ profiles, status, onNavigate, onSelectProfile,
               Indian creators, reviewed by our team before they are listed
             </h1>
             <p className="lede max-w-xl">
-              {BRAND_NAME} is a public directory of creators from across India. Any creator can apply for a free profile, which
-              goes live once our team approves it. Brands browse by niche and city, then send us an enquiry.
+              Creators in India join {BRAND_NAME} by applying for the {AWARD_NAME}, and get a public profile once our team
+              approves it. Brands search the directory by niche and city and send us an enquiry. After the awards, the
+              platform opens to every creator.
             </p>
             <HeroSearch onBrowse={onBrowse} />
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-1">
@@ -126,12 +127,12 @@ export default function HomeTab({ profiles, status, onNavigate, onSelectProfile,
         <div className="page grid md:grid-cols-2 md:divide-x divide-y md:divide-y-0 divide-line">
           <div className="py-8 md:py-10 md:pr-10 space-y-3">
             <h2 className="eyebrow">For creators</h2>
-            <p className="font-display text-[1.5rem] leading-snug text-ink">Get a free public profile that brands can find.</p>
+            <p className="font-display text-[1.5rem] leading-snug text-ink">Apply for the {AWARD_NAME} to join.</p>
             <p className="text-ink-2">
-              Apply in about two minutes. Our team reviews each application before it is published, and you can ask for changes at any time.
+              Applying is free and takes about two minutes. Our team reviews every application; approved creators get a public profile that brands can find.
             </p>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-1">
-              <TabLink tab="apply" onNavigate={onNavigate} className="btn btn-primary">Join as a creator</TabLink>
+              <TabLink tab="apply" onNavigate={onNavigate} className="btn btn-primary">{APPLY_LABEL}</TabLink>
               <TabLink tab="membership" onNavigate={onNavigate} className="link">Membership plans</TabLink>
             </div>
           </div>
@@ -259,8 +260,8 @@ export default function HomeTab({ profiles, status, onNavigate, onSelectProfile,
               Open to creators in {ELIGIBLE_NICHES.slice(0, -1).join(", ").toLowerCase()} and {ELIGIBLE_NICHES[ELIGIBLE_NICHES.length - 1].toLowerCase()}, among other niches.
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
-              <button type="button" onClick={onAwardEnquiry} className="btn btn-primary">Ask about the award</button>
-              <TabLink tab="apply" onNavigate={onNavigate} className="btn btn-secondary">Join as a creator</TabLink>
+              <TabLink tab="apply" onNavigate={onNavigate} className="btn btn-primary">{APPLY_LABEL}</TabLink>
+              <button type="button" onClick={onAwardEnquiry} className="btn btn-secondary">Ask about the award</button>
             </div>
           </div>
           <dl className="border-t border-line">

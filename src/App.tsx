@@ -20,6 +20,7 @@ import type { RosterStatus } from "./components/RosterNotice";
 import { Toaster } from "react-hot-toast";
 import { TabId, routeForPath, routeForTab, applyRouteMeta } from "./seo";
 import { BRAND_NAME } from "./content/brand";
+import { APPLY_LABEL } from "./content/awards";
 import { readableAccent } from "./lib/color";
 import { ProfileView, profilesFromSections } from "./lib/profile";
 import { PROFILE_PARAM, profileSlugFromLocation } from "./lib/profileLink";
@@ -230,7 +231,7 @@ export default function App() {
   const [directoryKey, setDirectoryKey] = useState(0);
 
   const askAboutAward = () => {
-    setContactTopic("Awards & applications");
+    setContactTopic("Award applications");
     navigateTo("contact");
   };
 
@@ -338,7 +339,7 @@ export default function App() {
               aria-current={activeTab === "apply" ? "page" : undefined}
               className="hidden sm:inline-flex btn btn-sm btn-primary"
             >
-              Join as a creator
+              {APPLY_LABEL}
             </a>
             <button
               type="button"
@@ -408,7 +409,7 @@ export default function App() {
                     }}
                     className="btn btn-primary"
                   >
-                    Join as a creator
+                    {APPLY_LABEL}
                   </a>
                   <button
                     type="button"

@@ -232,7 +232,7 @@ export default function ModelRegistrationTab() {
   return (
     <div className="page pb-16" id="influencer-registration-tab-container">
       <header className="max-w-3xl space-y-3 pt-10 md:pt-14 pb-10">
-        <p className="eyebrow">Creator application</p>
+        <p className="eyebrow">Award application</p>
         <h1 className="h-page">{routeForTab("apply").heading}</h1>
         <p className="lede">{routeForTab("apply").intro}</p>
         <p className="text-[0.9375rem] text-ink-2">

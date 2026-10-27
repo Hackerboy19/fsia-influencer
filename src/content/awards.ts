@@ -3,14 +3,19 @@
 
 import { AWARD_NAME } from "./brand";
 
-// There is one award. It is separate from FSIA, and separate from joining the platform:
-// any creator can join and get a profile, with or without the award.
+// There is one award, separate from FSIA. For now creators join the platform by applying
+// for it (Boss, 2026-10-27); after the awards the platform opens to every creator.
 export { AWARD_NAME };
+
+/** How joining works right now. Used wherever the site explains who can join. */
+export const JOIN_RULE = `Creators join by applying for the ${AWARD_NAME}. After the awards, the platform opens to every creator.`;
+/** Label for every button and link that opens the application form (/join/) */
+export const APPLY_LABEL = "Apply for the award";
 
 export const AWARD = {
   name: AWARD_NAME,
   tagline: "India's award for influencers and digital creators",
-  text: "A separate award, open to creators in every niche. The jury looks at the quality of the work, the audience and its impact. You do not need the award to join the platform: any creator can create a profile."
+  text: "Open to creators in every niche. The jury looks at the quality of the work, the audience and its impact. Applying for the award is how creators join the platform for now: our team reviews every application, and approved creators get a public profile. After the awards, the platform opens to every creator."
 } as const;
 
 // Creator niches that can apply (these are not separate award categories)
@@ -36,8 +41,8 @@ export const AWARD_PERKS = [
 export const VALUE_FLOW = [
   {
     step: 1,
-    title: "Join the Platform",
-    text: `Any creator can join and get a profile. The ${AWARD_NAME} is separate.`
+    title: "Apply for the Award",
+    text: JOIN_RULE
   },
   {
     step: 2,
@@ -131,7 +136,7 @@ export const MAGAZINE_PACKAGES = [
 ] as const;
 
 export const CONTACT_TOPICS = [
-  "Awards & applications",
+  "Award applications",
   "Star India membership",
   "Magazine booking",
   "Brand deals",
