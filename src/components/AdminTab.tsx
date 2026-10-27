@@ -2100,7 +2100,7 @@ export default function AdminTab() {
                     <input
                       type="text"
                       required
-                      placeholder="e.g., Winner, Miss India 2026"
+                      placeholder="e.g., Fashion creator"
                       value={creatorForm.role}
                       onChange={(e) => setCreatorForm(prev => ({ ...prev, role: e.target.value }))}
                       className="w-full px-3 py-2 bg-white border border-black/10 rounded-lg text-xs focus:outline-none focus:border-champagne"

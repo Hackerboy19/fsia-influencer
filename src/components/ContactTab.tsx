@@ -5,7 +5,7 @@ import EnquiryForm from "./EnquiryForm";
 import TabLink from "./TabLink";
 
 const HELP: { topic: string; text: string }[] = [
-  { topic: "Awards & applications", text: "Eligibility, how to apply and where your application stands." },
+  { topic: "Award applications", text: "Eligibility, how to apply and where your application stands." },
   { topic: "Star India membership", text: "Your profile and member support." },
   { topic: "Magazine booking", text: "Explore Magazine covers, features and digital spotlights." },
   { topic: "Brand deals", text: "Hiring creators for a campaign." },

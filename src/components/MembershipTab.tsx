@@ -7,6 +7,8 @@ import {
   inputClass, labelClass, optionalClass, errorBoxClass,
   isValidEmail, isValidPhone, EMAIL_ERROR, PHONE_ERROR, focusField
 } from "../lib/forms";
+import FieldError, { errorProps } from "./FieldError";
+import { isPreviewHost } from "../lib/preview";
 
 interface Plan {
   id?: string;
@@ -127,7 +129,11 @@ export default function MembershipTab() {
       <div className="mt-8" aria-live="polite">
         {loadState === "loading" && <p className="text-ink-2">Loading plans…</p>}
         {loadState === "error" && (
-          <p className="border border-line bg-surface p-6 text-ink-2">Membership plans could not be loaded right now. Please refresh the page or contact us.</p>
+          <p className="border border-line bg-surface p-6 text-ink-2">
+            {isPreviewHost()
+              ? "Membership plans are listed on the live site. This preview does not include plan data."
+              : "Membership plans could not be loaded right now. Please refresh the page or contact us."}
+          </p>
         )}
         {loadState === "ready" && plans.length === 0 && (
           <p className="border border-line bg-surface p-6 text-ink-2">No membership plans are listed at the moment. Please contact us for details.</p>
@@ -198,13 +204,13 @@ export default function MembershipTab() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 180 }}
-              className="relative w-full md:max-w-xl h-full bg-[#FAF9F6] shadow-2xl flex flex-col border-l border-black/5 z-10 outline-none"
+              className="relative w-full md:max-w-xl h-full bg-paper shadow-2xl flex flex-col border-l border-line z-10 outline-none"
               id="payment-portal-drawer"
             >
               {/* Header */}
               <div className="p-5 md:p-8 border-b border-black/10 flex items-center justify-between gap-4 bg-[#F4F3F0]">
                 <div>
-                  <span className="font-sans text-[11px] tracking-[0.2em] text-[#47453f] uppercase font-bold">
+                  <span className="eyebrow">
                     Membership request
                   </span>
                   <h2 id="plan-dialog-title" className="font-serif-display text-lg md:text-xl text-[#111] tracking-tight mt-1">
@@ -215,7 +221,7 @@ export default function MembershipTab() {
                   type="button"
                   onClick={closeDrawer}
                   aria-label="Close membership request"
-                  className="w-11 h-11 shrink-0 rounded-full border border-black/15 flex items-center justify-center text-[#222] hover:bg-white transition-all cursor-pointer"
+                  className="w-11 h-11 shrink-0 rounded-[4px] flex items-center justify-center text-ink hover:bg-sunken transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" aria-hidden="true" />
                 </button>
@@ -226,8 +232,8 @@ export default function MembershipTab() {
                 {checkoutStep === "form" ? (
                   <form onSubmit={handleCheckoutSubmit} noValidate className="space-y-5">
                     {/* Price summary */}
-                    <div className="p-5 bg-white border border-black/10 rounded-2xl shadow-sm space-y-4">
-                      <h3 className="text-[11px] font-sans tracking-[0.2em] text-[#47453f] uppercase font-bold border-b border-black/10 pb-2">
+                    <div className="p-5 bg-surface border border-line space-y-4">
+                      <h3 className="label-caps border-b border-black/10 pb-2">
                         Price summary
                       </h3>
                       <dl className="space-y-2 text-sm text-[#2e2c29]">
@@ -248,7 +254,7 @@ export default function MembershipTab() {
                         </div>
                       </dl>
                     </div>
-                    <p className="text-[13px] text-[#47453f]">Fields marked * are required.</p>
+                    <p className="text-[0.875rem] text-ink-3">Fields marked * are required.</p>
 
                     {/* Billing details */}
                     <div>
@@ -258,12 +264,13 @@ export default function MembershipTab() {
                         type="text"
                         autoComplete="name"
                         aria-required="true"
-                        aria-invalid={invalidField === "plan-name" || undefined}
+                        {...errorProps("plan-name", invalidField)}
                         value={billingDetails.name}
                         onChange={(e) => setBillingDetails(prev => ({ ...prev, name: e.target.value }))}
                         placeholder="e.g., Deepika Sharma"
                         className={inputClass}
                       />
+                      <FieldError fieldId="plan-name" invalidField={invalidField} message={requestError} />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -275,12 +282,13 @@ export default function MembershipTab() {
                           inputMode="email"
                           autoComplete="email"
                           aria-required="true"
-                          aria-invalid={invalidField === "plan-email" || undefined}
+                          {...errorProps("plan-email", invalidField)}
                           value={billingDetails.email}
                           onChange={(e) => setBillingDetails(prev => ({ ...prev, email: e.target.value }))}
                           placeholder="you@example.com"
                           className={inputClass}
                         />
+                        <FieldError fieldId="plan-email" invalidField={invalidField} message={requestError} />
                       </div>
                       <div>
                         <label htmlFor="plan-phone" className={labelClass}>Phone (WhatsApp) *</label>
@@ -290,12 +298,13 @@ export default function MembershipTab() {
                           inputMode="tel"
                           autoComplete="tel"
                           aria-required="true"
-                          aria-invalid={invalidField === "plan-phone" || undefined}
+                          {...errorProps("plan-phone", invalidField)}
                           value={billingDetails.phone}
                           onChange={(e) => setBillingDetails(prev => ({ ...prev, phone: e.target.value }))}
                           placeholder="+91 98765 43210"
                           className={inputClass}
                         />
+                        <FieldError fieldId="plan-phone" invalidField={invalidField} message={requestError} />
                       </div>
                     </div>
 
@@ -327,14 +336,14 @@ export default function MembershipTab() {
                     </div>
 
                     {/* Payment notice */}
-                    <div className="p-4 bg-white border border-black/10 rounded-xl text-[13px] text-[#2e2c29] flex items-start gap-2 leading-relaxed">
+                    <div className="p-4 bg-surface border border-line text-[0.875rem] text-[#2e2c29] flex items-start gap-2 leading-relaxed">
                       <HelpCircle className="w-5 h-5 text-champagne shrink-0 mt-0.5" aria-hidden="true" />
                       <span>
                         No payment is taken on this page. After you send this request, our team will confirm your plan and share secure payment details by email or WhatsApp.
                       </span>
                     </div>
 
-                    {requestError && (
+                    {requestError && !invalidField && (
                       <div role="alert" className={errorBoxClass}>
                         {requestError}
                       </div>
@@ -345,7 +354,7 @@ export default function MembershipTab() {
                       type="submit"
                       disabled={isProcessing}
                       aria-busy={isProcessing}
-                      className="w-full bg-[#111] hover:bg-[#2e2c29] text-[#FAF9F6] font-sans text-sm tracking-[0.12em] font-bold py-4 rounded-xl uppercase flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-70 disabled:cursor-wait"
+                      className="btn btn-primary w-full disabled:opacity-70 disabled:cursor-wait"
                     >
                       {isProcessing ? (
                         <>
@@ -362,11 +371,11 @@ export default function MembershipTab() {
                   </form>
                 ) : (
                   /* Payment Success Screen */
-                  <div role="status" className="p-6 md:p-8 border border-black/10 bg-white rounded-2xl shadow-xl text-center space-y-6 relative overflow-hidden">
+                  <div role="status" className="p-6 md:p-8 border border-line bg-surface text-center space-y-6 relative overflow-hidden">
                     <CheckCircle2 className="w-8 h-8 mx-auto text-[#2f6b45]" aria-hidden="true" />
 
                     <div className="space-y-1">
-                      <span className="font-sans text-[11px] tracking-[0.2em] text-[#47453f] uppercase font-bold">
+                      <span className="eyebrow">
                         Request received
                       </span>
                       <h3 className="font-serif-display text-xl md:text-2xl text-[#111] font-bold">
@@ -374,7 +383,7 @@ export default function MembershipTab() {
                       </h3>
                     </div>
 
-                    <div className="bg-white/90 border border-black/5 p-4 rounded-xl text-left space-y-2.5 font-sans text-sm text-[#2e2c29]">
+                    <div className="bg-sunken border border-line p-4 text-left space-y-2.5 font-sans text-sm text-[#2e2c29]">
                       <div className="flex justify-between gap-3">
                         <span>Name</span>
                         <strong className="text-[#111]">{billingDetails.name}</strong>
@@ -398,7 +407,7 @@ export default function MembershipTab() {
                     <button
                       type="button"
                       onClick={closeDrawer}
-                      className="w-full bg-[#111] hover:bg-[#2e2c29] text-[#FAF9F6] font-sans text-sm tracking-[0.12em] font-bold py-3.5 px-6 rounded-xl uppercase cursor-pointer"
+                      className="btn btn-primary w-full"
                     >
                       Back to plans
                     </button>

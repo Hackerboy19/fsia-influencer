@@ -7,6 +7,7 @@ import {
   inputClass, labelClass, helpClass, optionalClass, errorBoxClass,
   isValidEmail, isValidPhone, EMAIL_ERROR, PHONE_ERROR, focusField
 } from "../lib/forms";
+import FieldError, { errorProps } from "./FieldError";
 
 interface VipCollaborationFormProps {
   isOpen: boolean;
@@ -134,8 +135,7 @@ export default function VipCollaborationForm({
     setInvalidField("");
   };
 
-  const invalid = (id: string) => (invalidField === id ? true : undefined);
-  const budgetLabel = currency === "INR"
+    const budgetLabel = currency === "INR"
     ? (budgetInr === 10000000 ? "₹1 Crore+" : `₹${(budgetInr / 100000).toFixed(1)} Lakhs`)
     : (budgetUsd === 1000000 ? "$1,000,000+" : budgetUsd.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }));
 
@@ -164,7 +164,7 @@ export default function VipCollaborationForm({
             {/* Header */}
             <div className="p-5 md:p-8 border-b border-line flex items-center justify-between bg-paper">
               <div>
-                <span className="font-sans text-[11px] md:text-xs tracking-[0.2em] text-[#47453f] uppercase font-bold">
+                <span className="eyebrow">
                   For brands and agencies
                 </span>
                 <h2 id="enquiry-dialog-title" className="font-display text-[1.5rem] text-ink mt-1">
@@ -175,10 +175,10 @@ export default function VipCollaborationForm({
                 type="button"
                 onClick={onClose}
                 aria-label="Close brand enquiry"
-                className="w-11 h-11 rounded-full border border-black/15 flex items-center justify-center hover:bg-black/5 transition-colors cursor-pointer"
+                className="w-11 h-11 rounded-[4px] flex items-center justify-center text-ink hover:bg-sunken transition-colors cursor-pointer"
                 id="close-collaboration-form-btn"
               >
-                <X className="w-5 h-5 text-[#333]" aria-hidden="true" />
+                <X className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 
@@ -190,7 +190,7 @@ export default function VipCollaborationForm({
                   <p className="text-[0.9375rem] text-ink-2 leading-relaxed">
                     Tell us about your campaign. Our team reads every enquiry, suggests suitable creators and replies by email or phone.
                   </p>
-                  <p className="text-[13px] text-[#47453f]">Fields marked * are required.</p>
+                  <p className="text-[0.875rem] text-ink-3">Fields marked * are required.</p>
 
                   {/* Creator Selection */}
                   <div>
@@ -221,10 +221,11 @@ export default function VipCollaborationForm({
                         placeholder="Your brand or agency"
                         value={brandName}
                         onChange={(e) => setBrandName(e.target.value)}
-                        aria-invalid={invalid("enquiry-brand")}
+                        {...errorProps("enquiry-brand", invalidField)}
                         aria-required="true"
                         className={inputClass}
                       />
+                      <FieldError fieldId="enquiry-brand" invalidField={invalidField} message={errorMsg} />
                     </div>
                     <div>
                       <label htmlFor="enquiry-city" className={labelClass}>Operating city (HQ)</label>
@@ -253,10 +254,11 @@ export default function VipCollaborationForm({
                         placeholder="name@brand.in"
                         value={contactEmail}
                         onChange={(e) => setContactEmail(e.target.value)}
-                        aria-invalid={invalid("enquiry-email")}
+                        {...errorProps("enquiry-email", invalidField)}
                         aria-required="true"
                         className={inputClass}
                       />
+                      <FieldError fieldId="enquiry-email" invalidField={invalidField} message={errorMsg} />
                     </div>
                     <div>
                       <label htmlFor="enquiry-phone" className={labelClass}>Phone (WhatsApp) *</label>
@@ -270,12 +272,12 @@ export default function VipCollaborationForm({
                           placeholder="+91 98765 43210"
                           value={contactPhone}
                           onChange={(e) => setContactPhone(e.target.value)}
-                          aria-invalid={invalid("enquiry-phone")}
+                          {...errorProps("enquiry-phone", invalidField, "enquiry-phone-help")}
                           aria-required="true"
-                          aria-describedby="enquiry-phone-help"
                           className={inputClass + " pl-10"}
                         />
                       </div>
+                      <FieldError fieldId="enquiry-phone" invalidField={invalidField} message={errorMsg} />
                       <p id="enquiry-phone-help" className={helpClass}>+91 preferred. 10 to 15 digits.</p>
                       <label className="flex items-center gap-2 mt-2 cursor-pointer">
                         <input
@@ -284,8 +286,8 @@ export default function VipCollaborationForm({
                           onChange={(e) => setIsWhatsappPreferred(e.target.checked)}
                           className="accent-[#111] w-4 h-4"
                         />
-                        <span className="text-[13px] text-[#2e2c29]">
-                          Connect securely on WhatsApp for instant confirmation
+                        <span className="text-[0.875rem] text-ink-2">
+                          You can also contact me on WhatsApp
                         </span>
                       </label>
                     </div>
@@ -313,9 +315,9 @@ export default function VipCollaborationForm({
                   <div className="space-y-3">
                     <div className="flex flex-wrap justify-between items-center gap-2">
                       <label htmlFor="enquiry-budget" className={labelClass + " mb-0"}>
-                        Estimated budget: <span className="font-serif-display font-bold">{budgetLabel}</span>
+                        Estimated budget: <span className="tabular-nums">{budgetLabel}</span>
                       </label>
-                      <div className="flex rounded-lg overflow-hidden border border-black/15 text-xs font-bold font-sans" role="group" aria-label="Budget currency">
+                      <div className="flex rounded-[4px] overflow-hidden border border-field text-[0.8125rem] font-semibold" role="group" aria-label="Budget currency">
                         {(["INR", "USD"] as const).map((code) => (
                           <button
                             key={code}
@@ -323,7 +325,7 @@ export default function VipCollaborationForm({
                             onClick={() => setCurrency(code)}
                             aria-pressed={currency === code}
                             className={`px-3 py-1.5 transition-all cursor-pointer ${
-                              currency === code ? "bg-[#111] text-white" : "bg-white text-[#2e2c29] hover:bg-black/5"
+                              currency === code ? "bg-ink text-white" : "bg-surface text-ink hover:bg-sunken"
                             }`}
                           >
                             {code === "INR" ? "INR (₹)" : "USD ($)"}
@@ -384,10 +386,10 @@ export default function VipCollaborationForm({
                             type="button"
                             onClick={() => setDuration(dOption)}
                             aria-pressed={duration === dOption}
-                            className={`px-3 py-2 rounded-lg text-[13px] font-sans font-semibold transition-all cursor-pointer border ${
+                            className={`min-h-10 px-3 py-2 rounded-[4px] text-[0.875rem] font-semibold transition-colors cursor-pointer border ${
                               duration === dOption
-                                ? "bg-[#111] border-[#111] text-white"
-                                : "bg-white border-stone-300 text-[#2e2c29] hover:border-[#111]"
+                                ? "bg-ink border-ink text-white"
+                                : "bg-surface border-field text-ink hover:border-ink"
                             }`}
                           >
                             {dOption}
@@ -403,15 +405,15 @@ export default function VipCollaborationForm({
                         onChange={(e) => setScope(e.target.value)}
                         className={inputClass}
                       >
-                        <option value="Editorial Cover & Digital Campaign">Editorial Cover & Indian Digital</option>
-                        <option value="Runway Show / Brand Campaign Appearance">Runway & Bollywood Gala Appearance</option>
-                        <option value="Global Brand Ambassadorship">Pan-India Brand Ambassadorship</option>
-                        <option value="Charity & Advocacy Alignment">Social Impact Partnership</option>
+                        <option value="Editorial Cover & Digital Campaign">Editorial and digital campaign</option>
+                        <option value="Runway Show / Brand Campaign Appearance">Event or campaign appearance</option>
+                        <option value="Global Brand Ambassadorship">Brand ambassadorship</option>
+                        <option value="Charity & Advocacy Alignment">Social impact partnership</option>
                       </select>
                     </div>
                   </div>
 
-                  {errorMsg && (
+                  {errorMsg && !invalidField && (
                     <div role="alert" className={errorBoxClass}>
                       {errorMsg}
                     </div>
@@ -447,21 +449,21 @@ export default function VipCollaborationForm({
                   id="collaboration-success-credential"
                   role="status"
                 >
-                  <div className="p-6 md:p-8 border border-black/10 bg-white rounded-2xl shadow-xl relative overflow-hidden text-center space-y-6">
-                    <div className="mx-auto w-16 h-16 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 mb-4">
+                  <div className="p-6 md:p-8 border border-line bg-surface text-center space-y-6">
+                    <div className="mx-auto w-12 h-12 flex items-center justify-center text-[#2f6b45]">
                       <CheckCircle2 className="w-8 h-8" aria-hidden="true" />
                     </div>
 
                     <div className="space-y-1">
-                      <span className="font-sans text-[11px] tracking-[0.2em] text-[#47453f] uppercase font-bold">
+                      <span className="eyebrow">
                         Brand enquiry received
                       </span>
-                      <h3 className="font-serif-display text-xl md:text-2xl text-[#111] font-bold">
+                      <h3 className="font-display text-[1.5rem] text-ink">
                         Thank you, we have your enquiry
                       </h3>
                     </div>
 
-                    <dl className="border-t border-b border-black/10 py-4 space-y-2 text-left text-sm">
+                    <dl className="border-t border-b border-line py-4 space-y-2 text-left text-[0.9375rem]">
                       {[
                         ["Reference", submittedCredential.bookingId, "font-mono font-bold"],
                         ["Brand", submittedCredential.brandName, "font-semibold"],
@@ -470,14 +472,14 @@ export default function VipCollaborationForm({
                         ["City", submittedCredential.clientCity, "font-semibold"]
                       ].map(([term, value, weight]) => (
                         <div key={term} className="flex justify-between gap-4">
-                          <dt className="text-[#47453f]">{term}</dt>
-                          <dd className={`text-[#111] text-right ${weight}`}>{value}</dd>
+                          <dt className="text-ink-3">{term}</dt>
+                          <dd className={`text-ink text-right ${weight}`}>{value}</dd>
                         </div>
                       ))}
                     </dl>
 
-                    <p className="text-sm text-[#2e2c29] leading-relaxed px-2">
-                      Our team will contact you at <strong className="text-[#111]">{contactEmail}</strong>
+                    <p className="text-[0.9375rem] text-ink-2 leading-relaxed px-2">
+                      Our team will contact you at <strong className="text-ink">{contactEmail}</strong>
                       {isWhatsappPreferred ? " or on WhatsApp" : ""}. Please keep your reference number for any follow-up.
                     </p>
                   </div>
@@ -486,14 +488,14 @@ export default function VipCollaborationForm({
                     <button
                       type="button"
                       onClick={onClose}
-                      className="w-full bg-[#111] hover:bg-[#2e2c29] text-[#FAF9F6] font-sans text-sm tracking-[0.12em] py-3.5 px-6 rounded-xl uppercase cursor-pointer text-center font-bold"
+                      className="btn btn-primary w-full"
                     >
                       Done
                     </button>
                     <button
                       type="button"
                       onClick={handleReset}
-                      className="w-full bg-white hover:bg-black/5 text-[#111] border border-black/15 font-sans text-sm tracking-[0.12em] py-3.5 px-6 rounded-xl uppercase cursor-pointer text-center font-bold"
+                      className="btn btn-secondary w-full"
                     >
                       Send another enquiry
                     </button>

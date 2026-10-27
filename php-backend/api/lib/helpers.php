@@ -284,6 +284,12 @@ function debrand_text(string $text): string
     $brand = 'Influencer Awards';
     $award = 'Influencer Award';
     $rules = [
+        // Only one award exists (Boss, 2026-10-27): older section names and titles that read as other
+        // awards or as a verification are shown under neutral niche names. The stored data is unchanged.
+        ['/\b(?:Winner|(?:1st|2nd|3rd) Runner[- ]Up|Runner[- ]Up),?\s+Miss India \d{4}\b/iu', 'Fashion creator'],
+        ['/\bMiss India \d{4}\b/iu', 'Fashion & Modelling'],
+        ['/\bSuper Hero Awards?\b/iu', 'Social Impact'],
+        ['/\bVerified VIP Influencers\b/iu', 'Lifestyle & Design'],
         ['/FSIA\s*[—-]\s*Forever Star India Awards/iu', $brand],
         ['/Forever Star India(?: Awards| Association)?(?: \(FSIA\))?/iu', $brand],
         ['/\b(?:Forever|FSIA) Influencer Awards\b/iu', $brand],

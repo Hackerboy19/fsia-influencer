@@ -5,6 +5,7 @@ import {
   inputClass, labelClass, helpClass, optionalClass, errorBoxClass,
   isValidEmail, isValidPhone, EMAIL_ERROR, PHONE_ERROR, focusField
 } from "../lib/forms";
+import FieldError, { errorProps } from "./FieldError";
 import { CREATOR_CATEGORIES, OTHER_CATEGORY } from "../content/creatorCategories";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "motion/react";
@@ -79,7 +80,6 @@ export default function ModelRegistrationTab() {
   const [successData, setSuccessData] = useState<any | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [invalidField, setInvalidField] = useState("");
-  const invalid = (id: string) => (invalidField === id ? true : undefined);
 
   useEffect(() => {
     const values: Draft = { name, category, categoryOther, role, city, bio, reach, engagement, quote, email, phone, portfolioUrls };
@@ -232,7 +232,7 @@ export default function ModelRegistrationTab() {
   return (
     <div className="page pb-16" id="influencer-registration-tab-container">
       <header className="max-w-3xl space-y-3 pt-10 md:pt-14 pb-10">
-        <p className="eyebrow">Creator application</p>
+        <p className="eyebrow">Award application</p>
         <h1 className="h-page">{routeForTab("apply").heading}</h1>
         <p className="lede">{routeForTab("apply").intro}</p>
         <p className="text-[0.9375rem] text-ink-2">
@@ -242,7 +242,8 @@ export default function ModelRegistrationTab() {
       </header>
 
       {/* 2. STEP-BY-STEP FORM */}
-      <section id="registration-form-section" className="max-w-2xl scroll-mt-6">
+      <div className="grid gap-10 lg:gap-14 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] items-start">
+      <section id="registration-form-section" aria-label="Application form" className="max-w-2xl scroll-mt-6">
         <AnimatePresence mode="wait">
           {!successData ? (
             <motion.div
@@ -259,12 +260,12 @@ export default function ModelRegistrationTab() {
                   const current = i === step;
                   return (
                     <li key={s.title} aria-current={current ? "step" : undefined}>
-                      <div className={`h-1.5 rounded-full ${i <= step ? "bg-[#111]" : "bg-stone-200"}`} />
+                      <div className={`h-1 ${i <= step ? "bg-ink" : "bg-line"}`} />
                       <p className={`mt-2 text-sm font-semibold ${current ? "text-[#111]" : done ? "text-[#2e2c29]" : "text-[#57554f]"}`}>
                         <span className="mr-1">{done ? "✓" : `${i + 1}.`}</span>
                         {s.title}
                       </p>
-                      <p className="hidden sm:block text-xs text-[#57554f]">{s.hint}</p>
+                      <p className="hidden sm:block text-[0.8125rem] text-ink-3">{s.hint}</p>
                     </li>
                   );
                 })}
@@ -276,25 +277,28 @@ export default function ModelRegistrationTab() {
                     <div>
                       <label htmlFor="reg-name" className={labelClass}>Full name *</label>
                       <input id="reg-name" type="text" autoComplete="name" placeholder="e.g. Priya Sharma" aria-required="true"
-                        aria-invalid={invalid("reg-name")} value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
+                        {...errorProps("reg-name", invalidField)} value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
+                      <FieldError fieldId="reg-name" invalidField={invalidField} message={errorMsg} />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <div>
                         <label htmlFor="reg-category" className={labelClass}>Category *</label>
                         <select id="reg-category" value={category} onChange={(e) => setCategory(e.target.value)}
-                          aria-required="true" aria-invalid={invalid("reg-category")} className={inputClass}>
+                          aria-required="true" {...errorProps("reg-category", invalidField)} className={inputClass}>
                           <option value="" disabled>Choose your main category</option>
                           {CREATOR_CATEGORIES.map((cat) => (
                             <option key={cat} value={cat}>{cat}</option>
                           ))}
                           <option value={OTHER_CATEGORY}>Other (type your own)</option>
                         </select>
+                        <FieldError fieldId="reg-category" invalidField={invalidField} message={errorMsg} />
                         {category === OTHER_CATEGORY && (
                           <div className="mt-3">
                             <label htmlFor="reg-category-other" className={labelClass}>Your category *</label>
                             <input id="reg-category-other" type="text" maxLength={60} placeholder="e.g. Astrology, Cricket, Agriculture"
-                              aria-required="true" aria-invalid={invalid("reg-category-other")}
+                              aria-required="true" {...errorProps("reg-category-other", invalidField)}
                               value={categoryOther} onChange={(e) => setCategoryOther(e.target.value)} className={inputClass} />
+                            <FieldError fieldId="reg-category-other" invalidField={invalidField} message={errorMsg} />
                           </div>
                         )}
                       </div>
@@ -320,7 +324,7 @@ export default function ModelRegistrationTab() {
                   <>
                     <div>
                       <p className={labelClass}>Profile photo</p>
-                      <div className="flex gap-1 bg-stone-100 rounded-xl p-1 mb-3" role="tablist">
+                      <div className="flex gap-1 bg-sunken border border-line rounded-[4px] p-1 mb-3" role="tablist">
                         {([
                           ["upload", "Upload", Upload],
                           ["custom", "Paste a link", LinkIcon]
@@ -339,18 +343,18 @@ export default function ModelRegistrationTab() {
                           onDragLeave={() => setIsDragActive(false)}
                           onDrop={(e) => { e.preventDefault(); setIsDragActive(false); handleFile(e.dataTransfer.files?.[0]); }}
                           onClick={() => document.getElementById("portrait-file-input")?.click()}
-                          className={`border-2 border-dashed rounded-xl p-5 flex items-center gap-4 cursor-pointer ${isDragActive ? "border-[#111] bg-stone-50" : "border-stone-300 hover:border-[#111]"}`}
+                          className={`border-2 border-dashed rounded-[4px] p-5 flex items-center gap-4 cursor-pointer ${isDragActive ? "border-[#111] bg-stone-50" : "border-field hover:border-ink"}`}
                         >
                           <input type="file" id="portrait-file-input" accept="image/*" className="hidden"
                             onChange={(e) => handleFile(e.target.files?.[0])} />
                           {customImage ? (
-                            <img src={customImage} alt="Your uploaded profile photo" className="w-16 h-16 rounded-xl object-cover border border-stone-200" />
+                            <img src={customImage} alt="Your uploaded profile photo" className="w-16 h-16 rounded-[2px] object-cover border border-stone-200" />
                           ) : (
-                            <div className="w-16 h-16 rounded-xl bg-stone-100 flex items-center justify-center"><Upload className="w-6 h-6 text-[#2e2c29]" /></div>
+                            <div className="w-16 h-16 rounded-[2px] bg-stone-100 flex items-center justify-center"><Upload className="w-6 h-6 text-[#2e2c29]" /></div>
                           )}
                           <div>
                             <p className="text-sm font-semibold text-[#111]">{customImage ? uploadedFileName || "Photo added" : "Tap to upload or drag a photo here"}</p>
-                            <p className="text-[13px] text-[#47453f]">JPG or PNG. Large photos are resized automatically.</p>
+                            <p className="text-[0.875rem] text-[#47453f]">JPG or PNG. Large photos are resized automatically.</p>
                           </div>
                         </div>
                       )}
@@ -358,9 +362,10 @@ export default function ModelRegistrationTab() {
                       {imageType === "custom" && (
                         <div>
                           <input id="reg-image-link" type="url" placeholder="https://…" value={customImage}
-                            aria-invalid={invalid("reg-image-link")}
+                            {...errorProps("reg-image-link", invalidField, "reg-image-link-help")}
                             onChange={(e) => setCustomImage(e.target.value)} className={inputClass} aria-label="Image link" />
-                          <p className={helpClass}>Use a public link that starts with https://</p>
+                          <FieldError fieldId="reg-image-link" invalidField={invalidField} message={errorMsg} />
+                          <p id="reg-image-link-help" className={helpClass}>Use a public link that starts with https://</p>
                         </div>
                       )}
                     </div>
@@ -401,20 +406,22 @@ export default function ModelRegistrationTab() {
                       <div>
                         <label htmlFor="reg-email" className={labelClass}>Email *</label>
                         <div className="relative">
-                          <Mail className="w-4 h-4 text-[#47453f] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <Mail aria-hidden="true" className="w-4 h-4 text-ink-3 absolute left-3.5 top-1/2 -translate-y-1/2" />
                           <input id="reg-email" type="email" autoComplete="email" inputMode="email" placeholder="you@example.com"
-                            aria-required="true" aria-invalid={invalid("reg-email")}
+                            aria-required="true" {...errorProps("reg-email", invalidField)}
                             value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass + " pl-10"} />
                         </div>
+                        <FieldError fieldId="reg-email" invalidField={invalidField} message={errorMsg} />
                       </div>
                       <div>
                         <label htmlFor="reg-phone" className={labelClass}>Mobile (WhatsApp) *</label>
                         <div className="relative">
-                          <Phone className="w-4 h-4 text-[#47453f] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <Phone aria-hidden="true" className="w-4 h-4 text-ink-3 absolute left-3.5 top-1/2 -translate-y-1/2" />
                           <input id="reg-phone" type="tel" autoComplete="tel" inputMode="tel" placeholder="+91 98765 43210"
-                            aria-required="true" aria-invalid={invalid("reg-phone")}
+                            aria-required="true" {...errorProps("reg-phone", invalidField)}
                             value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass + " pl-10"} />
                         </div>
+                        <FieldError fieldId="reg-phone" invalidField={invalidField} message={errorMsg} />
                       </div>
                     </div>
 
@@ -425,7 +432,7 @@ export default function ModelRegistrationTab() {
                     </div>
 
                     {/* Review before submitting */}
-                    <div className="rounded-xl bg-stone-50 border border-stone-200 p-4 flex gap-4 items-center">
+                    <div className="bg-sunken border border-line p-4 flex gap-4 items-center">
                       {finalImage ? (
                         <img src={finalImage} alt="" className="w-14 h-14 rounded-[4px] object-cover border border-line" referrerPolicy="no-referrer" />
                       ) : (
@@ -434,18 +441,18 @@ export default function ModelRegistrationTab() {
                       <div className="min-w-0 text-sm">
                         <p className="font-semibold text-[#111] truncate">{name || "—"}</p>
                         <p className="text-[#2e2c29] truncate">{[categoryTitle, city, reach ? `${reach} followers` : ""].filter(Boolean).join(" · ")}</p>
-                        <button type="button" onClick={() => setStep(0)} className="text-[13px] font-semibold text-[#111] underline underline-offset-2 cursor-pointer">Edit details</button>
+                        <button type="button" onClick={() => setStep(0)} className="text-[0.875rem] font-semibold text-[#111] underline underline-offset-2 cursor-pointer">Edit details</button>
                       </div>
                     </div>
 
-                    <p className="flex items-start gap-2 text-[13px] text-[#2e2c29]">
+                    <p className="flex items-start gap-2 text-[0.875rem] text-[#2e2c29]">
                       <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0" />
                       If we approve your application, your name, photo, category, city, bio, audience figures and motto are shown on a public profile. Your email and phone number are never published; our team uses them only to contact you.
                     </p>
                   </>
                 )}
 
-                {errorMsg && (
+                {errorMsg && !invalidField && (
                   <div role="alert" className={errorBoxClass}>
                     {errorMsg}
                   </div>
@@ -454,12 +461,12 @@ export default function ModelRegistrationTab() {
                 <div className="flex items-center justify-between gap-3 pt-2">
                   {step > 0 ? (
                     <button type="button" onClick={goBack}
-                      className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-stone-300 text-[#111] font-semibold text-sm hover:bg-stone-50 cursor-pointer">
+                      className="btn btn-secondary">
                       <ArrowLeft className="w-4 h-4" /> Back
                     </button>
                   ) : <span />}
                   <button type="submit" disabled={isSubmitting} aria-busy={isSubmitting}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#111] hover:bg-[#222] text-white font-semibold text-sm cursor-pointer disabled:opacity-60">
+                    className="btn btn-primary disabled:opacity-60 disabled:cursor-wait">
                     {isSubmitting ? (
                       <>
                         <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Submitting…
@@ -471,7 +478,7 @@ export default function ModelRegistrationTab() {
                     )}
                   </button>
                 </div>
-                <p className="text-xs text-[#57554f] text-center">Step {step + 1} of {STEPS.length}</p>
+                <p className="text-[0.8125rem] text-ink-3 text-center">Step {step + 1} of {STEPS.length}</p>
               </form>
             </motion.div>
           ) : (
@@ -481,7 +488,7 @@ export default function ModelRegistrationTab() {
               animate={{ opacity: 1, scale: 1 }}
               className="bg-surface border border-line p-6 md:p-8 text-center space-y-5"
             >
-              <div className="mx-auto w-14 h-14 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
+              <div className="mx-auto w-12 h-12 flex items-center justify-center text-[#2f6b45]">
                 <CheckCircle2 className="w-7 h-7" />
               </div>
               <div className="space-y-1">
@@ -491,18 +498,18 @@ export default function ModelRegistrationTab() {
                   <strong>{successData.email}</strong> or on WhatsApp.
                 </p>
               </div>
-              <dl className="max-w-sm mx-auto text-left text-sm bg-stone-50 border border-stone-200 rounded-xl p-4 space-y-2">
+              <dl className="max-w-sm mx-auto text-left text-[0.9375rem] bg-sunken border border-line p-4 space-y-2">
                 <div className="flex justify-between gap-3"><dt className="text-[#47453f]">Reference</dt><dd className="font-mono font-semibold text-[#111]">{successData.id}</dd></div>
                 <div className="flex justify-between gap-3"><dt className="text-[#47453f]">Category</dt><dd className="font-semibold text-[#111]">{categoryTitle}</dd></div>
                 <div className="flex justify-between gap-3"><dt className="text-[#47453f]">Status</dt><dd className="font-semibold text-amber-800">Pending review</dd></div>
               </dl>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button onClick={() => navigateTo("campaigns")}
-                  className="px-6 py-3 bg-[#111] hover:bg-[#222] text-white font-semibold text-sm rounded-xl cursor-pointer">
+                  className="btn btn-primary">
                   Browse brand campaigns
                 </button>
                 <button onClick={handleReset}
-                  className="px-6 py-3 border border-stone-300 text-[#111] font-semibold text-sm rounded-xl hover:bg-stone-50 cursor-pointer">
+                  className="btn btn-secondary">
                   Register someone else
                 </button>
               </div>
@@ -510,14 +517,49 @@ export default function ModelRegistrationTab() {
           )}
         </AnimatePresence>
 
-        <p className="mt-6 text-center text-sm text-[#2e2c29]">
+        <p className="mt-6 text-[0.9375rem] text-ink-2">
           Want to see published profiles first?{" "}
-          <a href="/talent/" onClick={(e) => { e.preventDefault(); navigateTo("directory"); }}
-            className="font-semibold text-[#111] underline underline-offset-2 inline-flex items-center gap-1">
+          <a href="/talent/" onClick={(e) => { e.preventDefault(); navigateTo("directory"); }} className="link">
             Browse the directory
           </a>
         </p>
       </section>
+
+      {/* What is collected, why, and what happens next: only what the application workflow actually does */}
+      <aside aria-labelledby="apply-info" className="lg:sticky lg:top-8 space-y-8 lg:border-l lg:border-line lg:pl-10">
+        <div>
+          <h2 id="apply-info" className="label-caps pb-3 border-b border-line">What we ask for and why</h2>
+          <dl className="divide-y divide-line">
+            {[
+              ["Name, category, city, title", "Shown on your public profile so brands can find you."],
+              ["Photo, bio, followers, engagement", "Shown on your profile. Audience figures are labelled as supplied by you."],
+              ["Email and mobile", "Used by our team to contact you about your application. Not shown on your profile."]
+            ].map(([term, text]) => (
+              <div key={term} className="py-3.5">
+                <dt className="font-semibold text-ink">{term}</dt>
+                <dd className="text-[0.9375rem] text-ink-2 mt-0.5">{text}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+        <div>
+          <h2 className="label-caps pb-3 border-b border-line">What happens next</h2>
+          <ol className="divide-y divide-line">
+            {[
+              "You get a reference number straight away.",
+              "Our team reviews your application.",
+              "If it is approved, your profile is published in the directory.",
+              "You can ask us to correct or remove it at any time."
+            ].map((text, i) => (
+              <li key={text} className="py-3 flex gap-3 text-[0.9375rem] text-ink-2">
+                <span className="font-display text-bronze tabular-nums w-5 shrink-0" aria-hidden="true">{i + 1}</span>
+                <span>{text}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </aside>
+      </div>
     </div>
   );
 }

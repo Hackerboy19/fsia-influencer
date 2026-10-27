@@ -5,12 +5,13 @@ import ProfileCard from "./ProfileCard";
 import TabLink from "./TabLink";
 import type { RosterStatus } from "./RosterNotice";
 import RosterNotice from "./RosterNotice";
+import { APPLY_LABEL, JOIN_RULE } from "../content/awards";
 
 const BENEFITS = [
   { title: "A public profile", text: "Your photo, niche, city, biography and work, in the directory brands use." },
   { title: "Branding and marketing help", text: "Support with your bio, media kit and digital marketing." },
   { title: "Brand introductions", text: "When a brand brief fits your niche and city, our team introduces you." },
-  { title: "Open to any creator", text: "You do not need to win an award to become a member." }
+  { title: "How to join", text: JOIN_RULE }
 ];
 
 export default function StarIndiaTab({
@@ -36,7 +37,7 @@ export default function StarIndiaTab({
           <h1 className="h-page">{route.heading}</h1>
           <p className="lede">{route.intro}</p>
           <div className="flex flex-wrap gap-3 pt-2">
-            <TabLink tab="apply" onNavigate={onNavigate} className="btn btn-primary">Join as a creator</TabLink>
+            <TabLink tab="apply" onNavigate={onNavigate} className="btn btn-primary">{APPLY_LABEL}</TabLink>
             <TabLink tab="membership" onNavigate={onNavigate} className="btn btn-secondary">Membership plans</TabLink>
           </div>
         </header>

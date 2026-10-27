@@ -5,6 +5,7 @@ import type { ProfileView } from "../lib/profile";
 import ProfileCard from "./ProfileCard";
 import type { RosterStatus } from "./RosterNotice";
 import RosterNotice from "./RosterNotice";
+import { APPLY_LABEL, JOIN_RULE } from "../content/awards";
 
 interface DirectoryTabProps {
   key?: React.Key;
@@ -72,7 +73,7 @@ export default function DirectoryTab({ profiles, status, onSelectProfile, onAppl
   };
 
   const selectClass =
-    "h-11 w-full rounded-[4px] border border-line-strong bg-surface px-3 text-[0.9375rem] text-ink focus:outline-none focus:border-ink";
+    "h-11 w-full rounded-[4px] border border-field bg-surface px-3 text-[0.9375rem] text-ink focus:outline-none focus:border-ink";
 
   return (
     <div className="page pt-10 md:pt-14 pb-16" id="influencer-directory-tab">
@@ -183,9 +184,9 @@ export default function DirectoryTab({ profiles, status, onSelectProfile, onAppl
       <aside className="mt-16 grid gap-6 md:grid-cols-[1fr_auto] items-center border-t border-line pt-8">
         <div className="space-y-1">
           <h2 className="font-display text-[1.375rem] text-ink">Are you a creator?</h2>
-          <p className="text-ink-2">Any creator can join. It is free, and our team reviews every application.</p>
+          <p className="text-ink-2">{JOIN_RULE} Applying is free, and our team reviews every application.</p>
         </div>
-        <button type="button" onClick={onApply} className="btn btn-primary justify-self-start">Join as a creator</button>
+        <button type="button" onClick={onApply} className="btn btn-primary justify-self-start">{APPLY_LABEL}</button>
       </aside>
     </div>
   );

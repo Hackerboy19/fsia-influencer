@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { ArrowRight, Search } from "lucide-react";
 import { TabId } from "../seo";
 import { BRAND_NAME } from "../content/brand";
-import { AWARD, AWARD_NAME, AWARD_PERKS, ELIGIBLE_NICHES } from "../content/awards";
+import { APPLY_LABEL, AWARD, AWARD_NAME, AWARD_PERKS, ELIGIBLE_NICHES } from "../content/awards";
 import type { ProfileView } from "../lib/profile";
 import ProfileCard from "./ProfileCard";
 import Photo from "./Photo";
@@ -23,7 +23,7 @@ interface HomeTabProps {
 }
 
 const STEPS = [
-  { title: "A creator applies", text: "The form asks for their niche, city, audience figures, photos and contact details. Applying is free." },
+  { title: "A creator applies for the award", text: "The form asks for their niche, city, audience figures, photos and contact details. Applying is free." },
   { title: "Our team reviews it", text: "We read every application and check the creator's public social profiles before approving it." },
   { title: "The profile is published", text: "Approved creators appear in the directory with what they submitted. We do not add numbers or claims of our own." },
   { title: "Corrections are welcome", text: "Creators can ask us to update or remove their profile at any time through the contact page." }
@@ -55,9 +55,9 @@ function HeroSearch({ onBrowse }: { onBrowse: HomeTabProps["onBrowse"] }) {
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search by name, niche or city"
+          placeholder="Name, niche or city"
           autoComplete="off"
-          className="h-12 w-full rounded-l-[4px] border border-r-0 border-line-strong bg-surface pl-10 pr-3 text-[0.9375rem] text-ink focus:outline-none focus:border-ink"
+          className="h-12 w-full rounded-l-[4px] border border-r-0 border-field bg-surface pl-10 pr-3 text-[1rem] text-ink focus:outline-none focus:border-ink"
         />
       </div>
       <button type="submit" className="btn btn-primary h-12 rounded-l-none">Search</button>
@@ -107,16 +107,14 @@ export default function HomeTab({ profiles, status, onNavigate, onSelectProfile,
               Indian creators, reviewed by our team before they are listed
             </h1>
             <p className="lede max-w-xl">
-              Any creator in India can join {BRAND_NAME} and get a public profile once our team approves it. Brands search
-              the directory by niche and city and send us an enquiry. The {AWARD_NAME} is separate.
+              Creators in India join {BRAND_NAME} by applying for the {AWARD_NAME}, and get a public profile once our team
+              approves it. Brands search the directory by niche and city and send us an enquiry. After the awards, the
+              platform opens to every creator.
             </p>
             <HeroSearch onBrowse={onBrowse} />
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-1">
-              <TabLink tab="directory" onNavigate={onNavigate} className="btn btn-secondary">
-                Browse all profiles
-              </TabLink>
-              <TabLink tab="apply" onNavigate={onNavigate} className="link">
-                Join as a creator
+              <TabLink tab="directory" onNavigate={onNavigate} className="link inline-flex items-center gap-1.5">
+                Or browse all profiles <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </TabLink>
             </div>
           </div>
@@ -124,8 +122,36 @@ export default function HomeTab({ profiles, status, onNavigate, onSelectProfile,
         </div>
       </section>
 
+      {/* Who the site is for: one clear path each for creators and brands */}
+      <section aria-label="Ways to use the site" className="border-y border-line bg-surface">
+        <div className="page grid md:grid-cols-2 md:divide-x divide-y md:divide-y-0 divide-line">
+          <div className="py-8 md:py-10 md:pr-10 space-y-3">
+            <h2 className="eyebrow">For creators</h2>
+            <p className="font-display text-[1.5rem] leading-snug text-ink">Apply for the {AWARD_NAME} to join.</p>
+            <p className="text-ink-2">
+              Applying is free and takes about two minutes. Our team reviews every application; approved creators get a public profile that brands can find.
+            </p>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-1">
+              <TabLink tab="apply" onNavigate={onNavigate} className="btn btn-primary">{APPLY_LABEL}</TabLink>
+              <TabLink tab="membership" onNavigate={onNavigate} className="link">Membership plans</TabLink>
+            </div>
+          </div>
+          <div className="py-8 md:py-10 md:pl-10 space-y-3">
+            <h2 className="eyebrow">For brands</h2>
+            <p className="font-display text-[1.5rem] leading-snug text-ink">Find creators for a campaign.</p>
+            <p className="text-ink-2">
+              Tell us your brief, budget and timeline. Our team suggests creators from the directory and puts you in touch.
+            </p>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-1">
+              <button type="button" onClick={onBrandEnquiry} className="btn btn-secondary">Send a brand enquiry</button>
+              <TabLink tab="campaigns" onNavigate={onNavigate} className="link">Open campaigns</TabLink>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Profiles */}
-      <section aria-labelledby="home-profiles" className="page py-14 md:py-16 border-t border-line">
+      <section aria-labelledby="home-profiles" className="page py-14 md:py-20">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="space-y-2">
             <h2 id="home-profiles" className="h-section">In the directory</h2>
@@ -152,7 +178,7 @@ export default function HomeTab({ profiles, status, onNavigate, onSelectProfile,
           <div className="mt-14 grid gap-10 md:grid-cols-2">
             {categories.length > 0 && (
               <nav aria-labelledby="browse-category">
-                <h3 id="browse-category" className="text-[0.8125rem] font-semibold uppercase tracking-[0.08em] text-ink-3 pb-3 border-b border-line">Browse by category</h3>
+                <h3 id="browse-category" className="label-caps pb-3 border-b border-line">Browse by category</h3>
                 <ul className="divide-y divide-line">
                   {categories.map(([name, n]) => (
                     <li key={name}>
@@ -175,7 +201,7 @@ export default function HomeTab({ profiles, status, onNavigate, onSelectProfile,
             )}
             {cities.length > 0 && (
               <nav aria-labelledby="browse-city">
-                <h3 id="browse-city" className="text-[0.8125rem] font-semibold uppercase tracking-[0.08em] text-ink-3 pb-3 border-b border-line">Browse by city</h3>
+                <h3 id="browse-city" className="label-caps pb-3 border-b border-line">Browse by city</h3>
                 <ul className="divide-y divide-line">
                   {cities.map(([name, n]) => (
                     <li key={name}>
@@ -211,9 +237,9 @@ export default function HomeTab({ profiles, status, onNavigate, onSelectProfile,
             </p>
             <TabLink tab="faq" onNavigate={onNavigate} className="link inline-block">Read the full answer</TabLink>
           </div>
-          <ol className="grid gap-px bg-line sm:grid-cols-2 border border-line">
+          <ol className="grid sm:grid-cols-2 gap-x-10 border-t border-ink">
             {STEPS.map((s, i) => (
-              <li key={s.title} className="bg-surface p-6 space-y-2">
+              <li key={s.title} className="py-6 border-b border-line space-y-2">
                 <span className="font-display text-[1.5rem] text-bronze tabular-nums" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
                 <h3 className="font-semibold text-ink">{s.title}</h3>
                 <p className="text-[0.9375rem] leading-relaxed text-ink-2">{s.text}</p>
@@ -234,8 +260,8 @@ export default function HomeTab({ profiles, status, onNavigate, onSelectProfile,
               Open to creators in {ELIGIBLE_NICHES.slice(0, -1).join(", ").toLowerCase()} and {ELIGIBLE_NICHES[ELIGIBLE_NICHES.length - 1].toLowerCase()}, among other niches.
             </p>
             <div className="flex flex-wrap gap-3 pt-2">
-              <button type="button" onClick={onAwardEnquiry} className="btn btn-primary">Ask about the award</button>
-              <TabLink tab="apply" onNavigate={onNavigate} className="btn btn-secondary">Join as a creator</TabLink>
+              <TabLink tab="apply" onNavigate={onNavigate} className="btn btn-primary">{APPLY_LABEL}</TabLink>
+              <button type="button" onClick={onAwardEnquiry} className="btn btn-secondary">Ask about the award</button>
             </div>
           </div>
           <dl className="border-t border-line">
@@ -249,27 +275,18 @@ export default function HomeTab({ profiles, status, onNavigate, onSelectProfile,
         </div>
       </section>
 
-      {/* Brands and the rest of the site */}
-      <section aria-labelledby="for-brands" className="page pb-6">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] border-t border-line pt-14">
-          <div className="space-y-4">
-            <h2 id="for-brands" className="h-section">Hiring creators for a campaign?</h2>
-            <p className="text-ink-2">
-              Tell us what you need, your budget and your timeline. Our team suggests creators from the directory and puts you in touch.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <button type="button" onClick={onBrandEnquiry} className="btn btn-primary">Send a brand enquiry</button>
-              <TabLink tab="campaigns" onNavigate={onNavigate} className="btn btn-secondary">See open campaigns</TabLink>
-            </div>
-          </div>
-          <ul className="divide-y divide-line border-y border-line">
+      {/* The rest of the site */}
+      <section aria-labelledby="more-on-site" className="page pb-6">
+        <div className="border-t border-line pt-12 grid gap-8 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)]">
+          <h2 id="more-on-site" className="h-section">Also on the site</h2>
+          <ul className="grid sm:grid-cols-2 gap-x-10 border-t border-line sm:border-t-0">
             {[
               { tab: "starindia" as TabId, title: "Star India", text: "The creator membership: a public profile, branding help and brand introductions." },
-              { tab: "greenlight" as TabId, title: "Green Light and Explore Magazine", text: "Guides for creators and brands, and cover or feature bookings." },
-              { tab: "membership" as TabId, title: "Membership plans", text: "What each plan includes and how to request one." },
+              { tab: "greenlight" as TabId, title: "Guides and Explore Magazine", text: "Practical guides for creators and brands, and magazine feature bookings." },
+              { tab: "faq" as TabId, title: "Questions and answers", text: "How reviews work, what profiles show and how to change yours." },
               { tab: "catwalk" as TabId, title: "3D gallery", text: "The same profiles, arranged in an interactive 3D space." }
             ].map((item) => (
-              <li key={item.tab}>
+              <li key={item.tab} className="border-b border-line sm:border-t sm:[&:nth-child(n+3)]:border-t-0">
                 <TabLink tab={item.tab} onNavigate={onNavigate} className="group flex items-start justify-between gap-6 py-4">
                   <span>
                     <span className="block font-semibold text-ink group-hover:underline underline-offset-4">{item.title}</span>

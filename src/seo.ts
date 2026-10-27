@@ -41,10 +41,10 @@ export const ROUTES: RouteMeta[] = [
     path: "/",
     title: `Influencer Award & Creator Profiles in India | ${SITE_NAME}`,
     description:
-      `Browse reviewed profiles of Indian influencers, join as a creator, learn about the ${AWARD_NAME}, and send brand collaboration enquiries to our team.`,
+      `Browse reviewed profiles of Indian influencers, apply for the ${AWARD_NAME} to join, and send brand collaboration enquiries to our team.`,
     heading: "Indian influencer profiles, reviewed before they are published",
     intro:
-      `${SITE_NAME} is a creator directory for India. Any creator can join: once our team approves the application, they get a public profile with their category, city and work. The ${AWARD_NAME} is a separate award that creators can apply for. Brands browse those profiles, see open campaigns and send collaboration enquiries, which our team follows up directly.`,
+      `${SITE_NAME} is a creator directory for India. Creators join by applying for the ${AWARD_NAME}: once our team approves the application, they get a public profile with their category, city and work. After the awards, the platform opens to every creator. Brands browse those profiles, see open campaigns and send collaboration enquiries, which our team follows up directly.`,
     indexable: true,
     priority: "1.0",
     changefreq: "weekly"
@@ -57,7 +57,7 @@ export const ROUTES: RouteMeta[] = [
       "An interactive 3D gallery of published creator profiles. Move between sections and open any profile.",
     heading: "3D profile gallery",
     intro:
-      "An interactive 3D view of the published creator profiles. Move between sections with the arrows and open any creator to see their profile and work.",
+      "An interactive 3D view of the published creator profiles. Move between sections with the arrows and open a portrait to see the profile and work.",
     indexable: true,
     priority: "0.6",
     changefreq: "weekly"
@@ -91,12 +91,12 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "apply",
     path: "/join/",
-    title: `Influencer Registration in India | ${SITE_NAME}`,
+    title: `${AWARD_NAME} Application & Registration | ${SITE_NAME}`,
     description:
-      "Join as a creator and get a public profile. A free, three-step form; our team reviews every application.",
-    heading: "Join as a creator",
+      `Apply for the ${AWARD_NAME} to join and get a public profile. A free, three-step form; our team reviews every application.`,
+    heading: `Apply for the ${AWARD_NAME}`,
     intro:
-      "Joining is free, open to any creator, and takes about two minutes. Tell us your category, city and audience on Instagram or YouTube. Our team reviews each application; approved creators get a public profile that brands can browse, and can apply for paid brand collaborations. Creators in fashion, beauty, food, travel, tech, gaming and other niches are welcome from anywhere in India.",
+      `Creators join by applying for the ${AWARD_NAME}; after the awards, the platform opens to every creator. Applying is free and takes about two minutes. Tell us your category, city and audience on Instagram or YouTube. Our team reviews each application; approved creators get a public profile that brands can browse, and can apply for paid brand collaborations. Creators in fashion, beauty, food, travel, tech, gaming and other niches are welcome from anywhere in India.`,
     indexable: true,
     priority: "0.9",
     changefreq: "monthly"

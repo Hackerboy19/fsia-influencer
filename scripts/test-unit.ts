@@ -14,6 +14,12 @@ const check = (name: string, ok: boolean, detail = "") => {
 };
 
 const DEBRAND_CASES: [string, string][] = [
+  // Only one award: older award-style section names and titles get neutral niche names
+  ["Miss India 2026", "Fashion & Modelling"],
+  ["Winner, Miss India 2026", "Fashion creator"],
+  ["1st Runner Up, Miss India 2026", "Fashion creator"],
+  ["Super Hero Awards", "Social Impact"],
+  ["Verified VIP Influencers", "Lifestyle & Design"],
   ["Forever Influencer Portal", "Influencer Awards Portal"],
   ["FOREVER INFLUENCER", "INFLUENCER AWARDS"],
   ["FSIA INFLUENCER", "INFLUENCER AWARDS"],

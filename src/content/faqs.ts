@@ -9,12 +9,12 @@ export interface FAQItem {
 export const FAQS: FAQItem[] = [
   {
     question: `What is ${BRAND_NAME}?`,
-    answer: `${BRAND_NAME} is a website for Indian creators and the brands that work with them. Any creator can join: once our team approves the application, they get a public profile. The ${AWARD_NAME} is separate, and you do not need it to join. Brands browse those profiles, see open campaigns and send collaboration enquiries, which our team follows up by email or phone.`,
+    answer: `${BRAND_NAME} is a website for Indian creators and the brands that work with them. Creators join by applying for the ${AWARD_NAME}: once our team approves the application, they get a public profile. After the awards, the platform opens to every creator. Brands browse those profiles, see open campaigns and send collaboration enquiries, which our team follows up by email or phone.`,
     category: "General"
   },
   {
     question: "How do I register as an influencer in India?",
-    answer: "Open the Apply page and complete the three-step form with your category, city, audience size, engagement rate and contact details. Registration is free and takes about two minutes. Our team reviews each application; once approved, your profile is published in the profile directory where brands look for influencers to hire, and you can apply for paid brand collaborations.",
+    answer: `Right now you register by applying for the ${AWARD_NAME}. Open the Apply page and complete the three-step form with your category, city, audience size, engagement rate and contact details. Registration is free and takes about two minutes. Our team reviews each application; once approved, your profile is published in the profile directory where brands look for influencers to hire, and you can apply for paid brand collaborations. After the awards, registration opens to every creator.`,
     category: "General"
   },
   {
