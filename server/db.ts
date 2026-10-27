@@ -54,11 +54,15 @@ export interface Registration {
   scope?: string;
   duration?: string;
   verificationHash: string;
+  status?: "new" | "contacted" | "confirmed" | "closed";
+  notes?: string;
 }
 
 export interface AdminUser {
   username: string;
-  passwordHash: string; // "admin123" simple hash for demonstration / ease of access
+  passwordHash: string;
+  createdAt?: string;
+  lastLogin?: string;
 }
 
 export interface AdminLog {
@@ -109,6 +113,22 @@ export interface InfluencerApplication {
   phone: string;
   status: "pending" | "approved" | "declined";
   timestamp: string;
+  notes?: string;
+}
+
+// Campaign applications and membership plan requests sent from the public site
+export interface Enquiry {
+  id: string;
+  type: "campaign" | "membership";
+  subject: string;
+  refId?: string;
+  name: string;
+  email: string;
+  phone: string;
+  details: Record<string, string>;
+  status: "new" | "contacted" | "confirmed" | "closed";
+  notes?: string;
+  timestamp: string;
 }
 
 export interface MembershipPlan {
@@ -133,149 +153,257 @@ export interface DatabaseSchema {
   prompt_logs: PromptLog[];
   influencer_applications: InfluencerApplication[];
   membership_plans?: MembershipPlan[];
+  enquiries?: Enquiry[];
+  migrations?: Record<string, string>;
 }
 
-const DB_PATH = path.join(process.cwd(), "server", "db.json");
+export const DB_PATH = path.join(process.cwd(), "server", "db.json");
 
 // Seed Initial Data
 const INITIAL_CREATORS: GallerySection[] = [
   {
-    id: "miss-india",
-    title: "Forever Miss India 2026",
-    subtitle: "The Reign of Couture & Prestige",
-    zOffset: 0,
-    primaryColor: "#E1C699",
-    creators: [
+    "id": "miss-india",
+    "title": "Fashion & Modelling",
+    "subtitle": "Fashion, beauty and runway creators",
+    "zOffset": 0,
+    "primaryColor": "#E1C699",
+    "creators": [
       {
-        name: "Aishwarya Sen",
-        role: "Winner, Forever Miss India 2026",
-        city: "Mumbai",
-        image: "https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?q=80&w=600&auto=format&fit=crop",
-        bio: "An epitome of modern intellect and poise, Aishwarya championed rural girls' education and visual arts while walking the runways of Milan and Paris Couture Weeks. Her advocacy combined with high-fashion presence sets a new gold standard.",
-        stats: {
-          reach: "2.4M",
-          engagement: "6.8%",
-          verified: true,
-          "Runway Events": "18 Appearances",
-          "Couture Shows": "Milan, Paris, Mumbai"
+        "name": "Ishita Rawat",
+        "role": "Fashion and styling creator",
+        "city": "Mumbai",
+        "image": "https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?q=80&w=600&auto=format&fit=crop",
+        "bio": "Everyday styling with high-street and local labels: office looks, thrift finds and saree drapes that work on a commute. Runs a monthly series called One Kurta, Five Looks.",
+        "stats": {
+          "reach": "64K",
+          "engagement": "4.6%",
+          "verified": false,
+          "Platforms": "Instagram, YouTube Shorts",
+          "Languages": "Hindi, English"
         },
-        quote: "Prestige is not inherited; it is sculpted with intention, compassion, and relentless grace.",
-        portfolio: [
+        "quote": "Good style should survive the local train.",
+        "portfolio": [
           "https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=500&auto=format&fit=crop",
           "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=500&auto=format&fit=crop",
           "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=500&auto=format&fit=crop"
         ]
       },
       {
-        name: "Meera Deshmukh",
-        role: "1st Runner Up, Forever Miss India 2026",
-        city: "New Delhi",
-        image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format&fit=crop",
-        bio: "A classical Odissi dancer and high-fashion enthusiast, Meera blends deep-rooted cultural heritage with sharp, high-fashion styling. She represents the seamless dialogue between classical antiquity and modern avant-garde design.",
-        stats: {
-          reach: "1.2M",
-          engagement: "7.1%",
-          verified: true,
-          "Campaigns": "12 Global Brands",
-          "Dance Laurels": "National Sangeet Natak Awardee"
+        "name": "Sneha Kulkarni",
+        "role": "Model and beauty creator",
+        "city": "Pune",
+        "image": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format&fit=crop",
+        "bio": "Freelance model for catalogue and e-commerce shoots. Posts skincare routines for humid weather and honest reviews of products under ₹500.",
+        "stats": {
+          "reach": "38K",
+          "engagement": "5.2%",
+          "verified": false,
+          "Platforms": "Instagram",
+          "Languages": "Marathi, Hindi, English"
         },
-        quote: "True elegance is a resonance between our ancestral rhythms and the modern canvas.",
-        portfolio: [
-          "https://images.unsplash.com/photo-1581044777550-4cfa60707c03?q=80&w=500&auto=format&fit=crop",
-          "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=500&auto=format&fit=crop"
-        ]
-      }
-    ]
-  },
-  {
-    id: "super-hero",
-    title: "Super Hero Awards",
-    subtitle: "Visionary Social Impact & Leadership",
-    zOffset: -8,
-    primaryColor: "#A3B18A",
-    creators: [
-      {
-        name: "Dr. Ananya Iyer",
-        role: "Social Entrepreneur & Water Advocate",
-        city: "Bangalore",
-        image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=600&auto=format&fit=crop",
-        bio: "Pioneering eco-sensitive filtration hubs across 120 Indian villages, Dr. Iyer represents the powerful fusion of rigorous scientific inquiry, clean technology, and passionate grassroots leadership.",
-        stats: {
-          reach: "850K",
-          engagement: "9.4%",
-          verified: true,
-          "Villages Impacted": "120+ Communities",
-          "Patents Awarded": "2 Eco-Filtration"
-        },
-        quote: "Leadership is the quiet, continuous ripple that turns arid lands into fertile ground.",
-        portfolio: [
-          "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=500&auto=format&fit=crop",
-          "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=500&auto=format&fit=crop"
-        ]
-      },
-      {
-        name: "Rhea Kapur",
-        role: "Circular Couture Innovator",
-        city: "Chennai",
-        image: "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?q=80&w=600&auto=format&fit=crop",
-        bio: "A sustainable fashion pioneer, Rhea developed organic textile solutions using indigenous hemp, bamboo fibres, and lotus silk, bringing climate consciousness to the heart of luxury couture runways.",
-        stats: {
-          reach: "980K",
-          engagement: "8.2%",
-          verified: true,
-          "Circular Runway": "100% Fully Circular",
-          "Design Laurels": "Green Fashion Award 2025"
-        },
-        quote: "Couture doesn't need to leave a scar on the Earth to take your breath away.",
-        portfolio: [
+        "quote": "If I wouldn't buy it again, I say so.",
+        "portfolio": [
+          "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=500&auto=format&fit=crop",
           "https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=500&auto=format&fit=crop"
         ]
+      },
+      {
+        "name": "Arjun Malhotra",
+        "role": "Menswear creator",
+        "city": "New Delhi",
+        "image": "https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=600&auto=format&fit=crop",
+        "bio": "Menswear on a budget: wedding-season outfits, kurta and jacket pairings, and simple grooming. Most of his audience is 20 to 30 and based in North India.",
+        "stats": {
+          "reach": "110K",
+          "engagement": "3.4%",
+          "verified": false,
+          "Platforms": "Instagram, YouTube",
+          "Languages": "Hindi, English"
+        },
+        "quote": "",
+        "portfolio": [
+          "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=500&auto=format&fit=crop"
+        ]
       }
     ]
   },
   {
-    id: "verified-influencers",
-    title: "Verified VIP Influencers",
-    subtitle: "The Standard of Modern Digital Authority",
-    zOffset: -16,
-    primaryColor: "#C5C3C0",
-    creators: [
+    "id": "super-hero",
+    "title": "Social Impact",
+    "subtitle": "Creators working on social causes",
+    "zOffset": -8,
+    "primaryColor": "#A3B18A",
+    "creators": [
       {
-        name: "Kabir Mehta",
-        role: "Luxury Men's Tailoring Influencer",
-        city: "Mumbai",
-        image: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=600&auto=format&fit=crop",
-        bio: "Redefining contemporary dandyism in India, Kabir merges custom Indian bandhgalas with minimalist European street silhouettes. He is a primary advisor to luxury heritage houses seeking digital reach.",
-        stats: {
-          reach: "1.9M",
-          engagement: "5.4%",
-          verified: true,
-          "Brand Collaborations": "32 Global",
-          "Editorial Mentions": "GQ, Esquire India"
+        "name": "Kavya Reddy",
+        "role": "Civic and climate creator",
+        "city": "Hyderabad",
+        "image": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=600&auto=format&fit=crop",
+        "bio": "Short videos on city issues: lake clean-ups, waste segregation and how to file a civic complaint. Volunteers with a lake restoration group on weekends.",
+        "stats": {
+          "reach": "27K",
+          "engagement": "6.8%",
+          "verified": false,
+          "Platforms": "Instagram, X",
+          "Languages": "Telugu, English"
         },
-        quote: "Fashion is language; tailoring is the precise syntax that ensures your story is heard.",
-        portfolio: [
-          "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?q=80&w=500&auto=format&fit=crop",
-          "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=500&auto=crop"
-        ]
+        "quote": "Small fixes, filmed properly, get other people started.",
+        "portfolio": []
       },
       {
-        name: "Tara Nair",
-        role: "Creative Director & Fine Art Creator",
-        city: "Kochi",
-        image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=600&auto=format&fit=crop",
-        bio: "Tara creates deeply evocative visual campaigns for high-end boutique hotels and international luxury labels. Her lens fuses modern structural minimalism with Indian subcontinental color theories.",
-        stats: {
-          reach: "1.5M",
-          engagement: "6.9%",
-          verified: true,
-          "Featured Columns": "Vogue, Architectural Digest",
-          "Exhibitions Held": "Kochi-Muziris Biennale '25"
+        "name": "Pooja Thakur",
+        "role": "Menstrual health educator",
+        "city": "Dehradun",
+        "image": "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=600&auto=format&fit=crop",
+        "bio": "Gives talks on menstrual health in schools across Uttarakhand and answers the questions students ask most, in simple Hindi.",
+        "stats": {
+          "reach": "19K",
+          "engagement": "7.5%",
+          "verified": false,
+          "Platforms": "Instagram, YouTube",
+          "Languages": "Hindi"
         },
-        quote: "A frame is just a window, but light is the invitation that turns a space into a memory.",
-        portfolio: [
-          "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?q=80&w=500&auto=format&fit=crop"
-        ]
+        "quote": "",
+        "portfolio": []
+      }
+    ]
+  },
+  {
+    "id": "verified-influencers",
+    "title": "Lifestyle & Design",
+    "subtitle": "Lifestyle, design and culture creators",
+    "zOffset": -16,
+    "primaryColor": "#C5C3C0",
+    "creators": [
+      {
+        "name": "Nikhil Joshi",
+        "role": "Home and interiors creator",
+        "city": "Ahmedabad",
+        "image": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?q=80&w=600&auto=format&fit=crop",
+        "bio": "Rental-friendly makeovers of small flats: lighting, storage and plants, with a cost breakdown in every video.",
+        "stats": {
+          "reach": "51K",
+          "engagement": "4.9%",
+          "verified": false,
+          "Platforms": "Instagram, YouTube",
+          "Languages": "Gujarati, Hindi, English"
+        },
+        "quote": "",
+        "portfolio": []
+      },
+      {
+        "name": "Tanvi Rao",
+        "role": "Illustrator and journaling creator",
+        "city": "Bengaluru",
+        "image": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=600&auto=format&fit=crop",
+        "bio": "Posts process videos of her journals and hand lettering, and sells prints at weekend craft markets.",
+        "stats": {
+          "reach": "33K",
+          "engagement": "5.8%",
+          "verified": false,
+          "Platforms": "Instagram",
+          "Languages": "Kannada, English"
+        },
+        "quote": "",
+        "portfolio": []
+      },
+      {
+        "name": "Ritika Bose",
+        "role": "Books and lifestyle creator",
+        "city": "Kolkata",
+        "image": "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?q=80&w=600&auto=format&fit=crop",
+        "bio": "Book reviews, Kolkata café guides and slow weekend vlogs. Hosts a small monthly online book club.",
+        "stats": {
+          "reach": "22K",
+          "engagement": "6.1%",
+          "verified": false,
+          "Platforms": "Instagram, YouTube",
+          "Languages": "Bengali, English"
+        },
+        "quote": "",
+        "portfolio": []
+      }
+    ]
+  },
+  {
+    "id": "food-travel",
+    "title": "Food & Travel",
+    "subtitle": "Food, travel and regional culture creators",
+    "zOffset": -24,
+    "primaryColor": "#C9A27E",
+    "creators": [
+      {
+        "name": "Zoya Khan",
+        "role": "Food creator",
+        "city": "Lucknow",
+        "image": "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?q=80&w=600&auto=format&fit=crop",
+        "bio": "Home-style Awadhi recipes and food walks through old Lucknow. Every recipe video lists quantities for a family of four.",
+        "stats": {
+          "reach": "140K",
+          "engagement": "3.9%",
+          "verified": false,
+          "Platforms": "Instagram, YouTube",
+          "Languages": "Hindi, Urdu"
+        },
+        "quote": "",
+        "portfolio": []
+      },
+      {
+        "name": "Aditi Menon",
+        "role": "Travel creator",
+        "city": "Kochi",
+        "image": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=600&auto=format&fit=crop",
+        "bio": "Budget travel across South India by train and bus, with day-by-day itineraries and costs. Focuses on solo travel for women.",
+        "stats": {
+          "reach": "58K",
+          "engagement": "4.4%",
+          "verified": false,
+          "Platforms": "Instagram, YouTube",
+          "Languages": "Malayalam, English"
+        },
+        "quote": "Sleeper class, window seat, full itinerary in the caption.",
+        "portfolio": []
+      }
+    ]
+  },
+  {
+    "id": "tech-learning",
+    "title": "Tech & Learning",
+    "subtitle": "Tech, personal finance and education creators",
+    "zOffset": -32,
+    "primaryColor": "#9DB4C0",
+    "creators": [
+      {
+        "name": "Rohan Verma",
+        "role": "Tech reviewer",
+        "city": "Indore",
+        "image": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=600&auto=format&fit=crop",
+        "bio": "Reviews phones and gadgets under ₹30,000 and explains settings in Hindi. Uses each phone for at least two weeks before posting a review.",
+        "stats": {
+          "reach": "210K",
+          "engagement": "2.8%",
+          "verified": false,
+          "Platforms": "YouTube, Instagram",
+          "Languages": "Hindi"
+        },
+        "quote": "",
+        "portfolio": []
+      },
+      {
+        "name": "Neha Agarwal",
+        "role": "Personal finance educator",
+        "city": "Jaipur",
+        "image": "https://images.unsplash.com/photo-1581044777550-4cfa60707c03?q=80&w=600&auto=format&fit=crop",
+        "bio": "Explains budgeting, SIPs and tax filing for first-time earners. Her videos are general education, not investment advice.",
+        "stats": {
+          "reach": "74K",
+          "engagement": "5.1%",
+          "verified": false,
+          "Platforms": "Instagram, YouTube",
+          "Languages": "Hindi, English"
+        },
+        "quote": "",
+        "portfolio": []
       }
     ]
   }
@@ -358,7 +486,7 @@ const INITIAL_REGISTRATIONS: Registration[] = [
     bookingId: "FSIA-VIP-482012",
     timestamp: "2026-07-15",
     brandName: "Chopard Luxury India",
-    creatorName: "Aishwarya Sen",
+    creatorName: "Ishita Rawat",
     budget: "₹8,00,000",
     clientCity: "Mumbai",
     contactEmail: "marketing@chopard.in",
@@ -369,16 +497,16 @@ const INITIAL_REGISTRATIONS: Registration[] = [
   }
 ];
 
+// Default operator account. The seeded password is a legacy SHA-256 hash of
+// "admin123" so that both the Node and PHP backends can verify it; it is
+// transparently upgraded to a salted hash on first successful login, and the
+// admin panel nags until it is changed. Override with ADMIN_USERNAME / ADMIN_PASSWORD.
 const INITIAL_USERS: AdminUser[] = [
   {
-    username: "admin",
-    // Simple verification check helper: in actual production, bcrypt or pbkdf2 is used.
-    // For local ease of demonstration and robustness of zero-dependency code, we'll store simple salt/string or check directly.
-    passwordHash: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918" // sha256 for "admin123"
-  },
-  {
-    username: "pm37855@gmail.com",
-    passwordHash: crypto.createHash("sha256").update("Xbox@1122").digest("hex")
+    username: process.env.ADMIN_USERNAME || "admin",
+    passwordHash: process.env.ADMIN_PASSWORD
+      ? hashPassword(process.env.ADMIN_PASSWORD)
+      : crypto.createHash("sha256").update("admin123").digest("hex")
   }
 ];
 
@@ -388,14 +516,14 @@ const INITIAL_PLANS: MembershipPlan[] = [
     name: "Elite Star",
     badge: "Standard Entry",
     price: "₹0",
-    period: "Forever Free",
+    period: "Always Free",
     accent: "#8E8D8A",
     icon: "Star",
     perks: [
-      "Registry inclusion in the standard FSIA database",
+      "Registry inclusion in the standard creator database",
       "Basic creator profile page accessible to search queries",
       "Apply to general public brand campaigns",
-      "Standard digital copy of your FSIA credentials"
+      "Standard digital copy of your membership credentials"
     ]
   },
   {
@@ -411,7 +539,7 @@ const INITIAL_PLANS: MembershipPlan[] = [
       "Higher ranking in brand matching search inquiries",
       "Up to 3 automated direct matchmaking recommendations per month",
       "Invitations to state-level regional model meetups",
-      "Priority support from the FSIA helpdesk"
+      "Priority support from our helpdesk"
     ]
   },
   {
@@ -426,8 +554,8 @@ const INITIAL_PLANS: MembershipPlan[] = [
     perks: [
       "Verified Gold Star profile badge and priority listing",
       "1 Professional couture portfolio shoot per year at local hub",
-      "10 Guaranteed brand match pitches submitted by FSIA team",
-      "Spotlight feature in the weekly FSIA Brand Newsletter",
+      "10 Guaranteed brand match pitches submitted by our team",
+      "Spotlight feature in our weekly Brand Newsletter",
       "Dedicated access to our partner digital agency network",
       "15% Discount on runway pageant entry vouchers"
     ]
@@ -460,6 +588,122 @@ const INITIAL_LOGS: AdminLog[] = [
   }
 ];
 
+export const DEFAULT_SETTINGS: SystemSettings = {
+  websiteTitle: "Influencer Awards",
+  heroTitle: "INFLUENCER AWARDS",
+  heroSubtitle: "Reviewed profiles of Indian creators, Influencer Award applications and brand enquiries.",
+  ctaText: "BROWSE PROFILES",
+  footerText: "© 2026 Influencer Awards. All rights reserved.",
+  logoUrl: "",
+  primaryColor: "#E1C699",
+  secondaryColor: "#111111",
+  geminiApiKey: "",
+  aiSystemPrompt: "You are an elite, world-class haute couture brand director and luxury media strategist for Influencer Awards. Your job is to optimize a creator's rough pitch/concept for a luxury brand sponsorship campaign into a majestic, highly professional premium proposal.",
+  modelSelection: "gemini-2.5-flash",
+  temperature: 0.7,
+  topK: 40
+};
+
+// Fresh database contents, also exported to php-backend/api/seed.json for the PHP build
+export function createDefaultDb(): DatabaseSchema {
+  return JSON.parse(JSON.stringify({
+    creators: INITIAL_CREATORS,
+    campaigns: INITIAL_CAMPAIGNS,
+    registrations: INITIAL_REGISTRATIONS,
+    admin_users: INITIAL_USERS,
+    admin_logs: INITIAL_LOGS,
+    system_settings: { ...DEFAULT_SETTINGS, geminiApiKey: process.env.GEMINI_API_KEY || "" },
+    prompt_logs: [],
+    influencer_applications: [],
+    membership_plans: INITIAL_PLANS,
+    enquiries: [],
+    migrations: { debrand_v1: "seed", debrand_v2: "seed", debrand_v3: "seed", debrand_v4: "seed" }
+  }));
+}
+
+// ----------------------------------------------------
+// PASSWORD HASHING
+// ----------------------------------------------------
+export function hashPassword(password: string): string {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.scryptSync(password, salt, 64).toString("hex");
+  return `scrypt$${salt}$${hash}`;
+}
+
+// Supports salted scrypt hashes and legacy unsalted SHA-256 hex digests
+export function verifyPassword(password: string, stored: string): boolean {
+  if (stored.startsWith("scrypt$")) {
+    const [, salt, hash] = stored.split("$");
+    const candidate = crypto.scryptSync(password, salt, 64);
+    const expected = Buffer.from(hash, "hex");
+    return expected.length === candidate.length && crypto.timingSafeEqual(candidate, expected);
+  }
+  const legacy = crypto.createHash("sha256").update(password).digest();
+  const expected = Buffer.from(stored, "hex");
+  return expected.length === legacy.length && crypto.timingSafeEqual(legacy, expected);
+}
+
+export function needsRehash(stored: string): boolean {
+  return !stored.startsWith("scrypt$");
+}
+
+// ----------------------------------------------------
+// BRAND NAME — the public brand is "Influencer Awards" and the award is the "Influencer Award"
+// (PLACEHOLDERS until Boss confirms; keep in sync with src/content/brand.ts).
+// The word "Forever" must not appear in anything visitors see (Boss, 2026-10-26), and the award
+// is separate from FSIA (Boss, 2026-10-26), so stored text from every earlier naming is rewritten
+// in every public API response. Keep in sync with debrand_text() in php-backend/api/lib/helpers.php
+// ----------------------------------------------------
+const PUBLIC_BRAND = "Influencer Awards";
+const PUBLIC_AWARD = "Influencer Award";
+// A null replacement keeps the first capture group. An all-caps match gets an all-caps
+// replacement unless the rule is marked "asIs" (the acronym FSIA is always upper case).
+const DEBRAND_RULES: [RegExp, string | null, "asIs"?][] = [
+  // Only one award exists (Boss, 2026-10-27): older section names and titles that read as other
+  // awards or as a verification are shown under neutral niche names. The stored data is unchanged.
+  [/\b(?:Winner|(?:1st|2nd|3rd) Runner[- ]Up|Runner[- ]Up),?\s+Miss India \d{4}\b/gi, "Fashion creator"],
+  [/\bMiss India \d{4}\b/gi, "Fashion & Modelling"],
+  [/\bSuper Hero Awards?\b/gi, "Social Impact"],
+  [/\bVerified VIP Influencers\b/gi, "Lifestyle & Design"],
+  [/FSIA\s*[—-]\s*Forever Star India Awards/gi, PUBLIC_BRAND],
+  [/Forever Star India(?: Awards| Association)?(?: \(FSIA\))?/gi, PUBLIC_BRAND],
+  [/\b(?:Forever|FSIA) Influencer Awards\b/gi, PUBLIC_BRAND],
+  [/\b(?:Forever|FSIA) Influencer Award\b/gi, PUBLIC_AWARD],
+  [/\b(?:Forever|FSIA) Influencer\b/gi, PUBLIC_BRAND],
+  [/\bForever Free\b/gi, "Always Free"],
+  // Lower-case prose ("stay forever young") keeps its meaning with "always"
+  [/\bforever\b/g, "always"],
+  // Any other spelling is the old brand prefix or suffix: drop it
+  [/\bforever\s+/gi, ""],
+  [/\s*\bforever\b/gi, ""],
+  [/forever/gi, ""],
+  // Other mentions of FSIA as a name ("the FSIA team"); IDs such as FSIA-24527 and domains stay
+  [/\bFSIA\b(?![-.]\w)/g, PUBLIC_BRAND, "asIs"],
+  [/\b(Influencer Awards)(?: Influencer)+(?: Awards?)?\b/gi, null]
+];
+
+export function debrandText(text: string): string {
+  return DEBRAND_RULES.reduce(
+    (out, [pattern, replacement, asIs]) =>
+      out.replace(pattern, (m: string, group?: unknown) => {
+        const value = replacement ?? String(group);
+        return !asIs && m === m.toUpperCase() && /[A-Z]/.test(m) ? value.toUpperCase() : value;
+      }),
+    text
+  );
+}
+
+export function debrandValue<T>(value: T): T {
+  if (typeof value === "string") {
+    return (/^(https?:|data:)/i.test(value) ? value : debrandText(value)) as T;
+  }
+  if (Array.isArray(value)) return value.map(debrandValue) as T;
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, debrandValue(v)])) as T;
+  }
+  return value;
+}
+
 // Initialize and Read Database
 export function getDb(): DatabaseSchema {
   const dir = path.dirname(DB_PATH);
@@ -467,34 +711,8 @@ export function getDb(): DatabaseSchema {
     fs.mkdirSync(dir, { recursive: true });
   }
 
-  const defaultSettings: SystemSettings = {
-    websiteTitle: "FSIA — Forever Star India Awards",
-    heroTitle: "FOREVER STAR INDIA",
-    heroSubtitle: "THE EXQUISITE HALL OF LUXURY INFLUENCING & PRESTIGE COUTURE",
-    ctaText: "SECURE VIP RUNWAY ACCESS",
-    footerText: "© 2026 FOREVER STAR INDIA AWARDS (FSIA). ALL RIGHTS RESERVED.",
-    logoUrl: "",
-    primaryColor: "#E1C699",
-    secondaryColor: "#111111",
-    geminiApiKey: process.env.GEMINI_API_KEY || "",
-    aiSystemPrompt: "You are an elite, world-class haute couture brand director and luxury media strategist for FSIA. Your job is to optimize a creator's rough pitch/concept for a luxury brand sponsorship campaign into a majestic, highly professional premium proposal.",
-    modelSelection: "gemini-3.5-flash",
-    temperature: 0.7,
-    topK: 40
-  };
-
   if (!fs.existsSync(DB_PATH)) {
-    const defaultData: DatabaseSchema = {
-      creators: INITIAL_CREATORS,
-      campaigns: INITIAL_CAMPAIGNS,
-      registrations: INITIAL_REGISTRATIONS,
-      admin_users: INITIAL_USERS,
-      admin_logs: INITIAL_LOGS,
-      system_settings: defaultSettings,
-      prompt_logs: [],
-      influencer_applications: [],
-      membership_plans: INITIAL_PLANS
-    };
+    const defaultData = createDefaultDb();
     fs.writeFileSync(DB_PATH, JSON.stringify(defaultData, null, 2), "utf8");
     return defaultData;
   }
@@ -503,7 +721,7 @@ export function getDb(): DatabaseSchema {
     const raw = fs.readFileSync(DB_PATH, "utf8");
     const parsed = JSON.parse(raw) as DatabaseSchema;
     if (!parsed.system_settings) {
-      parsed.system_settings = defaultSettings;
+      parsed.system_settings = { ...DEFAULT_SETTINGS };
     }
     if (!parsed.prompt_logs) {
       parsed.prompt_logs = [];
@@ -514,40 +732,82 @@ export function getDb(): DatabaseSchema {
     if (!parsed.membership_plans) {
       parsed.membership_plans = INITIAL_PLANS;
     }
-    if (!parsed.admin_users) {
+    if (!parsed.admin_users || parsed.admin_users.length === 0) {
       parsed.admin_users = INITIAL_USERS;
     }
-    const hasTargetUser = parsed.admin_users.some((u) => u.username === "pm37855@gmail.com");
-    if (!hasTargetUser) {
-      parsed.admin_users.push({
-        username: "pm37855@gmail.com",
-        passwordHash: crypto.createHash("sha256").update("Xbox@1122").digest("hex")
-      });
+    if (!parsed.admin_logs) {
+      parsed.admin_logs = [];
     }
-    fs.writeFileSync(DB_PATH, JSON.stringify(parsed, null, 2), "utf8");
+    if (!parsed.enquiries) {
+      parsed.enquiries = [];
+    }
+    if (!parsed.migrations?.debrand_v1) {
+      // Settings still on the old default copy get the new defaults; customised text is only debranded
+      const oldDefaults: Partial<Record<keyof SystemSettings, string>> = {
+        websiteTitle: "FSIA — Forever Star India Awards",
+        heroTitle: "FOREVER STAR INDIA",
+        heroSubtitle: "THE EXQUISITE HALL OF LUXURY INFLUENCING & PRESTIGE COUTURE",
+        ctaText: "SECURE VIP RUNWAY ACCESS",
+        footerText: "© 2026 FOREVER STAR INDIA AWARDS (FSIA). ALL RIGHTS RESERVED."
+      };
+      for (const [field, before] of Object.entries(oldDefaults) as [keyof SystemSettings, string][]) {
+        if (parsed.system_settings[field] === before) {
+          (parsed.system_settings as any)[field] = DEFAULT_SETTINGS[field];
+        }
+      }
+      parsed.creators = debrandValue(parsed.creators);
+      parsed.campaigns = debrandValue(parsed.campaigns);
+      parsed.membership_plans = debrandValue(parsed.membership_plans);
+      parsed.system_settings = debrandValue(parsed.system_settings);
+      parsed.migrations = { ...parsed.migrations, debrand_v1: new Date().toISOString() };
+      saveDb(parsed);
+    }
+    if (!parsed.migrations?.debrand_v2) {
+      // v2 rules are case-insensitive (v1 only matched capitalised spellings)
+      parsed.creators = debrandValue(parsed.creators);
+      parsed.campaigns = debrandValue(parsed.campaigns);
+      parsed.membership_plans = debrandValue(parsed.membership_plans);
+      parsed.system_settings = debrandValue(parsed.system_settings);
+      parsed.migrations = { ...parsed.migrations, debrand_v2: new Date().toISOString() };
+      saveDb(parsed);
+    }
+    if (!parsed.migrations?.debrand_v3) {
+      // v3: "Forever" is removed again and the site is "FSIA Influencer"
+      parsed.creators = debrandValue(parsed.creators);
+      parsed.campaigns = debrandValue(parsed.campaigns);
+      parsed.membership_plans = debrandValue(parsed.membership_plans);
+      parsed.system_settings = debrandValue(parsed.system_settings);
+      parsed.migrations = { ...parsed.migrations, debrand_v3: new Date().toISOString() };
+      saveDb(parsed);
+    }
+    if (!parsed.migrations?.debrand_v4) {
+      // v4: the award is separate from FSIA, so stored "FSIA" names are rewritten too
+      parsed.creators = debrandValue(parsed.creators);
+      parsed.campaigns = debrandValue(parsed.campaigns);
+      parsed.membership_plans = debrandValue(parsed.membership_plans);
+      parsed.system_settings = debrandValue(parsed.system_settings);
+      parsed.migrations = { ...parsed.migrations, debrand_v4: new Date().toISOString() };
+      saveDb(parsed);
+    }
     return parsed;
   } catch (error) {
-    console.error("Error reading JSON Database. Re-seeding defaults.", error);
-    const defaultData: DatabaseSchema = {
-      creators: INITIAL_CREATORS,
-      campaigns: INITIAL_CAMPAIGNS,
-      registrations: INITIAL_REGISTRATIONS,
-      admin_users: INITIAL_USERS,
-      admin_logs: INITIAL_LOGS,
-      system_settings: defaultSettings,
-      prompt_logs: [],
-      influencer_applications: [],
-      membership_plans: INITIAL_PLANS
-    };
+    // Never silently wipe a corrupt database: keep a copy for manual recovery
+    console.error("Error reading JSON Database. Backing up and re-seeding defaults.", error);
+    try {
+      fs.copyFileSync(DB_PATH, DB_PATH + ".corrupt-" + Date.now());
+    } catch {}
+    const defaultData = createDefaultDb();
     fs.writeFileSync(DB_PATH, JSON.stringify(defaultData, null, 2), "utf8");
     return defaultData;
   }
 }
 
-// Write Database
+// Write Database (atomic: write temp file then rename)
 export function saveDb(data: DatabaseSchema) {
   try {
-    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), "utf8");
+    const tmp = DB_PATH + ".tmp";
+    fs.writeFileSync(tmp, JSON.stringify(data, null, 2), "utf8");
+    fs.renameSync(tmp, DB_PATH);
   } catch (error) {
     console.error("Error writing to JSON Database", error);
   }
@@ -562,9 +822,9 @@ export function logAction(action: string, ip?: string) {
     action,
     ip
   });
-  // Keep logs to a clean max limit of 100 entries
-  if (db.admin_logs.length > 100) {
-    db.admin_logs = db.admin_logs.slice(0, 100);
+  // Keep a bounded audit trail
+  if (db.admin_logs.length > 500) {
+    db.admin_logs = db.admin_logs.slice(0, 500);
   }
   saveDb(db);
 }

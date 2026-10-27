@@ -3,9 +3,13 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   Lock, User, LogIn, LayoutDashboard, Sparkles, Users, Briefcase, FileText, 
   Trash2, Plus, Edit2, Check, RefreshCw, X, AlertTriangle, Shield, CheckCircle2,
-  TrendingUp, Phone, Mail, MapPin, Eye, FileSpreadsheet, Activity, UserPlus, Layout
+  TrendingUp, Phone, Mail, MapPin, Eye, FileSpreadsheet, Activity, UserPlus, Layout,
+  KeyRound, Search, Download, Inbox
 } from "lucide-react";
 import AdminContentManager from "./AdminContentManager";
+import AdminSecurityPanel from "./AdminSecurityPanel";
+import AdminEnquiriesPanel from "./AdminEnquiriesPanel";
+import { ADMIN_TOKEN_KEY, ADMIN_UNAUTHORIZED_EVENT, downloadCsv } from "../lib/adminSession";
 import { toast } from "react-hot-toast";
 
 interface Creator {
@@ -60,7 +64,18 @@ interface Registration {
   scope?: string;
   duration?: string;
   verificationHash: string;
+  status?: LeadStatus;
+  notes?: string;
 }
+
+type LeadStatus = "new" | "contacted" | "confirmed" | "closed";
+
+const LEAD_STATUSES: { id: LeadStatus; label: string; className: string }[] = [
+  { id: "new", label: "New", className: "bg-blue-50 text-blue-700 border-blue-100" },
+  { id: "contacted", label: "Contacted", className: "bg-amber-50 text-amber-700 border-amber-100" },
+  { id: "confirmed", label: "Confirmed", className: "bg-emerald-50 text-emerald-700 border-emerald-100" },
+  { id: "closed", label: "Closed", className: "bg-stone-100 text-stone-600 border-stone-200" }
+];
 
 interface InfluencerApplication {
   id: string;
@@ -96,6 +111,14 @@ export default function AdminTab() {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState("");
+  const [mustChangePassword, setMustChangePassword] = useState(false);
+
+  // Inbox filters
+  const [regQuery, setRegQuery] = useState("");
+  const [regStatusFilter, setRegStatusFilter] = useState<"all" | LeadStatus>("all");
+  const [appQuery, setAppQuery] = useState("");
+  const [appStatusFilter, setAppStatusFilter] = useState<"all" | InfluencerApplication["status"]>("all");
 
   // Active sub-section within Admin Workspace (extended with dynamic settings modules)
   const [adminActiveSubTab, setAdminActiveSubTab] = useState<string>("dashboard");
@@ -103,17 +126,21 @@ export default function AdminTab() {
   // Admin Workspace Data
   const [stats, setStats] = useState<any | null>(null);
   const [sections, setSections] = useState<GallerySection[]>([]);
+  // Runway section chosen for each pending applicant (the form collects a content category)
+  const [approveSection, setApproveSection] = useState<Record<string, string>>({});
+  const defaultSectionFor = (app: { id: string; category: string }) =>
+    approveSection[app.id] ?? (sections.some((s) => s.id === app.category) ? app.category : sections[0]?.id || "");
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [influencerApplications, setInfluencerApplications] = useState<InfluencerApplication[]>([]);
 
   // Enterprise Dynamic Settings Configuration State
   const [settings, setSettings] = useState({
-    websiteTitle: "FSIA — Forever Star India Awards",
-    heroTitle: "FOREVER STAR INDIA",
+    websiteTitle: "Influencer Awards",
+    heroTitle: "INFLUENCER AWARDS",
     heroSubtitle: "THE EXQUISITE HALL OF LUXURY INFLUENCING & PRESTIGE COUTURE",
     ctaText: "SECURE VIP RUNWAY ACCESS",
-    footerText: "© 2026 FOREVER STAR INDIA AWARDS (FSIA). ALL RIGHTS RESERVED.",
+    footerText: "© 2026 Influencer Awards. All rights reserved.",
     logoUrl: "",
     primaryColor: "#E1C699",
     secondaryColor: "#111111",
@@ -212,7 +239,7 @@ export default function AdminTab() {
   const handleDeleteCategory = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (!window.confirm("Are you sure you want to delete this item? This action cannot be undone.")) return;
-    setGallerySections(prev => prev.filter(s => s.id !== id));
+    setSections(prev => prev.filter(s => s.id !== id));
     try {
       const res = await fetch(`/api/sections/${id}`, {
         method: "DELETE",
@@ -234,14 +261,36 @@ export default function AdminTab() {
     }
   };
 
-  // Check login on load
+  // Restore and validate a saved session on load
   useEffect(() => {
-    const savedToken = localStorage.getItem("fsia_admin_token");
-    if (savedToken) {
-      setToken(savedToken);
-      setIsLoggedIn(true);
-      fetchAdminData(savedToken);
-    }
+    const savedToken = localStorage.getItem(ADMIN_TOKEN_KEY);
+    if (!savedToken) return;
+    fetch("/api/auth/me", { headers: { "Authorization": `Bearer ${savedToken}` } })
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((data) => {
+        setToken(savedToken);
+        setCurrentUser(data.username);
+        setMustChangePassword(!!data.mustChangePassword);
+        setIsLoggedIn(true);
+        // The server allows nothing else until the default password is changed
+        if (data.mustChangePassword) setAdminActiveSubTab("security");
+        else fetchAdminData(savedToken);
+      })
+      .catch(() => localStorage.removeItem(ADMIN_TOKEN_KEY));
+  }, []);
+
+  // Any 401 from an admin call means the session expired or was revoked
+  useEffect(() => {
+    const onUnauthorized = () => {
+      if (!localStorage.getItem(ADMIN_TOKEN_KEY)) return;
+      localStorage.removeItem(ADMIN_TOKEN_KEY);
+      setToken("");
+      setIsLoggedIn(false);
+      setStats(null);
+      toast.error("Your admin session has expired. Please sign in again.");
+    };
+    window.addEventListener(ADMIN_UNAUTHORIZED_EVENT, onUnauthorized);
+    return () => window.removeEventListener(ADMIN_UNAUTHORIZED_EVENT, onUnauthorized);
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -261,21 +310,27 @@ export default function AdminTab() {
       const data = await res.json();
       if (res.ok && data.success) {
         setToken(data.token);
-        localStorage.setItem("fsia_admin_token", data.token);
+        localStorage.setItem(ADMIN_TOKEN_KEY, data.token);
+        setCurrentUser(data.username);
+        setMustChangePassword(!!data.mustChangePassword);
+        setPassword("");
         setIsLoggedIn(true);
-        fetchAdminData(data.token);
+        // The server allows nothing else until the default password is changed
+        if (data.mustChangePassword) setAdminActiveSubTab("security");
+        else fetchAdminData(data.token);
       } else {
         setLoginError(data.error || "Invalid administrative credentials.");
       }
     } catch (err) {
-      setLoginError("Failed to communicate with FSIA Auth Service.");
+      setLoginError("Could not reach the server (the connection was dropped). Please wait a few seconds and try again. If this keeps happening, ask your hosting provider to check its firewall for dropped connections.");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("fsia_admin_token");
+    fetch("/api/auth/logout", { method: "POST", headers: { "Authorization": `Bearer ${token}` } }).catch(() => {});
+    localStorage.removeItem(ADMIN_TOKEN_KEY);
     setToken("");
     setIsLoggedIn(false);
     setStats(null);
@@ -320,7 +375,7 @@ export default function AdminTab() {
       }
 
       // 5. Fetch system settings
-      const settingsRes = await fetch("/api/settings");
+      const settingsRes = await fetch("/api/admin/settings", { headers });
       if (settingsRes.ok) {
         const settingsData = await settingsRes.json();
         setSettings(settingsData);
@@ -337,22 +392,27 @@ export default function AdminTab() {
     }
   };
 
-  const approveInfluencerApplication = async (id: string) => {
+  const approveInfluencerApplication = async (id: string, sectionId: string) => {
     try {
       const res = await fetch(`/api/influencer-applications/${id}/approve`, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${token}`
-        }
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ sectionId })
       });
       if (res.ok) {
+        const sectionTitle = sections.find((s) => s.id === sectionId)?.title || "the runway";
+        toast.success(`Applicant approved and added to ${sectionTitle}.`);
+        window.dispatchEvent(new Event("sections-updated"));
         fetchAdminData(token);
       } else {
         const err = await res.json();
-        alert(err.error || "Approval failed.");
+        toast.error(err.error || "Approval failed.");
       }
     } catch (e) {
-      alert("Failed to communicate with administration service.");
+      toast.error("Failed to communicate with administration service.");
     }
   };
 
@@ -368,10 +428,10 @@ export default function AdminTab() {
         fetchAdminData(token);
       } else {
         const err = await res.json();
-        alert(err.error || "Decline failed.");
+        toast.error(err.error || "Decline failed.");
       }
     } catch (e) {
-      alert("Failed to communicate with administration service.");
+      toast.error("Failed to communicate with administration service.");
     }
   };
 
@@ -403,6 +463,71 @@ export default function AdminTab() {
       setIsSavingSettings(false);
     }
   };
+
+  // ----------------------------------------------------
+  // LEADS & APPLICANTS INBOX METHODS
+  // ----------------------------------------------------
+  const updateRegistration = async (id: string, patch: { status?: LeadStatus; notes?: string }) => {
+    setRegistrations((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+    try {
+      const res = await fetch(`/api/registrations/${encodeURIComponent(id)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify(patch)
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error || "Failed to update lead.");
+        fetchAdminData(token);
+      }
+    } catch {
+      toast.error("Failed to update lead.");
+      fetchAdminData(token);
+    }
+  };
+
+  const deleteRegistration = async (id: string) => {
+    if (!window.confirm("Delete this brand lead permanently?")) return;
+    const res = await fetch(`/api/registrations/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (res.ok) {
+      toast.success("Lead deleted.");
+      setRegistrations((prev) => prev.filter((r) => r.id !== id));
+    } else {
+      toast.error("Failed to delete lead.");
+    }
+  };
+
+  const deleteInfluencerApplication = async (id: string) => {
+    if (!window.confirm("Delete this application permanently? Approved creators stay on the roster.")) return;
+    const res = await fetch(`/api/influencer-applications/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (res.ok) {
+      toast.success("Application deleted.");
+      setInfluencerApplications((prev) => prev.filter((a) => a.id !== id));
+    } else {
+      toast.error("Failed to delete application.");
+    }
+  };
+
+  const matches = (query: string, ...fields: (string | undefined)[]) =>
+    !query.trim() || fields.some((f) => (f || "").toLowerCase().includes(query.trim().toLowerCase()));
+
+  const filteredRegistrations = registrations.filter(
+    (r) =>
+      (regStatusFilter === "all" || (r.status || "new") === regStatusFilter) &&
+      matches(regQuery, r.brandName, r.creatorName, r.contactEmail, r.contactPhone, r.bookingId, r.clientCity)
+  );
+
+  const filteredApplications = influencerApplications.filter(
+    (a) =>
+      (appStatusFilter === "all" || a.status === appStatusFilter) &&
+      matches(appQuery, a.name, a.email, a.phone, a.city, a.category, a.role)
+  );
 
   // ----------------------------------------------------
   // CREATORS CRUD METHODS
@@ -525,7 +650,7 @@ export default function AdminTab() {
   const deleteCreator = async (e: React.MouseEvent, sectionId: string, name: string) => {
     e.stopPropagation();
     if (!window.confirm("Are you sure you want to delete this item? This action cannot be undone.")) return;
-    setGallerySections(prev => 
+    setSections(prev => 
       prev.map(section => {
         if (section.id === sectionId) {
           return {
@@ -691,8 +816,8 @@ export default function AdminTab() {
                 <Shield className="w-8 h-8" />
               </div>
               <div className="space-y-1">
-                <span className="font-sans text-[10px] tracking-[0.3em] text-[#8E8D8A] uppercase font-bold">
-                  FSIA Secure Portal
+                <span className="font-sans text-[11px] tracking-[0.3em] text-[#8E8D8A] uppercase font-bold">
+                  Admin portal
                 </span>
                 <h2 className="font-serif-display text-2xl font-bold text-[#111]">
                   VIP Administration
@@ -712,7 +837,7 @@ export default function AdminTab() {
               )}
 
               <div className="space-y-1.5">
-                <label className="block text-[9px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                <label className="block text-[11px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
                   Operator Username
                 </label>
                 <div className="relative">
@@ -729,7 +854,7 @@ export default function AdminTab() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-[9px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
+                <label className="block text-[11px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
                   Administrative Password
                 </label>
                 <div className="relative">
@@ -761,9 +886,6 @@ export default function AdminTab() {
               </button>
             </form>
 
-            <div className="pt-2 text-[10px] font-mono text-[#888]">
-              Credentials Helper: Use <strong className="text-black">admin</strong> & <strong className="text-black">admin123</strong>
-            </div>
           </motion.div>
         </div>
       ) : (
@@ -775,10 +897,10 @@ export default function AdminTab() {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/70 backdrop-blur-md p-6 rounded-2xl border border-black/5 shadow-xs">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="bg-emerald-50 text-emerald-700 text-[9px] font-sans font-bold px-2 py-0.5 rounded-md border border-emerald-100 flex items-center gap-1">
+                <span className="bg-emerald-50 text-emerald-700 text-[11px] font-sans font-bold px-2 py-0.5 rounded-md border border-emerald-100 flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3 text-emerald-600" /> ACTIVE CONTEXT
                 </span>
-                <span className="font-mono text-[10px] text-[#888]">TOKEN VERIFIED</span>
+                <span className="font-mono text-[11px] text-[#888]">SIGNED IN AS {currentUser.toUpperCase()}</span>
               </div>
               <h2 className="font-serif-display text-2xl font-bold text-[#111] tracking-tight">
                 VIP Editorial Workspace
@@ -803,12 +925,30 @@ export default function AdminTab() {
               </button>
               <button
                 onClick={handleLogout}
-                className="bg-red-50 hover:bg-red-100 text-red-700 font-sans text-[10px] tracking-[0.1em] font-bold px-4 py-2.5 rounded-lg transition-colors cursor-pointer border border-red-100"
+                className="bg-red-50 hover:bg-red-100 text-red-700 font-sans text-[11px] tracking-[0.1em] font-bold px-4 py-2.5 rounded-lg transition-colors cursor-pointer border border-red-100"
               >
                 SECURE SIGN OUT
               </button>
             </div>
           </div>
+
+          {mustChangePassword && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+              <div className="flex items-start gap-2.5 text-amber-800">
+                <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+                <p className="text-xs font-sans leading-relaxed">
+                  <strong>You are using the default password.</strong> Anyone who knows it can control this website,
+                  so the admin panel stays locked until you change it below.
+                </p>
+              </div>
+              <button
+                onClick={() => setAdminActiveSubTab("security")}
+                className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold tracking-widest uppercase px-4 py-2 rounded-lg cursor-pointer"
+              >
+                Change password
+              </button>
+            </div>
+          )}
 
           {/* Tab Navigation */}
           <div className="flex flex-wrap md:flex-nowrap items-center gap-1.5 md:gap-2 border-b border-[#E1C699]/30 pb-1 w-full max-w-full overflow-x-auto scrollbar-thin">
@@ -820,16 +960,20 @@ export default function AdminTab() {
               { id: "prompt_logs", label: "Prompt Logs", icon: Activity },
               { id: "creators", label: "Creator Roster", icon: Users },
               { id: "campaigns", label: "Brand Bookings", icon: Briefcase },
-              { id: "registrations", label: "VIP Applications", icon: FileText },
-              { id: "influencer_applications", label: "Creator Applicants", icon: UserPlus }
-            ].map((tab) => {
+              { id: "registrations", label: "VIP Applications", icon: FileText, badge: registrations.filter((r) => (r.status || "new") === "new").length },
+              { id: "influencer_applications", label: "Creator Applicants", icon: UserPlus, badge: influencerApplications.filter((a) => a.status === "pending").length },
+              { id: "enquiries", label: "Enquiries", icon: Inbox, badge: stats?.newEnquiriesCount },
+              { id: "security", label: "Security & Data", icon: KeyRound }
+            ].map((tab: { id: string; label: string; icon: typeof KeyRound; badge?: number }) => {
               const Icon = tab.icon;
               const active = adminActiveSubTab === tab.id;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setAdminActiveSubTab(tab.id)}
-                  className={`px-2.5 md:px-4 py-2 md:py-2.5 rounded-t-xl text-[9px] md:text-xs font-sans font-bold tracking-widest uppercase transition-all flex items-center gap-1.5 md:gap-2 whitespace-nowrap cursor-pointer ${
+                  disabled={mustChangePassword && tab.id !== "security"}
+                  title={mustChangePassword && tab.id !== "security" ? "Change the default password first" : undefined}
+                  className={`px-2.5 md:px-4 py-2 md:py-2.5 rounded-t-xl text-[11px] md:text-xs font-sans font-bold tracking-widest uppercase transition-all flex items-center gap-1.5 md:gap-2 whitespace-nowrap cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                     active 
                       ? "bg-white border-t-2 border-champagne text-[#111] shadow-xs" 
                       : "text-[#666] hover:text-black hover:bg-black/[0.02]"
@@ -837,6 +981,11 @@ export default function AdminTab() {
                 >
                   <Icon className={`w-3.5 h-3.5 md:w-4 md:h-4 ${active ? "text-champagne" : "text-[#888]"}`} />
                   {tab.label}
+                  {!!tab.badge && (
+                    <span className="ml-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[11px] leading-[18px] text-center">
+                      {tab.badge}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -858,34 +1007,55 @@ export default function AdminTab() {
                     <div className="bg-white/60 p-5 rounded-2xl border border-black/5 shadow-xs space-y-1">
                       <Users className="w-5 h-5 text-champagne" />
                       <div className="text-2xl font-serif-display font-bold text-[#111]">{stats.creatorsCount}</div>
-                      <div className="text-[10px] font-sans tracking-wider text-[#666] uppercase font-semibold">Runway Models</div>
+                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">Runway Models</div>
                     </div>
                     <div className="bg-white/60 p-5 rounded-2xl border border-black/5 shadow-xs space-y-1">
                       <Briefcase className="w-5 h-5 text-champagne" />
                       <div className="text-2xl font-serif-display font-bold text-[#111]">{stats.campaignsCount}</div>
-                      <div className="text-[10px] font-sans tracking-wider text-[#666] uppercase font-semibold">Brand Campaigns</div>
+                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">Brand Campaigns</div>
                     </div>
                     <div className="bg-white/60 p-5 rounded-2xl border border-black/5 shadow-xs space-y-1">
                       <FileText className="w-5 h-5 text-champagne" />
                       <div className="text-2xl font-serif-display font-bold text-[#111]">{stats.applicationsCount}</div>
-                      <div className="text-[10px] font-sans tracking-wider text-[#666] uppercase font-semibold">Escrow Applications</div>
+                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">Escrow Applications</div>
                     </div>
                     <div className="bg-white/60 p-5 rounded-2xl border border-black/5 shadow-xs space-y-1">
                       <TrendingUp className="w-5 h-5 text-emerald-600" />
                       <div className="text-2xl font-serif-display font-bold text-[#111]">{stats.estimatedRosterReach}</div>
-                      <div className="text-[10px] font-sans tracking-wider text-[#666] uppercase font-semibold">Total Audited Reach</div>
+                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">Total Audited Reach</div>
                     </div>
                     {/* Prompt logs count card */}
                     <div className="bg-white/60 p-5 rounded-2xl border border-black/5 shadow-xs space-y-1">
                       <Activity className="w-5 h-5 text-blue-500" />
                       <div className="text-2xl font-serif-display font-bold text-[#111]">{stats.totalPromptsCount !== undefined ? stats.totalPromptsCount : 0}</div>
-                      <div className="text-[10px] font-sans tracking-wider text-[#666] uppercase font-semibold">Total Prompt Runs</div>
+                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">Total Prompt Runs</div>
                     </div>
                     {/* API Success rate card */}
                     <div className="bg-white/60 p-5 rounded-2xl border border-black/5 shadow-xs space-y-1">
                       <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                       <div className="text-2xl font-serif-display font-bold text-[#111]">{stats.apiSuccessRate !== undefined ? stats.apiSuccessRate : 100}%</div>
-                      <div className="text-[10px] font-sans tracking-wider text-[#666] uppercase font-semibold">API Success Rate</div>
+                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">API Success Rate</div>
+                    </div>
+                    <button
+                      onClick={() => setAdminActiveSubTab("registrations")}
+                      className="text-left bg-blue-50/60 p-5 rounded-2xl border border-blue-100 shadow-xs space-y-1 hover:bg-blue-50 cursor-pointer transition-colors"
+                    >
+                      <Mail className="w-5 h-5 text-blue-600" />
+                      <div className="text-2xl font-serif-display font-bold text-[#111]">{registrations.filter((r) => (r.status || "new") === "new").length}</div>
+                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">New Brand Leads</div>
+                    </button>
+                    <button
+                      onClick={() => setAdminActiveSubTab("influencer_applications")}
+                      className="text-left bg-amber-50/60 p-5 rounded-2xl border border-amber-100 shadow-xs space-y-1 hover:bg-amber-50 cursor-pointer transition-colors"
+                    >
+                      <UserPlus className="w-5 h-5 text-amber-600" />
+                      <div className="text-2xl font-serif-display font-bold text-[#111]">{influencerApplications.filter((a) => a.status === "pending").length}</div>
+                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">Applicants Awaiting Review</div>
+                    </button>
+                    <div className="bg-white/60 p-5 rounded-2xl border border-black/5 shadow-xs space-y-1">
+                      <Layout className="w-5 h-5 text-champagne" />
+                      <div className="text-2xl font-serif-display font-bold text-[#111]">{stats.categoriesCount ?? 0}</div>
+                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">Runway Categories</div>
                     </div>
                   </div>
 
@@ -893,11 +1063,13 @@ export default function AdminTab() {
                   <div className="p-6 bg-champagne/10 border border-champagne/20 rounded-2xl space-y-3">
                     <div className="flex items-center gap-2 text-champagne font-bold font-sans text-xs uppercase tracking-widest">
                       <Shield className="w-4 h-4 text-champagne" />
-                      PHP BACKEND CONVERSION FULLY ARCHITECTED
+                      Go-live checklist
                     </div>
-                    <p className="text-xs text-[#444] font-serif-text leading-relaxed">
-                      This active full-stack panel communicates with local JSON storage in memory. The enterprise **PHP MVC blueprints (with raw PDO connections, prepared statements, MySQL relational schemas, and cURL-authenticated Gemini API request routing)** are completely compiled and exportable inside the <code>/php-mvc-blueprint/</code> directory of your codebase.
-                    </p>
+                    <ul className="text-xs text-[#444] font-serif-text leading-relaxed list-disc pl-5 space-y-1">
+                      <li>Change the default admin password and add named accounts for each team member (Security &amp; Data tab).</li>
+                      <li>Download a backup before every redeploy — uploading a new build never touches your saved data.</li>
+                      <li>Review new brand leads and creator applicants daily from the badges above.</li>
+                    </ul>
                   </div>
                 </div>
 
@@ -913,7 +1085,7 @@ export default function AdminTab() {
                   <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
                     {stats.logs.map((log) => (
                       <div key={log.id} className="text-[11px] border-b border-black/[0.02] pb-2 space-y-1">
-                        <div className="flex justify-between font-mono text-[9px] text-[#888]">
+                        <div className="flex justify-between font-mono text-[11px] text-[#888]">
                           <span>{new Date(log.timestamp).toLocaleTimeString()}</span>
                           <span>IP: {log.ip || "127.0.0.1"}</span>
                         </div>
@@ -953,18 +1125,18 @@ export default function AdminTab() {
                 <form onSubmit={handleSaveSettings} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Website Brand Title</label>
+                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Website Brand Title</label>
                       <input 
                         type="text" 
                         required
                         value={settings.websiteTitle} 
                         onChange={(e) => setSettings(prev => ({ ...prev, websiteTitle: e.target.value }))} 
                         className="w-full px-4 py-2.5 bg-white border border-black/10 rounded-xl text-xs" 
-                        placeholder="FSIA — Forever Star India Awards" 
+                        placeholder="Influencer Awards" 
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Logo URL (Optional)</label>
+                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Logo URL (Optional)</label>
                       <input 
                         type="text" 
                         value={settings.logoUrl} 
@@ -974,7 +1146,7 @@ export default function AdminTab() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Hero Display Title</label>
+                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Hero Display Title</label>
                       <input 
                         type="text" 
                         required
@@ -984,7 +1156,7 @@ export default function AdminTab() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">CTA Call-To-Action Button Text</label>
+                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">CTA Call-To-Action Button Text</label>
                       <input 
                         type="text" 
                         required
@@ -996,7 +1168,7 @@ export default function AdminTab() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Hero Subtitle Text</label>
+                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Hero Subtitle Text</label>
                     <textarea 
                       rows={2} 
                       required
@@ -1007,7 +1179,7 @@ export default function AdminTab() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Footer Copyright Notice</label>
+                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Footer Copyright Notice</label>
                     <input 
                       type="text" 
                       required
@@ -1019,7 +1191,7 @@ export default function AdminTab() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-3 border-t border-black/5">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Primary Accent Theme Color</label>
+                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Primary Accent Theme Color</label>
                       <div className="flex gap-3 items-center">
                         <input 
                           type="color" 
@@ -1037,7 +1209,7 @@ export default function AdminTab() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Secondary Theme Color (Backgrounds/Accents)</label>
+                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Secondary Theme Color (Backgrounds/Accents)</label>
                       <div className="flex gap-3 items-center">
                         <input 
                           type="color" 
@@ -1090,18 +1262,18 @@ export default function AdminTab() {
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <label className="text-[9px] font-sans font-bold text-[#666] uppercase">Category Title</label>
+                        <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Category Title</label>
                         <input
                           type="text"
                           required
-                          placeholder="e.g. Forever Teen India 2026"
+                          placeholder="e.g. Teen India 2026"
                           value={newCategoryTitle}
                           onChange={(e) => setNewCategoryTitle(e.target.value)}
                           className="w-full px-3 py-2 bg-white border border-black/10 rounded-lg text-xs"
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[9px] font-sans font-bold text-[#666] uppercase">Category Subtitle</label>
+                        <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Category Subtitle</label>
                         <input
                           type="text"
                           placeholder="e.g. Celebrating Youthful Glamour and Poise"
@@ -1114,7 +1286,7 @@ export default function AdminTab() {
 
                     <div className="flex flex-col sm:flex-row items-end sm:items-center justify-between gap-4 pt-2">
                       <div className="space-y-1 w-full sm:w-auto">
-                        <label className="text-[9px] font-sans font-bold text-[#666] uppercase block">Primary Accent Theme Color</label>
+                        <label className="text-[11px] font-sans font-bold text-[#666] uppercase block">Primary Accent Theme Color</label>
                         <div className="flex gap-2 items-center">
                           <input
                             type="color"
@@ -1157,8 +1329,8 @@ export default function AdminTab() {
                                 title={`Theme Color: ${sec.primaryColor}`}
                               />
                             </div>
-                            <p className="text-[10px] text-[#888] truncate">{sec.subtitle || "No Subtitle"}</p>
-                            <div className="flex items-center gap-2 pt-1 font-mono text-[9px] text-[#666]">
+                            <p className="text-[11px] text-[#888] truncate">{sec.subtitle || "No Subtitle"}</p>
+                            <div className="flex items-center gap-2 pt-1 font-mono text-[11px] text-[#666]">
                               <span className="bg-[#FAF9F6] px-1.5 py-0.5 rounded border border-black/5 uppercase">ID: {sec.id}</span>
                               <span className="bg-[#FAF9F6] px-1.5 py-0.5 rounded border border-black/5">{sec.creators?.length || 0} Models</span>
                             </div>
@@ -1196,7 +1368,7 @@ export default function AdminTab() {
 
                 <form onSubmit={handleSaveSettings} className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Secure Gemini API Key</label>
+                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Secure Gemini API Key</label>
                     <input 
                       type="password" 
                       value={settings.geminiApiKey} 
@@ -1204,12 +1376,12 @@ export default function AdminTab() {
                       className="w-full px-4 py-2.5 bg-white border border-black/10 rounded-xl text-xs font-mono" 
                       placeholder="Paste your Gemini API key (routed securely server-side)" 
                     />
-                    <p className="text-[10px] text-[#888] italic">Note: Your API key is safely routed via server endpoints and is never exposed to public browser client sessions.</p>
+                    <p className="text-[11px] text-[#888] italic">Note: Your API key is safely routed via server endpoints and is never exposed to public browser client sessions.</p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Model Selection Selection</label>
+                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Model Selection Selection</label>
                       <select 
                         value={settings.modelSelection || "gemini-3.5-flash"} 
                         onChange={(e) => setSettings(prev => ({ ...prev, modelSelection: e.target.value }))} 
@@ -1222,9 +1394,9 @@ export default function AdminTab() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">Model Temperature ({settings.temperature !== undefined ? settings.temperature : 0.7})</label>
+                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Model Temperature ({settings.temperature !== undefined ? settings.temperature : 0.7})</label>
                       <div className="flex gap-4 items-center pt-2">
-                        <span className="text-[10px] font-sans text-[#888]">Precise (0.0)</span>
+                        <span className="text-[11px] font-sans text-[#888]">Precise (0.0)</span>
                         <input 
                           type="range" 
                           min="0.0" 
@@ -1234,13 +1406,13 @@ export default function AdminTab() {
                           onChange={(e) => setSettings(prev => ({ ...prev, temperature: parseFloat(e.target.value) }))} 
                           className="w-full accent-[#E1C699]" 
                         />
-                        <span className="text-[10px] font-sans text-[#888]">Creative (1.0)</span>
+                        <span className="text-[11px] font-sans text-[#888]">Creative (1.0)</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-sans font-bold tracking-wider text-[#666] uppercase block">System Instructions / Master Prompt Guidelines</label>
+                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">System Instructions / Master Prompt Guidelines</label>
                     <textarea 
                       rows={6} 
                       required
@@ -1290,7 +1462,7 @@ export default function AdminTab() {
                   <div className="mt-6 overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="border-b border-black/5 text-[9px] font-sans font-bold tracking-wider text-[#666] uppercase">
+                        <tr className="border-b border-black/5 text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase">
                           <th className="py-3 px-4">Timestamp</th>
                           <th className="py-3 px-4">AI Model</th>
                           <th className="py-3 px-4">Status</th>
@@ -1300,25 +1472,25 @@ export default function AdminTab() {
                       <tbody className="divide-y divide-black/[0.03]">
                         {promptLogs.map((log: any) => (
                           <tr key={log.id} className="text-xs hover:bg-black/[0.01]">
-                            <td className="py-4 px-4 font-mono text-[10px] text-[#888] whitespace-nowrap">
+                            <td className="py-4 px-4 font-mono text-[11px] text-[#888] whitespace-nowrap">
                               {new Date(log.timestamp).toLocaleString("en-IN", { hour12: true })}
                             </td>
                             <td className="py-4 px-4">
-                              <span className="bg-black/5 border border-black/5 px-2 py-0.5 rounded text-[10px] font-mono text-black">{log.modelUsed}</span>
+                              <span className="bg-black/5 border border-black/5 px-2 py-0.5 rounded text-[11px] font-mono text-black">{log.modelUsed}</span>
                             </td>
                             <td className="py-4 px-4">
-                              <span className={`px-2 py-0.5 rounded text-[9px] font-sans uppercase font-bold ${log.status === "success" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-red-50 text-red-700 border border-red-100"}`}>
+                              <span className={`px-2 py-0.5 rounded text-[11px] font-sans uppercase font-bold ${log.status === "success" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-red-50 text-red-700 border border-red-100"}`}>
                                 {log.status}
                               </span>
                             </td>
                             <td className="py-4 px-4 max-w-md">
                               <div className="space-y-2">
                                 <div className="p-2.5 bg-black/[0.02] rounded-lg border border-black/[0.03] text-[11px] font-serif-text text-[#555]">
-                                  <strong className="text-[9px] font-sans text-black uppercase font-bold tracking-wider block mb-1">USER PROMPT CONTENT:</strong>
+                                  <strong className="text-[11px] font-sans text-black uppercase font-bold tracking-wider block mb-1">USER PROMPT CONTENT:</strong>
                                   {log.userPrompt}
                                 </div>
                                 <div className="p-2.5 bg-champagne/[0.03] rounded-lg border border-champagne/10 text-[11px] font-serif-text text-black">
-                                  <strong className="text-[9px] font-sans text-champagne uppercase font-bold tracking-wider block mb-1">GENERATED HARMONIC CURATION:</strong>
+                                  <strong className="text-[11px] font-sans text-champagne uppercase font-bold tracking-wider block mb-1">GENERATED HARMONIC CURATION:</strong>
                                   <div className="whitespace-pre-wrap leading-relaxed line-clamp-4 hover:line-clamp-none transition-all">{log.aiResponse}</div>
                                 </div>
                               </div>
@@ -1352,7 +1524,7 @@ export default function AdminTab() {
                   </div>
                   <button
                     onClick={openAddCreator}
-                    className="bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[10px] tracking-widest font-bold py-2 px-4 rounded-lg uppercase flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    className="bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[11px] tracking-widest font-bold py-2 px-4 rounded-lg uppercase flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >
                     <Plus className="w-3.5 h-3.5 text-champagne" /> Catalog Model
                   </button>
@@ -1365,9 +1537,9 @@ export default function AdminTab() {
                       <div className="px-5 py-3.5 bg-[#F4F3F0] border-b border-black/5 flex justify-between items-center">
                         <div>
                           <h4 className="font-serif-display text-sm font-bold text-[#111]">{section.title}</h4>
-                          <span className="text-[9px] text-[#888] tracking-widest uppercase font-mono">{section.subtitle}</span>
+                          <span className="text-[11px] text-[#888] tracking-widest uppercase font-mono">{section.subtitle}</span>
                         </div>
-                        <span className="text-[9px] font-mono text-[#888] bg-white border border-black/5 px-2.5 py-1 rounded-full">
+                        <span className="text-[11px] font-mono text-[#888] bg-white border border-black/5 px-2.5 py-1 rounded-full">
                           Z_OFFSET: {section.zOffset}m
                         </span>
                       </div>
@@ -1381,7 +1553,7 @@ export default function AdminTab() {
                                 <div className="flex items-center gap-2">
                                   <h5 className="font-serif-display text-sm font-bold text-[#111]">{c.name}</h5>
                                   {c.stats.verified && (
-                                    <span className="text-[8px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded font-sans uppercase font-bold">Verified</span>
+                                    <span className="text-[11px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded font-sans uppercase font-bold">Verified</span>
                                   )}
                                 </div>
                                 <p className="text-[11px] font-sans text-[#666]">{c.role} — <span className="italic">{c.city}</span></p>
@@ -1391,7 +1563,7 @@ export default function AdminTab() {
                             <div className="flex items-center gap-6">
                               <div className="text-right hidden md:block">
                                 <div className="text-xs font-mono font-bold">{c.stats.reach}</div>
-                                <div className="text-[9px] text-[#888] tracking-wider uppercase font-semibold">Reach / {c.stats.engagement} ER</div>
+                                <div className="text-[11px] text-[#888] tracking-wider uppercase font-semibold">Reach / {c.stats.engagement} ER</div>
                               </div>
 
                               <div className="flex items-center gap-1.5">
@@ -1439,7 +1611,7 @@ export default function AdminTab() {
                   </div>
                   <button
                     onClick={openAddCampaign}
-                    className="bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[10px] tracking-widest font-bold py-2 px-4 rounded-lg uppercase flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    className="bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[11px] tracking-widest font-bold py-2 px-4 rounded-lg uppercase flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >
                     <Plus className="w-3.5 h-3.5 text-champagne" /> Draft Campaign
                   </button>
@@ -1451,10 +1623,10 @@ export default function AdminTab() {
                       <div className="space-y-2">
                         <div className="flex justify-between items-start">
                           <div>
-                            <span className="text-[9px] font-sans text-champagne font-bold tracking-widest uppercase block">{camp.brand}</span>
+                            <span className="text-[11px] font-sans text-champagne font-bold tracking-widest uppercase block">{camp.brand}</span>
                             <h4 className="font-serif-display text-sm font-bold text-[#111] mt-0.5">{camp.title}</h4>
                           </div>
-                          <span className="bg-white border border-black/5 text-[#111] text-[9px] font-sans font-bold px-2.5 py-1 rounded">
+                          <span className="bg-white border border-black/5 text-[#111] text-[11px] font-sans font-bold px-2.5 py-1 rounded">
                             {camp.budget}
                           </span>
                         </div>
@@ -1462,7 +1634,7 @@ export default function AdminTab() {
                       </div>
 
                       <div className="pt-3 border-t border-black/5 flex justify-between items-center">
-                        <span className="text-[9px] font-mono text-[#888] uppercase">DURATION: {camp.duration}</span>
+                        <span className="text-[11px] font-mono text-[#888] uppercase">DURATION: {camp.duration}</span>
                         <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => openEditCampaign(camp)}
@@ -1495,78 +1667,135 @@ export default function AdminTab() {
                   <div className="px-5 py-4 bg-[#F4F3F0] border-b border-black/5 flex items-center justify-between">
                     <div>
                       <h4 className="font-serif-display text-sm font-bold text-[#111]">VIP Escrow Curation Applications</h4>
-                      <p className="text-[9px] text-[#888] uppercase tracking-wider font-mono">Secured applications arriving via Client Charter gateways</p>
+                      <p className="text-[11px] text-[#888] uppercase tracking-wider font-mono">Secured applications arriving via Client Charter gateways</p>
                     </div>
-                    <span className="bg-champagne/15 text-champagne border border-champagne text-[10px] font-sans font-bold px-3 py-1 rounded-full">
+                    <span className="bg-champagne/15 text-champagne border border-champagne text-[11px] font-sans font-bold px-3 py-1 rounded-full">
                       {registrations.length} APPLICATIONS
                     </span>
                   </div>
 
+                  <div className="px-5 py-3 border-b border-black/5 bg-white/40 flex flex-col md:flex-row gap-2 md:items-center">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-2.5 w-4 h-4 text-[#888]" />
+                      <input
+                        value={regQuery}
+                        onChange={(e) => setRegQuery(e.target.value)}
+                        placeholder="Search brand, creator, email, phone or booking ID…"
+                        className="w-full pl-9 pr-3 py-2 bg-white border border-black/10 rounded-lg text-xs focus:outline-none focus:border-champagne"
+                      />
+                    </div>
+                    <select
+                      value={regStatusFilter}
+                      onChange={(e) => setRegStatusFilter(e.target.value as "all" | LeadStatus)}
+                      className="px-3 py-2 bg-white border border-black/10 rounded-lg text-xs focus:outline-none focus:border-champagne"
+                    >
+                      <option value="all">All statuses</option>
+                      {LEAD_STATUSES.map((st) => (
+                        <option key={st.id} value={st.id}>{st.label}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => downloadCsv(`fsia-brand-leads-${new Date().toISOString().slice(0, 10)}.csv`, filteredRegistrations as unknown as Record<string, unknown>[])}
+                      disabled={filteredRegistrations.length === 0}
+                      className="px-3 py-2 bg-[#111] text-white rounded-lg text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Export CSV
+                    </button>
+                  </div>
+
                   <div className="divide-y divide-black/5">
-                    {registrations.map((reg) => (
+                    {filteredRegistrations.map((reg) => (
                       <div key={reg.id} className="p-5 space-y-4 hover:bg-white/20 transition-all">
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
                               <span className="font-mono text-xs font-bold text-[#111]">{reg.bookingId}</span>
-                              <span className="text-[10px] bg-champagne/10 text-champagne border border-champagne/20 px-2 py-0.5 rounded font-sans font-semibold">
-                                ESCROW ACTIVE
-                              </span>
+                              <select
+                                value={reg.status || "new"}
+                                onChange={(e) => updateRegistration(reg.id, { status: e.target.value as LeadStatus })}
+                                className={`text-[11px] font-sans font-bold uppercase px-2 py-0.5 rounded border cursor-pointer focus:outline-none ${
+                                  (LEAD_STATUSES.find((st) => st.id === (reg.status || "new")) || LEAD_STATUSES[0]).className
+                                }`}
+                                title="Lead status"
+                              >
+                                {LEAD_STATUSES.map((st) => (
+                                  <option key={st.id} value={st.id}>{st.label}</option>
+                                ))}
+                              </select>
                             </div>
                             <h5 className="font-serif-display text-base font-bold text-black">{reg.brandName}</h5>
                           </div>
                           
-                          <div className="text-left md:text-right font-mono text-[10px] text-[#666]">
-                            <div>Budget: <strong className="text-black font-semibold">{reg.budget}</strong></div>
-                            <div>Applied: {reg.timestamp}</div>
+                          <div className="flex items-start gap-3">
+                            <div className="text-left md:text-right font-mono text-[11px] text-[#666]">
+                              <div>Budget: <strong className="text-black font-semibold">{reg.budget}</strong></div>
+                              <div>Applied: {reg.timestamp}</div>
+                            </div>
+                            <button
+                              onClick={() => deleteRegistration(reg.id)}
+                              className="p-2 rounded-lg text-red-600 hover:bg-red-50 cursor-pointer"
+                              title="Delete lead"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
 
                         {/* Submission Metadata details */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white/45 p-3.5 rounded-xl border border-black/[0.03] text-xs font-serif-text">
                           <div className="space-y-1">
-                            <span className="text-[8px] font-sans font-bold tracking-wider text-[#888] uppercase block">TARGET CREATOR</span>
+                            <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">TARGET CREATOR</span>
                             <div className="flex items-center gap-1.5 font-sans font-semibold text-black">
                               <Users className="w-3.5 h-3.5 text-champagne" />
                               {reg.creatorName}
                             </div>
                           </div>
                           <div className="space-y-1">
-                            <span className="text-[8px] font-sans font-bold tracking-wider text-[#888] uppercase block">CONTACT CHANNELS</span>
+                            <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">CONTACT CHANNELS</span>
                             <div className="space-y-0.5">
-                              <div className="flex items-center gap-1.5 text-black">
+                              <a href={`mailto:${reg.contactEmail}`} className="flex items-center gap-1.5 text-black hover:underline">
                                 <Mail className="w-3.5 h-3.5 text-[#888]" /> {reg.contactEmail}
-                              </div>
-                              <div className="flex items-center gap-1.5 text-black">
+                              </a>
+                              <a href={`tel:${reg.contactPhone}`} className="flex items-center gap-1.5 text-black hover:underline">
                                 <Phone className="w-3.5 h-3.5 text-[#888]" /> {reg.contactPhone}
-                              </div>
+                              </a>
                             </div>
                           </div>
                           <div className="space-y-1">
-                            <span className="text-[8px] font-sans font-bold tracking-wider text-[#888] uppercase block">CURRENCY & LOCATION</span>
+                            <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">CURRENCY & LOCATION</span>
                             <div>
                               <div className="flex items-center gap-1.5 text-black">
                                 <MapPin className="w-3.5 h-3.5 text-[#888]" /> {reg.clientCity}
                               </div>
                               {reg.gstin && (
-                                <div className="text-[10px] text-[#888] font-mono">GSTIN: {reg.gstin}</div>
+                                <div className="text-[11px] text-[#888] font-mono">GSTIN: {reg.gstin}</div>
                               )}
                             </div>
                           </div>
                         </div>
 
-                        <div className="flex justify-between items-center font-mono text-[9px] text-[#888]">
+                        <div className="flex justify-between items-center font-mono text-[11px] text-[#888]">
                           <span>VERIFICATION HASH: <code className="text-[#444] bg-white px-1.5 py-0.5 rounded border border-black/5">{reg.verificationHash}</code></span>
                           {reg.scope && (
                             <span className="font-serif-text italic text-[#666]">Scope: {reg.scope} ({reg.duration || "3 Months"})</span>
                           )}
                         </div>
+
+                        <textarea
+                          defaultValue={reg.notes || ""}
+                          onBlur={(e) => {
+                            if (e.target.value !== (reg.notes || "")) updateRegistration(reg.id, { notes: e.target.value });
+                          }}
+                          placeholder="Private follow-up notes (saved when you click away)…"
+                          rows={2}
+                          className="w-full px-3 py-2 bg-white/70 border border-black/5 rounded-lg text-xs font-serif-text focus:outline-none focus:border-champagne"
+                        />
                       </div>
                     ))}
 
-                    {registrations.length === 0 && (
+                    {filteredRegistrations.length === 0 && (
                       <div className="p-12 text-center text-xs text-[#888] font-serif-text italic">
-                        No client escrow collaboration proposals received yet.
+                        {registrations.length === 0 ? "No client escrow collaboration proposals received yet." : "No leads match your filters."}
                       </div>
                     )}
                   </div>
@@ -1584,23 +1813,23 @@ export default function AdminTab() {
                 {/* Metrics bar */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-white/60 p-4 rounded-xl border border-black/5 shadow-xs">
-                    <span className="text-[9px] text-[#888] uppercase tracking-wider font-sans font-bold block">Total Applications</span>
+                    <span className="text-[11px] text-[#888] uppercase tracking-wider font-sans font-bold block">Total Applications</span>
                     <strong className="text-xl font-bold text-[#111]">{influencerApplications.length}</strong>
                   </div>
                   <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100/50 shadow-xs">
-                    <span className="text-[9px] text-amber-700 uppercase tracking-wider font-sans font-bold block">Pending Audit</span>
+                    <span className="text-[11px] text-amber-700 uppercase tracking-wider font-sans font-bold block">Pending Audit</span>
                     <strong className="text-xl font-bold text-amber-700">
                       {influencerApplications.filter(a => a.status === "pending").length}
                     </strong>
                   </div>
                   <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100/50 shadow-xs">
-                    <span className="text-[9px] text-emerald-700 uppercase tracking-wider font-sans font-bold block">Approved & Rostered</span>
+                    <span className="text-[11px] text-emerald-700 uppercase tracking-wider font-sans font-bold block">Approved & Rostered</span>
                     <strong className="text-xl font-bold text-emerald-700">
                       {influencerApplications.filter(a => a.status === "approved").length}
                     </strong>
                   </div>
                   <div className="bg-red-50/50 p-4 rounded-xl border border-red-100/50 shadow-xs">
-                    <span className="text-[9px] text-red-700 uppercase tracking-wider font-sans font-bold block">Declined</span>
+                    <span className="text-[11px] text-red-700 uppercase tracking-wider font-sans font-bold block">Declined</span>
                     <strong className="text-xl font-bold text-red-700">
                       {influencerApplications.filter(a => a.status === "declined").length}
                     </strong>
@@ -1611,12 +1840,41 @@ export default function AdminTab() {
                   <div className="px-5 py-4 bg-[#F4F3F0] border-b border-black/5 flex items-center justify-between flex-wrap gap-3">
                     <div>
                       <h4 className="font-serif-display text-sm font-bold text-[#111]">Runway Model Applicants</h4>
-                      <p className="text-[9px] text-[#888] uppercase tracking-wider font-mono">Approve submitted registrations to directly deploy them into the 3D catwalk and directory roster</p>
+                      <p className="text-[11px] text-[#888] uppercase tracking-wider font-mono">Approve submitted registrations to directly deploy them into the 3D catwalk and directory roster</p>
                     </div>
                   </div>
 
+                  <div className="px-5 py-3 border-b border-black/5 bg-white/40 flex flex-col md:flex-row gap-2 md:items-center">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-2.5 w-4 h-4 text-[#888]" />
+                      <input
+                        value={appQuery}
+                        onChange={(e) => setAppQuery(e.target.value)}
+                        placeholder="Search name, email, phone, city or category…"
+                        className="w-full pl-9 pr-3 py-2 bg-white border border-black/10 rounded-lg text-xs focus:outline-none focus:border-champagne"
+                      />
+                    </div>
+                    <select
+                      value={appStatusFilter}
+                      onChange={(e) => setAppStatusFilter(e.target.value as "all" | InfluencerApplication["status"])}
+                      className="px-3 py-2 bg-white border border-black/10 rounded-lg text-xs focus:outline-none focus:border-champagne"
+                    >
+                      <option value="all">All statuses</option>
+                      <option value="pending">Pending</option>
+                      <option value="approved">Approved</option>
+                      <option value="declined">Declined</option>
+                    </select>
+                    <button
+                      onClick={() => downloadCsv(`fsia-creator-applicants-${new Date().toISOString().slice(0, 10)}.csv`, filteredApplications as unknown as Record<string, unknown>[])}
+                      disabled={filteredApplications.length === 0}
+                      className="px-3 py-2 bg-[#111] text-white rounded-lg text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Export CSV
+                    </button>
+                  </div>
+
                   <div className="divide-y divide-black/5">
-                    {influencerApplications.map((app) => (
+                    {filteredApplications.map((app) => (
                       <div key={app.id} className="p-5 space-y-4 hover:bg-white/20 transition-all text-left">
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                           <div className="flex items-center gap-3">
@@ -1626,7 +1884,7 @@ export default function AdminTab() {
                             <div className="space-y-0.5">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <h5 className="font-serif-display text-base font-bold text-black">{app.name}</h5>
-                                <span className={`text-[8px] font-sans font-bold px-2 py-0.5 rounded border uppercase ${
+                                <span className={`text-[11px] font-sans font-bold px-2 py-0.5 rounded border uppercase ${
                                   app.status === "approved" 
                                     ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
                                     : app.status === "declined"
@@ -1644,30 +1902,51 @@ export default function AdminTab() {
 
                           <div className="flex items-center gap-4">
                             <div className="text-left md:text-right">
-                              <span className="text-[8px] font-sans font-bold text-[#888] uppercase block">AUDITED METRICS</span>
+                              <span className="text-[11px] font-sans font-bold text-[#888] uppercase block">AUDITED METRICS</span>
                               <div className="text-xs font-mono font-bold text-black">
                                 {app.reach} Followers / {app.engagement} ER
                               </div>
                             </div>
 
                             {app.status === "pending" && (
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <label htmlFor={`approve-section-${app.id}`} className="sr-only">
+                                  Runway section for {app.name}
+                                </label>
+                                <select
+                                  id={`approve-section-${app.id}`}
+                                  value={defaultSectionFor(app)}
+                                  onChange={(e) => setApproveSection((prev) => ({ ...prev, [app.id]: e.target.value }))}
+                                  title="Runway section this creator joins when approved"
+                                  className="px-2 py-1.5 bg-white border border-black/15 rounded-lg text-xs font-sans text-[#111] max-w-[180px]"
+                                >
+                                  {sections.map((sec) => (
+                                    <option key={sec.id} value={sec.id}>{sec.title}</option>
+                                  ))}
+                                </select>
                                 <button
-                                  onClick={() => approveInfluencerApplication(app.id)}
-                                  className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-sans text-[10px] font-bold uppercase rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+                                  onClick={() => approveInfluencerApplication(app.id, defaultSectionFor(app))}
+                                  className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-sans text-[11px] font-bold uppercase rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
                                   title="Approve and publish to 3D Runway"
                                 >
                                   <Check className="w-3.5 h-3.5" /> APPROVE
                                 </button>
                                 <button
                                   onClick={() => declineInfluencerApplication(app.id)}
-                                  className="px-3 py-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 font-sans text-[10px] font-bold uppercase rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+                                  className="px-3 py-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 font-sans text-[11px] font-bold uppercase rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
                                   title="Decline request"
                                 >
                                   <X className="w-3.5 h-3.5" /> DECLINE
                                 </button>
                               </div>
                             )}
+                            <button
+                              onClick={() => deleteInfluencerApplication(app.id)}
+                              className="p-2 rounded-lg text-red-600 hover:bg-red-50 cursor-pointer"
+                              title="Delete application"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
 
@@ -1675,7 +1954,7 @@ export default function AdminTab() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#FAF9F6] p-4 rounded-xl border border-black/[0.02]">
                           <div className="space-y-2">
                             <div>
-                              <span className="text-[8px] font-sans font-bold tracking-wider text-[#888] uppercase block">BIOGRAPHY & PITCH</span>
+                              <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">BIOGRAPHY & PITCH</span>
                               <p className="text-xs text-[#555] font-serif-text leading-relaxed mt-0.5">{app.bio}</p>
                             </div>
                             {app.quote && (
@@ -1688,13 +1967,13 @@ export default function AdminTab() {
                           <div className="space-y-3 font-serif-text text-xs">
                             <div className="grid grid-cols-2 gap-2">
                               <div>
-                                <span className="text-[8px] font-sans font-bold tracking-wider text-[#888] uppercase block">EMAIL CONTACT</span>
+                                <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">EMAIL CONTACT</span>
                                 <a href={`mailto:${app.email}`} className="text-black hover:underline flex items-center gap-1 font-sans font-semibold mt-0.5">
                                   <Mail className="w-3.5 h-3.5 text-[#888]" /> {app.email}
                                 </a>
                               </div>
                               <div>
-                                <span className="text-[8px] font-sans font-bold tracking-wider text-[#888] uppercase block">PHONE CONTACT</span>
+                                <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">PHONE CONTACT</span>
                                 <a href={`tel:${app.phone}`} className="text-black hover:underline flex items-center gap-1 font-sans font-semibold mt-0.5">
                                   <Phone className="w-3.5 h-3.5 text-[#888]" /> {app.phone}
                                 </a>
@@ -1703,10 +1982,10 @@ export default function AdminTab() {
 
                             {app.portfolio && app.portfolio.length > 0 && (
                               <div>
-                                <span className="text-[8px] font-sans font-bold tracking-wider text-[#888] uppercase block mb-1">SUBMITTED PORTFOLIO</span>
+                                <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block mb-1">SUBMITTED PORTFOLIO</span>
                                 <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
                                   {app.portfolio.map((img, i) => (
-                                    <a key={i} href={img} target="_blank" rel="noopener noreferrer" className="relative w-12 h-16 rounded overflow-hidden border border-black/5 bg-gray-50 flex-shrink-0 group">
+                                    <a key={i} href={/^https?:\/\//i.test(img) ? img : undefined} target="_blank" rel="noopener noreferrer" className="relative w-12 h-16 rounded overflow-hidden border border-black/5 bg-gray-50 flex-shrink-0 group">
                                       <img src={img} alt={`Portfolio ${i+1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform" referrerPolicy="no-referrer" />
                                       <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                         <Eye className="w-3.5 h-3.5 text-white" />
@@ -1719,20 +1998,36 @@ export default function AdminTab() {
                           </div>
                         </div>
 
-                        <div className="text-[9px] font-mono text-[#888] text-right">
+                        <div className="text-[11px] font-mono text-[#888] text-right">
                           RECEIVED VIA PUBLIC PORTAL: {app.timestamp}
                         </div>
                       </div>
                     ))}
 
-                    {influencerApplications.length === 0 && (
+                    {filteredApplications.length === 0 && (
                       <div className="p-12 text-center text-xs text-[#888] font-serif-text italic">
-                        No public model registration requests submitted yet.
+                        {influencerApplications.length === 0 ? "No public model registration requests submitted yet." : "No applicants match your filters."}
                       </div>
                     )}
                   </div>
                 </div>
               </motion.div>
+            )}
+
+            {adminActiveSubTab === "enquiries" && (
+              <AdminEnquiriesPanel token={token} onChange={() => fetchAdminData(token)} />
+            )}
+
+            {adminActiveSubTab === "security" && (
+              <AdminSecurityPanel
+                token={token}
+                currentUser={currentUser}
+                onPasswordChanged={() => {
+                  setMustChangePassword(false);
+                  fetchAdminData(token);
+                }}
+                onDataRestored={() => fetchAdminData(token)}
+              />
             )}
 
           </div>
@@ -1776,7 +2071,7 @@ export default function AdminTab() {
               <form onSubmit={saveCreator} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Target Category</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Target Category</label>
                     <select
                       value={creatorForm.sectionId}
                       disabled={!!editingCreator}
@@ -1787,7 +2082,7 @@ export default function AdminTab() {
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Full Legal Name</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Full Legal Name</label>
                     <input
                       type="text"
                       required
@@ -1801,18 +2096,18 @@ export default function AdminTab() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Official Runway Role</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Official Runway Role</label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g., Winner, Forever Miss India 2026"
+                      placeholder="e.g., Fashion creator"
                       value={creatorForm.role}
                       onChange={(e) => setCreatorForm(prev => ({ ...prev, role: e.target.value }))}
                       className="w-full px-3 py-2 bg-white border border-black/10 rounded-lg text-xs focus:outline-none focus:border-champagne"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Couture Base City</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Couture Base City</label>
                     <input
                       type="text"
                       placeholder="e.g., Mumbai"
@@ -1824,7 +2119,7 @@ export default function AdminTab() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-sans font-bold text-[#666] uppercase">High Resolution Image URL</label>
+                  <label className="text-[11px] font-sans font-bold text-[#666] uppercase">High Resolution Image URL</label>
                   <input
                     type="url"
                     required
@@ -1836,7 +2131,7 @@ export default function AdminTab() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Couture Lookbook Portfolio Image URLs (Comma Separated)</label>
+                  <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Couture Lookbook Portfolio Image URLs (Comma Separated)</label>
                   <textarea
                     rows={2}
                     placeholder="e.g. https://images.unsplash.com/photo-1, https://images.unsplash.com/photo-2"
@@ -1844,14 +2139,14 @@ export default function AdminTab() {
                     onChange={(e) => setCreatorForm(prev => ({ ...prev, portfolioUrls: e.target.value }))}
                     className="w-full px-3 py-2 bg-white border border-black/10 rounded-lg text-xs focus:outline-none focus:border-champagne font-mono"
                   />
-                  <p className="text-[9px] text-[#8e8d8a] leading-none mt-0.5">
+                  <p className="text-[11px] text-[#8e8d8a] leading-none mt-0.5">
                     Paste multiple high-res image URLs separated by commas to populate the lookbook sliding reels on the Catwalk 3D tab detail panel.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Audited Reach</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Audited Reach</label>
                     <input
                       type="text"
                       placeholder="e.g., 1.5M"
@@ -1861,7 +2156,7 @@ export default function AdminTab() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Engagement Rate</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Engagement Rate</label>
                     <input
                       type="text"
                       placeholder="e.g., 6.8%"
@@ -1878,13 +2173,13 @@ export default function AdminTab() {
                         onChange={(e) => setCreatorForm(prev => ({ ...prev, verified: e.target.checked }))}
                         className="rounded accent-[#E1C699]"
                       />
-                      <span className="text-[10px] font-sans font-bold text-[#444] uppercase">VERIFIED</span>
+                      <span className="text-[11px] font-sans font-bold text-[#444] uppercase">VERIFIED</span>
                     </label>
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Biography Curation Narrative</label>
+                  <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Biography Curation Narrative</label>
                   <textarea
                     rows={3}
                     required
@@ -1896,7 +2191,7 @@ export default function AdminTab() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Signature Editorial Quote</label>
+                  <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Signature Editorial Quote</label>
                   <input
                     type="text"
                     placeholder="Signature design quote or professional ethos..."
@@ -1954,7 +2249,7 @@ export default function AdminTab() {
               <form onSubmit={saveCampaign} className="space-y-4 text-left">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Brand Partner</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Brand Partner</label>
                     <input
                       type="text"
                       required
@@ -1965,7 +2260,7 @@ export default function AdminTab() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Campaign Headline</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Campaign Headline</label>
                     <input
                       type="text"
                       required
@@ -1979,7 +2274,7 @@ export default function AdminTab() {
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Budget Bracket</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Budget Bracket</label>
                     <input
                       type="text"
                       placeholder="e.g., ₹4,00,000"
@@ -1989,7 +2284,7 @@ export default function AdminTab() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Duration</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Duration</label>
                     <input
                       type="text"
                       placeholder="e.g., 3 Weeks"
@@ -1999,7 +2294,7 @@ export default function AdminTab() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Location</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Location</label>
                     <input
                       type="text"
                       placeholder="e.g., Mumbai"
@@ -2012,7 +2307,7 @@ export default function AdminTab() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Niche Focus</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Niche Focus</label>
                     <input
                       type="text"
                       placeholder="e.g., Royal Couture"
@@ -2022,7 +2317,7 @@ export default function AdminTab() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Minimum Audience Requirement</label>
+                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Minimum Audience Requirement</label>
                     <input
                       type="text"
                       placeholder="e.g., 100K+ Reach"
@@ -2034,7 +2329,7 @@ export default function AdminTab() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-sans font-bold text-[#666] uppercase">Campaign Outline Brief</label>
+                  <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Campaign Outline Brief</label>
                   <textarea
                     rows={3}
                     required
@@ -2046,7 +2341,7 @@ export default function AdminTab() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-sans font-bold text-[#666] uppercase block">VIP Compensation Perks (Up to 3)</label>
+                  <label className="text-[11px] font-sans font-bold text-[#666] uppercase block">VIP Compensation Perks (Up to 3)</label>
                   <input
                     type="text"
                     placeholder="Perk 1: e.g. Keep custom bespoke couture"

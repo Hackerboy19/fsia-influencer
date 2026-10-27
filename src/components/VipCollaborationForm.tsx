@@ -1,7 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Send, ShieldCheck, Calendar, DollarSign, Award, ArrowRight, CheckCircle2, Phone, Briefcase, Landmark } from "lucide-react";
+import { X, ArrowRight, CheckCircle2, Phone, Landmark } from "lucide-react";
 import { Creator, gallerySections } from "../data";
+import { useDialog, Portal } from "../lib/dialog";
+import {
+  inputClass, labelClass, helpClass, optionalClass, errorBoxClass,
+  isValidEmail, isValidPhone, EMAIL_ERROR, PHONE_ERROR, focusField
+} from "../lib/forms";
+import FieldError, { errorProps } from "./FieldError";
 
 interface VipCollaborationFormProps {
   isOpen: boolean;
@@ -33,9 +39,24 @@ export default function VipCollaborationForm({
   const [scope, setScope] = useState("Editorial Cover & Digital Campaign");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedCredential, setSubmittedCredential] = useState<any | null>(null);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [invalidField, setInvalidField] = useState("");
+  const dialogRef = useDialog<HTMLDivElement>(isOpen, onClose);
 
-  // Extract flat list of creators
-  const allCreators = gallerySections.flatMap((s) => s.creators);
+  // Live roster (falls back to the bundled list until the API answers)
+  const [allCreators, setAllCreators] = useState<Creator[]>(gallerySections.flatMap((s) => s.creators));
+  useEffect(() => {
+    if (!isOpen) return;
+    fetch("/api/creators")
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((data) => Array.isArray(data) && setAllCreators(data.flatMap((s: any) => s.creators || [])))
+      .catch(() => {});
+  }, [isOpen]);
+
+  // Follow the creator the visitor opened the form from
+  useEffect(() => {
+    if (isOpen) setSelectedCreatorName(preselectedCreator ? preselectedCreator.name : "All VIP Roster");
+  }, [isOpen, preselectedCreator]);
 
   // Indian Cities
   const indianCities = [
@@ -45,69 +66,61 @@ export default function VipCollaborationForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!brandName || !contactEmail || !contactPhone) return;
+    if (isSubmitting) return;
+    const problem =
+      !brandName.trim() ? { field: "enquiry-brand", message: "Please enter your brand or agency name." } :
+      !isValidEmail(contactEmail) ? { field: "enquiry-email", message: EMAIL_ERROR } :
+      !isValidPhone(contactPhone) ? { field: "enquiry-phone", message: PHONE_ERROR } : null;
+    if (problem) {
+      setInvalidField(problem.field);
+      setErrorMsg(problem.message);
+      focusField(problem.field);
+      return;
+    }
 
     setIsSubmitting(true);
+    setInvalidField("");
+    setErrorMsg("");
 
-    const bookingId = "FSIA-VIP-" + Math.floor(100000 + Math.random() * 900000);
-    const formattedBudget = currency === "INR" 
+    const formattedBudget = currency === "INR"
       ? "₹" + (budgetInr / 100000).toFixed(1) + " Lakhs"
       : budgetUsd.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-
-    const payload = {
-      bookingId,
-      brandName,
-      contactEmail,
-      contactPhone,
-      creatorName: selectedCreatorName,
-      budget: formattedBudget,
-      clientCity,
-      scope,
-      duration
-    };
 
     fetch("/api/registrations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    })
-    .then((res) => {
-      if (!res.ok) throw new Error("Server registration error");
-      return res.json();
-    })
-    .then((savedData) => {
-      setIsSubmitting(false);
-      setSubmittedCredential({
-        bookingId: savedData.bookingId || bookingId,
-        timestamp: new Date().toLocaleDateString("en-IN", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        }),
-        brandName,
+      body: JSON.stringify({
+        brandName: brandName.trim(),
+        contactEmail: contactEmail.trim(),
+        contactPhone: contactPhone.trim(),
         creatorName: selectedCreatorName,
         budget: formattedBudget,
         clientCity,
-        verificationHash: "0x" + Math.random().toString(16).substring(2, 10).toUpperCase() + "..." + Math.random().toString(16).substring(2, 6).toUpperCase(),
-      });
+        gstin,
+        scope,
+        duration
+      })
     })
-    .catch((err) => {
-      console.warn("Falling back to client-side emulation:", err);
-      setIsSubmitting(false);
-      setSubmittedCredential({
-        bookingId,
-        timestamp: new Date().toLocaleDateString("en-IN", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        }),
-        brandName,
-        creatorName: selectedCreatorName,
-        budget: formattedBudget,
-        clientCity,
-        verificationHash: "0x" + Math.random().toString(16).substring(2, 10).toUpperCase() + "..." + Math.random().toString(16).substring(2, 6).toUpperCase(),
-      });
-    });
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || "Your enquiry could not be sent.");
+        // Show exactly what was stored, so the reference matches the team's records
+        const saved = data.registration || {};
+        setSubmittedCredential({
+          bookingId: saved.bookingId,
+          timestamp: saved.timestamp,
+          brandName,
+          creatorName: selectedCreatorName,
+          budget: formattedBudget,
+          clientCity,
+          verificationHash: saved.verificationHash
+        });
+      })
+      .catch((err: Error) => {
+        // Never show a fake confirmation: the brand must know to try again
+        setErrorMsg((err.message || "Your enquiry could not be sent.") + " Your details are still here — please try again.");
+      })
+      .finally(() => setIsSubmitting(false));
   };
 
   const handleReset = () => {
@@ -118,98 +131,109 @@ export default function VipCollaborationForm({
     setBudgetInr(500000);
     setBudgetUsd(10000);
     setSubmittedCredential(null);
+    setErrorMsg("");
+    setInvalidField("");
   };
 
+    const budgetLabel = currency === "INR"
+    ? (budgetInr === 10000000 ? "₹1 Crore+" : `₹${(budgetInr / 100000).toFixed(1)} Lakhs`)
+    : (budgetUsd === 1000000 ? "$1,000,000+" : budgetUsd.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }));
+
   return (
+    <Portal>
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end overflow-hidden bg-black/30 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[60] flex justify-end overflow-hidden bg-black/30 backdrop-blur-sm">
           {/* Backdrop Click */}
-          <div className="absolute inset-0" onClick={onClose} />
+          <div className="absolute inset-0" onClick={onClose} aria-hidden="true" />
 
           {/* Slider Panel */}
           <motion.div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="enquiry-dialog-title"
+            tabIndex={-1}
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 180 }}
-            className="relative w-full md:max-w-xl h-full bg-[#FAF9F6] shadow-2xl flex flex-col border-l border-black/5"
+            className="relative w-full md:max-w-xl h-full bg-paper shadow-2xl flex flex-col border-l border-line outline-none"
             id="vip-collaboration-form-container"
           >
             {/* Header */}
-            <div className="p-5 md:p-8 border-b border-black/5 flex items-center justify-between bg-[#F4F3F0]">
+            <div className="p-5 md:p-8 border-b border-line flex items-center justify-between bg-paper">
               <div>
-                <span className="font-sans text-[10px] md:text-xs tracking-[0.25em] text-[#8E8D8A] uppercase font-bold">
-                  FSIA Gateway (India Desk)
+                <span className="eyebrow">
+                  For brands and agencies
                 </span>
-                <h3 className="font-serif-display text-xl md:text-2xl text-[#111] tracking-tight mt-1">
-                  VIP Collaboration Charter
-                </h3>
+                <h2 id="enquiry-dialog-title" className="font-display text-[1.5rem] text-ink mt-1">
+                  Brand enquiry
+                </h2>
               </div>
               <button
+                type="button"
                 onClick={onClose}
-                className="w-10 h-10 rounded-full border border-black/5 flex items-center justify-center hover:bg-black/5 transition-colors cursor-pointer"
+                aria-label="Close brand enquiry"
+                className="w-11 h-11 rounded-[4px] flex items-center justify-center text-ink hover:bg-sunken transition-colors cursor-pointer"
                 id="close-collaboration-form-btn"
               >
-                <X className="w-5 h-5 text-[#333]" />
+                <X className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 
             {/* Scrollable Form Content */}
-            <div className="flex-1 overflow-y-auto p-5 md:p-8 space-y-6 md:space-y-8 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-5 md:p-8 space-y-6 custom-scrollbar">
               {!submittedCredential ? (
-                <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
-                  {/* Elite Intro */}
-                  <div className="p-4 md:p-5 bg-white/60 border border-black/5 rounded-xl text-[11px] md:text-xs text-[#555] font-serif-text space-y-2 leading-relaxed">
-                    <div className="flex items-center gap-2 text-champagne font-bold mb-1 uppercase tracking-widest text-[9px] font-sans">
-                      <ShieldCheck className="w-4 h-4" />
-                      SECURE ESCROW PROTOCOL & VIP TRIAGE
-                    </div>
-                    By submitting this charter to the Forever Star India VIP Desk, your brand requirements enter the elite curation pipeline. Direct legal representatives are coordinates within 4 business hours.
-                  </div>
+                <form onSubmit={handleSubmit} noValidate className="space-y-5">
+                  {/* Intro */}
+                  <p className="text-[0.9375rem] text-ink-2 leading-relaxed">
+                    Tell us about your campaign. Our team reads every enquiry, suggests suitable creators and replies by email or phone.
+                  </p>
+                  <p className="text-[0.875rem] text-ink-3">Fields marked * are required.</p>
 
                   {/* Creator Selection */}
-                  <div className="space-y-2">
-                    <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
-                      Select VIP Creator / Joint Roster
-                    </label>
+                  <div>
+                    <label htmlFor="enquiry-creator" className={labelClass}>Creator or roster</label>
                     <select
+                      id="enquiry-creator"
                       value={selectedCreatorName}
                       onChange={(e) => setSelectedCreatorName(e.target.value)}
-                      className="w-full px-4 py-3 bg-white border border-black/10 rounded-lg text-sm text-[#222] font-serif-text focus:outline-none focus:border-champagne focus:ring-1 focus:ring-champagne transition-all"
+                      className={inputClass}
                     >
-                      <option value="All VIP Roster">Joint Showroom Showcase (All VIPs)</option>
+                      <option value="All VIP Roster">Not sure yet: suggest creators for me</option>
                       {allCreators.map((creator) => (
                         <option key={creator.name} value={creator.name}>
-                          {creator.name} ({creator.role.split(",")[0]})
+                          {creator.name}{creator.role ? ` (${creator.role.split(",")[0]})` : ""}
                         </option>
                       ))}
                     </select>
                   </div>
 
                   {/* Corporate/Brand Credentials */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
-                        Brand House / Agency Name
-                      </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <label htmlFor="enquiry-brand" className={labelClass}>Brand or agency name *</label>
                       <input
+                        id="enquiry-brand"
                         type="text"
-                        required
-                        placeholder="e.g., Sabyasachi, Vogue India"
+                        autoComplete="organization"
+                        placeholder="Your brand or agency"
                         value={brandName}
                         onChange={(e) => setBrandName(e.target.value)}
-                        className="w-full px-4 py-3 bg-white border border-black/10 rounded-lg text-sm text-[#222] placeholder:text-[#BBB] focus:outline-none focus:border-champagne focus:ring-1 focus:ring-champagne transition-all"
+                        {...errorProps("enquiry-brand", invalidField)}
+                        aria-required="true"
+                        className={inputClass}
                       />
+                      <FieldError fieldId="enquiry-brand" invalidField={invalidField} message={errorMsg} />
                     </div>
-                    <div className="space-y-2">
-                      <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
-                        Operating City (HQ)
-                      </label>
+                    <div>
+                      <label htmlFor="enquiry-city" className={labelClass}>Operating city (HQ)</label>
                       <select
+                        id="enquiry-city"
                         value={clientCity}
                         onChange={(e) => setClientCity(e.target.value)}
-                        className="w-full px-4 py-3 bg-white border border-black/10 rounded-lg text-sm text-[#222] font-serif-text focus:outline-none focus:border-champagne transition-all"
+                        className={inputClass}
                       >
                         {indianCities.map((city) => (
                           <option key={city} value={city}>{city}</option>
@@ -218,147 +242,132 @@ export default function VipCollaborationForm({
                     </div>
                   </div>
 
-                  {/* Dual Contacts tailored to Indian standards (WhatsApp integration) */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
-                        Secure Corporate Email
-                      </label>
+                  {/* Contacts */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <label htmlFor="enquiry-email" className={labelClass}>Work email *</label>
                       <input
+                        id="enquiry-email"
                         type="email"
-                        required
-                        placeholder="vip.comms@brand.in"
+                        inputMode="email"
+                        autoComplete="email"
+                        placeholder="name@brand.in"
                         value={contactEmail}
                         onChange={(e) => setContactEmail(e.target.value)}
-                        className="w-full px-4 py-3 bg-white border border-black/10 rounded-lg text-sm text-[#222] placeholder:text-[#BBB] focus:outline-none focus:border-champagne focus:ring-1 focus:ring-champagne transition-all"
+                        {...errorProps("enquiry-email", invalidField)}
+                        aria-required="true"
+                        className={inputClass}
                       />
+                      <FieldError fieldId="enquiry-email" invalidField={invalidField} message={errorMsg} />
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
-                          Contact Number (+91 Preferred)
-                        </label>
-                      </div>
+                    <div>
+                      <label htmlFor="enquiry-phone" className={labelClass}>Phone (WhatsApp) *</label>
                       <div className="relative">
+                        <Phone className="w-4 h-4 text-[#47453f] absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true" />
                         <input
+                          id="enquiry-phone"
                           type="tel"
-                          required
-                          placeholder="+91 XXXXX XXXXX"
+                          inputMode="tel"
+                          autoComplete="tel"
+                          placeholder="+91 98765 43210"
                           value={contactPhone}
                           onChange={(e) => setContactPhone(e.target.value)}
-                          className="w-full pl-10 pr-4 py-3 bg-white border border-black/10 rounded-lg text-sm text-[#222] placeholder:text-[#BBB] focus:outline-none focus:border-champagne focus:ring-1 focus:ring-champagne transition-all"
+                          {...errorProps("enquiry-phone", invalidField, "enquiry-phone-help")}
+                          aria-required="true"
+                          className={inputClass + " pl-10"}
                         />
-                        <Phone className="w-4 h-4 text-[#8E8D8A] absolute left-3.5 top-1/2 -translate-y-1/2" />
                       </div>
-                      <label className="flex items-center gap-2 mt-1.5 cursor-pointer">
+                      <FieldError fieldId="enquiry-phone" invalidField={invalidField} message={errorMsg} />
+                      <p id="enquiry-phone-help" className={helpClass}>+91 preferred. 10 to 15 digits.</p>
+                      <label className="flex items-center gap-2 mt-2 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={isWhatsappPreferred}
                           onChange={(e) => setIsWhatsappPreferred(e.target.checked)}
-                          className="rounded text-champagne accent-[#E1C699] focus:ring-champagne w-3.5 h-3.5"
+                          className="accent-[#111] w-4 h-4"
                         />
-                        <span className="text-[10px] font-sans text-[#555]">
-                          Connect securely on WhatsApp for instant confirmation
+                        <span className="text-[0.875rem] text-ink-2">
+                          You can also contact me on WhatsApp
                         </span>
                       </label>
                     </div>
                   </div>
 
-                  {/* Corporate Taxation/Verification (GSTIN / PAN) */}
-                  <div className="space-y-2">
-                    <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
-                      GSTIN / Corporate PAN (Optional - for Proforma Invoice)
+                  {/* GSTIN / PAN */}
+                  <div>
+                    <label htmlFor="enquiry-gstin" className={labelClass}>
+                      GSTIN or corporate PAN <span className={optionalClass}>(optional, for a proforma invoice)</span>
                     </label>
                     <div className="relative">
+                      <Landmark className="w-4 h-4 text-[#47453f] absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true" />
                       <input
+                        id="enquiry-gstin"
                         type="text"
-                        placeholder="e.g., 27AAAAA1111A1Z1 / Corporate ID"
+                        placeholder="e.g., 27AAAAA1111A1Z1"
                         value={gstin}
                         onChange={(e) => setGstin(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 bg-white border border-black/10 rounded-lg text-sm text-[#222] placeholder:text-[#BBB] uppercase focus:outline-none focus:border-champagne transition-all"
+                        className={inputClass + " pl-10 uppercase"}
                       />
-                      <Landmark className="w-4 h-4 text-[#8E8D8A] absolute left-3.5 top-1/2 -translate-y-1/2" />
                     </div>
                   </div>
 
-                  {/* Dual Currency Luxury Allocation Selector */}
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center border-b border-black/5 pb-2">
-                      <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
-                        Estimated Budget Allocation
+                  {/* Budget */}
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap justify-between items-center gap-2">
+                      <label htmlFor="enquiry-budget" className={labelClass + " mb-0"}>
+                        Estimated budget: <span className="tabular-nums">{budgetLabel}</span>
                       </label>
-                      <div className="flex rounded-md overflow-hidden border border-black/10 text-[9px] font-bold font-sans">
-                        <button
-                          type="button"
-                          onClick={() => setCurrency("INR")}
-                          className={`px-2.5 py-1 transition-all ${
-                            currency === "INR"
-                              ? "bg-champagne text-white"
-                              : "bg-white text-[#666] hover:bg-black/5"
-                          }`}
-                        >
-                          INR (₹)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setCurrency("USD")}
-                          className={`px-2.5 py-1 transition-all ${
-                            currency === "USD"
-                              ? "bg-champagne text-white"
-                              : "bg-white text-[#666] hover:bg-black/5"
-                          }`}
-                        >
-                          USD ($)
-                        </button>
+                      <div className="flex rounded-[4px] overflow-hidden border border-field text-[0.8125rem] font-semibold" role="group" aria-label="Budget currency">
+                        {(["INR", "USD"] as const).map((code) => (
+                          <button
+                            key={code}
+                            type="button"
+                            onClick={() => setCurrency(code)}
+                            aria-pressed={currency === code}
+                            className={`px-3 py-1.5 transition-all cursor-pointer ${
+                              currency === code ? "bg-ink text-white" : "bg-surface text-ink hover:bg-sunken"
+                            }`}
+                          >
+                            {code === "INR" ? "INR (₹)" : "USD ($)"}
+                          </button>
+                        ))}
                       </div>
                     </div>
 
                     {currency === "INR" ? (
-                      /* INR Range */
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-sans text-[#888]">Allocated Cap (Indian Rupees)</span>
-                          <span className="text-sm font-serif-display text-[#111] font-bold">
-                            {budgetInr === 10000000 ? "₹1 Crore+" : `₹${(budgetInr / 100000).toFixed(1)} Lakhs`}
-                          </span>
-                        </div>
+                      <div className="space-y-1">
                         <input
+                          id="enquiry-budget"
                           type="range"
                           min="100000"
                           max="10000000"
                           step="100000"
                           value={budgetInr}
+                          aria-valuetext={budgetLabel}
                           onChange={(e) => setBudgetInr(Number(e.target.value))}
-                          className="w-full accent-[#E1C699] h-1.5 bg-[#E5E5E2] rounded-lg cursor-pointer"
+                          className="w-full accent-[#111] h-2 cursor-pointer"
                         />
-                        <div className="flex justify-between text-[9px] text-[#888] font-sans">
+                        <div className="flex justify-between text-xs text-[#47453f] font-sans" aria-hidden="true">
                           <span>₹1 Lakh</span>
-                          <span>₹15 Lakhs</span>
                           <span>₹50 Lakhs</span>
                           <span>₹1 Crore+</span>
                         </div>
                       </div>
                     ) : (
-                      /* USD Range */
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-sans text-[#888]">Allocated Cap (US Dollars)</span>
-                          <span className="text-sm font-serif-display text-[#111] font-bold">
-                            {budgetUsd === 1000000 ? "$1,000,000+" : budgetUsd.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })}
-                          </span>
-                        </div>
+                      <div className="space-y-1">
                         <input
+                          id="enquiry-budget"
                           type="range"
                           min="5000"
                           max="1000000"
                           step="5000"
                           value={budgetUsd}
+                          aria-valuetext={budgetLabel}
                           onChange={(e) => setBudgetUsd(Number(e.target.value))}
-                          className="w-full accent-[#E1C699] h-1.5 bg-[#E5E5E2] rounded-lg cursor-pointer"
+                          className="w-full accent-[#111] h-2 cursor-pointer"
                         />
-                        <div className="flex justify-between text-[9px] text-[#888] font-sans">
+                        <div className="flex justify-between text-xs text-[#47453f] font-sans" aria-hidden="true">
                           <span>$5,000</span>
-                          <span>$100,000</span>
                           <span>$500,000</span>
                           <span>$1M+</span>
                         </div>
@@ -367,21 +376,20 @@ export default function VipCollaborationForm({
                   </div>
 
                   {/* Campaign Scope & Horizon */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
-                        Campaign Horizon
-                      </label>
-                      <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <p id="enquiry-duration-label" className={labelClass}>Campaign duration</p>
+                      <div className="flex flex-wrap gap-2" role="group" aria-labelledby="enquiry-duration-label">
                         {["Single Event", "3 Months", "6 Months", "Annual Contract"].map((dOption) => (
                           <button
                             key={dOption}
                             type="button"
                             onClick={() => setDuration(dOption)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-sans transition-all cursor-pointer ${
+                            aria-pressed={duration === dOption}
+                            className={`min-h-10 px-3 py-2 rounded-[4px] text-[0.875rem] font-semibold transition-colors cursor-pointer border ${
                               duration === dOption
-                                ? "bg-champagne/15 border border-champagne text-[#222] font-semibold"
-                                : "bg-white border border-black/5 text-[#666] hover:bg-[#F3F3F1]"
+                                ? "bg-ink border-ink text-white"
+                                : "bg-surface border-field text-ink hover:border-ink"
                             }`}
                           >
                             {dOption}
@@ -389,113 +397,107 @@ export default function VipCollaborationForm({
                         ))}
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <label className="block text-[9px] md:text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
-                        Engagement Scope
-                      </label>
+                    <div>
+                      <label htmlFor="enquiry-scope" className={labelClass}>Engagement scope</label>
                       <select
+                        id="enquiry-scope"
                         value={scope}
                         onChange={(e) => setScope(e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-black/10 rounded-lg text-xs text-[#222] font-serif-text focus:outline-none focus:border-champagne"
+                        className={inputClass}
                       >
-                        <option value="Editorial Cover & Digital Campaign">Editorial Cover & Indian Digital</option>
-                        <option value="Runway Show / Brand Campaign Appearance">Runway & Bollywood Gala Appearance</option>
-                        <option value="Global Brand Ambassadorship">Pan-India Brand Ambassadorship</option>
-                        <option value="Charity & Advocacy Alignment">Social Impact Partnership</option>
+                        <option value="Editorial Cover & Digital Campaign">Editorial and digital campaign</option>
+                        <option value="Runway Show / Brand Campaign Appearance">Event or campaign appearance</option>
+                        <option value="Global Brand Ambassadorship">Brand ambassadorship</option>
+                        <option value="Charity & Advocacy Alignment">Social impact partnership</option>
                       </select>
                     </div>
                   </div>
+
+                  {errorMsg && !invalidField && (
+                    <div role="alert" className={errorBoxClass}>
+                      {errorMsg}
+                    </div>
+                  )}
 
                   {/* Submit Button */}
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-xs tracking-[0.25em] font-medium py-4 px-6 rounded-lg uppercase flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg active:scale-[0.98]"
+                    aria-busy={isSubmitting}
+                    className="btn btn-primary w-full disabled:opacity-70 disabled:cursor-wait"
                     id="submit-collaboration-charter-btn"
                   >
                     {isSubmitting ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-t-transparent border-[#FAF9F6] rounded-full animate-spin" />
-                        DISPATCHING SECURE CHARTER...
+                        <span className="w-4 h-4 border-2 border-t-transparent border-[#FAF9F6] rounded-full animate-spin" aria-hidden="true" />
+                        Sending enquiry…
                       </>
                     ) : (
                       <>
-                        VERIFY & TRANSMIT CHARTER
-                        <ArrowRight className="w-4 h-4" />
+                        Send enquiry
+                        <ArrowRight className="w-4 h-4" aria-hidden="true" />
                       </>
                     )}
                   </button>
                 </form>
               ) : (
-                /* Success Credential Receipt with Indian-centric variables */
+                /* Success receipt */
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="space-y-8"
+                  className="space-y-6"
                   id="collaboration-success-credential"
+                  role="status"
                 >
-                  <div className="p-6 md:p-8 border border-champagne/30 bg-white/80 rounded-2xl shadow-xl relative overflow-hidden text-center space-y-6">
-                    {/* Decorative gold seal backing */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 border border-champagne/5 rounded-full pointer-events-none" />
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border border-champagne/5 rounded-full pointer-events-none" />
-
-                    <div className="mx-auto w-16 h-16 rounded-full bg-champagne/10 border border-champagne flex items-center justify-center text-champagne mb-4">
-                      <CheckCircle2 className="w-8 h-8" />
+                  <div className="p-6 md:p-8 border border-line bg-surface text-center space-y-6">
+                    <div className="mx-auto w-12 h-12 flex items-center justify-center text-[#2f6b45]">
+                      <CheckCircle2 className="w-8 h-8" aria-hidden="true" />
                     </div>
 
                     <div className="space-y-1">
-                      <span className="font-sans text-[9px] tracking-[0.3em] text-[#8E8D8A] uppercase font-bold">
-                        FSIA India VIP Credential
+                      <span className="eyebrow">
+                        Brand enquiry received
                       </span>
-                      <h4 className="font-serif-display text-xl md:text-2xl text-[#111] font-bold">
-                        Charter Dispatched
-                      </h4>
+                      <h3 className="font-display text-[1.5rem] text-ink">
+                        Thank you, we have your enquiry
+                      </h3>
                     </div>
 
-                    <div className="border-t border-b border-black/5 py-4 space-y-2 text-left">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-[#888] font-sans">REGISTRATION ID:</span>
-                        <span className="font-mono text-[#222] font-bold">{submittedCredential.bookingId}</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-[#888] font-sans">BRAND HOUSE:</span>
-                        <span className="font-serif-text text-[#222] font-semibold">{submittedCredential.brandName}</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-[#888] font-sans">VIP DESIGNEE:</span>
-                        <span className="font-serif-text text-[#222] font-semibold">{submittedCredential.creatorName}</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-[#888] font-sans">BUDGET ALLOCATION:</span>
-                        <span className="font-serif-text text-[#222] font-bold text-champagne">{submittedCredential.budget}</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-[#888] font-sans">CITY HUB:</span>
-                        <span className="font-serif-text text-[#222] font-semibold">{submittedCredential.clientCity}</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-[#888] font-sans">SECURITY HASH:</span>
-                        <span className="font-mono text-[#8E8D8A] text-[10px]">{submittedCredential.verificationHash}</span>
-                      </div>
-                    </div>
+                    <dl className="border-t border-b border-line py-4 space-y-2 text-left text-[0.9375rem]">
+                      {[
+                        ["Reference", submittedCredential.bookingId, "font-mono font-bold"],
+                        ["Brand", submittedCredential.brandName, "font-semibold"],
+                        ["Creator", submittedCredential.creatorName === "All VIP Roster" ? "Suggest creators" : submittedCredential.creatorName, "font-semibold"],
+                        ["Budget", submittedCredential.budget, "font-bold"],
+                        ["City", submittedCredential.clientCity, "font-semibold"]
+                      ].map(([term, value, weight]) => (
+                        <div key={term} className="flex justify-between gap-4">
+                          <dt className="text-ink-3">{term}</dt>
+                          <dd className={`text-ink text-right ${weight}`}>{value}</dd>
+                        </div>
+                      ))}
+                    </dl>
 
-                    <p className="text-xs text-[#666] font-serif-text leading-relaxed px-2">
-                      Your VIP charter request is successfully sealed. Direct coordinates have been initiated. Expect secure WhatsApp & Email dispatch to <strong className="text-[#222]">{contactEmail}</strong>.
+                    <p className="text-[0.9375rem] text-ink-2 leading-relaxed px-2">
+                      Our team will contact you at <strong className="text-ink">{contactEmail}</strong>
+                      {isWhatsappPreferred ? " or on WhatsApp" : ""}. Please keep your reference number for any follow-up.
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-3">
                     <button
-                      onClick={handleReset}
-                      className="w-full bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-xs tracking-[0.25em] py-3.5 px-6 rounded-lg uppercase cursor-pointer text-center font-medium"
+                      type="button"
+                      onClick={onClose}
+                      className="btn btn-primary w-full"
                     >
-                      SUBMIT NEW CHARTER
+                      Done
                     </button>
                     <button
-                      onClick={onClose}
-                      className="w-full bg-transparent hover:bg-black/5 text-[#333] border border-black/10 font-sans text-xs tracking-[0.25em] py-3.5 px-6 rounded-lg uppercase cursor-pointer text-center font-semibold"
+                      type="button"
+                      onClick={handleReset}
+                      className="btn btn-secondary w-full"
                     >
-                      RETURN TO CATWALK
+                      Send another enquiry
                     </button>
                   </div>
                 </motion.div>
@@ -505,6 +507,6 @@ export default function VipCollaborationForm({
         </div>
       )}
     </AnimatePresence>
+    </Portal>
   );
 }
-

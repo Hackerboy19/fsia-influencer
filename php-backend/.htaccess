@@ -1,0 +1,60 @@
+# FSIA Influencer — Apache / LiteSpeed configuration
+Options -Indexes
+DirectoryIndex index.html
+# Unknown URLs get a real 404 status (not the home page) so search engines never
+# index soft 404s. /talent → /talent/ is redirected by mod_dir (DirectorySlash).
+ErrorDocument 404 /404.html
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Pass the Authorization header through to PHP (CGI / FastCGI hosts drop it)
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Folders without the trailing slash (/talent) go straight to the canonical
+    # https://…/talent/ in one redirect instead of two
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteCond %{REQUEST_URI} !/$
+    RewriteCond %{REQUEST_URI} !^/(api|storage|assets)(/|$)
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1/ [L,R=301]
+
+    # Force HTTPS
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # API → PHP router
+    RewriteCond %{REQUEST_URI} !^/api/index\.php
+    RewriteRule ^api(/.*)?$ api/index.php [QSA,L]
+
+    # No single-page-app fallback: every public page is a prerendered folder
+    # (talent/index.html, campaigns/index.html …), so anything else is a 404.
+</IfModule>
+
+# Project notes and lock/log files are never public
+<FilesMatch "\.(md|lock|log|map)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+    Header always set Strict-Transport-Security "max-age=15552000"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    <FilesMatch "\.(js|css|woff2?|png|jpe?g|svg|webp)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    <FilesMatch "(index|404)\.html$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
+    <FilesMatch "^404\.html$">
+        Header set X-Robots-Tag "noindex"
+    </FilesMatch>
+</IfModule>
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
+</IfModule>

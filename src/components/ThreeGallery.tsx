@@ -8,6 +8,8 @@ interface ThreeGalleryProps {
   selectedCreator: Creator | null;
   onSelectCreator: (creator: Creator | null) => void;
   onSectionChange: (index: number) => void;
+  /** Stop drawing while the scene is hidden behind a content page (saves battery and CPU) */
+  paused?: boolean;
 }
 
 export default function ThreeGallery({
@@ -16,6 +18,7 @@ export default function ThreeGallery({
   selectedCreator,
   onSelectCreator,
   onSectionChange,
+  paused = false,
 }: ThreeGalleryProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -23,6 +26,8 @@ export default function ThreeGallery({
   // Keep refs of values needed in the animation loop to avoid dependency re-binding
   const activeSectionIndexRef = useRef(activeSectionIndex);
   const selectedCreatorRef = useRef(selectedCreator);
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
 
   // Local state for interactive hints
   const [hoveredCreator, setHoveredCreator] = useState<Creator | null>(null);
@@ -43,7 +48,7 @@ export default function ThreeGallery({
 
     // 1. Scene, Camera, and WebGL Renderer Setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#FAF9F6"); // Pure luxury Alabaster
+    scene.background = new THREE.Color("#F7F5F0"); // page background
     scene.fog = new THREE.FogExp2("#FAF9F6", 0.04); // Ethereal daytime fog for depth
 
     const camera = new THREE.PerspectiveCamera(
@@ -354,6 +359,11 @@ export default function ThreeGallery({
     // 6. Navigation, Camera Target Lerping & Interaction Engines
     let runwayZ = 3.2; // default home z position of camera
     let targetRunwayZ = 3.2;
+    // Section changes made outside the scene (arrows, station list, swipes) glide the
+    // camera to that section; the "nearest section" check waits until it arrives,
+    // otherwise it would report the old section and undo the change.
+    let lastSeenSectionIdx = activeSectionIndexRef.current;
+    let glidingToSection = false;
 
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
@@ -393,6 +403,7 @@ export default function ThreeGallery({
         const deltaY = clientY - prevMouseY;
         prevMouseY = clientY;
         // Map deltaY directly to Z runway depth (slower, smooth)
+        glidingToSection = false;
         targetRunwayZ += deltaY * 0.02;
         // Boundary constraints
         targetRunwayZ = Math.min(3.8, Math.max(-20, targetRunwayZ));
@@ -484,6 +495,7 @@ export default function ThreeGallery({
     // Wheel Scroll glide down runway
     const handleWheel = (e: WheelEvent) => {
       if (selectedCreatorRef.current) return; // scroll disabled in focused modal
+      glidingToSection = false;
       targetRunwayZ -= e.deltaY * 0.005;
       targetRunwayZ = Math.min(3.8, Math.max(-20, targetRunwayZ));
     };
@@ -529,6 +541,7 @@ export default function ThreeGallery({
 
     const animate = () => {
       animFrameId = requestAnimationFrame(animate);
+      if (pausedRef.current) return;
 
       const time = clock.getElapsedTime();
 
@@ -589,8 +602,13 @@ export default function ThreeGallery({
         const activeIdx = activeSectionIndexRef.current;
         const targetSectionZ = (sections[activeIdx] || sections[0] || { zOffset: 0 }).zOffset + 3.8;
 
-        // If active section changes externally (HUD clicks), snap/lerp runway position
-        if (Math.abs(targetRunwayZ - runwayZ) < 0.1) {
+        if (activeIdx !== lastSeenSectionIdx) {
+          // Changed outside the scene (arrows, station list, swipe): glide to that section
+          lastSeenSectionIdx = activeIdx;
+          targetRunwayZ = targetSectionZ;
+          glidingToSection = true;
+        } else if (!glidingToSection && Math.abs(targetRunwayZ - runwayZ) < 0.1) {
+          // At rest after scrolling: settle gently onto the current section
           targetRunwayZ = THREE.MathUtils.lerp(targetRunwayZ, targetSectionZ, 0.08);
         }
 
@@ -611,6 +629,10 @@ export default function ThreeGallery({
         // Dynamic lookAt slightly down the hallway path
         targetLookAt.set(0, 1.25, runwayZ - 5);
 
+        if (glidingToSection && Math.abs(camera.position.z - targetRunwayZ) < 0.3) {
+          glidingToSection = false;
+        }
+
         // SECTION HIGHLIGHT TRIGGER (Report section updates based on camera runwayZ coordinate)
         const currentZ = camera.position.z;
         // Determine nearest section index
@@ -624,7 +646,11 @@ export default function ThreeGallery({
           }
         });
 
-        if (closestIdx !== activeSectionIndexRef.current) {
+        if (!glidingToSection && closestIdx !== activeSectionIndexRef.current) {
+          // Record it now: React updates the prop a frame or two later, and until then
+          // the scene must not mistake its own report for an outside change
+          lastSeenSectionIdx = closestIdx;
+          activeSectionIndexRef.current = closestIdx;
           onSectionChange(closestIdx);
         }
       }

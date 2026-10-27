@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from "react";
+import { routeForTab } from "../seo";
 import { motion, AnimatePresence } from "motion/react";
-import { Calendar, Briefcase, Landmark, ShieldCheck, ArrowRight, CheckCircle2, Sparkles, Send, Users, TrendingUp } from "lucide-react";
+import { ArrowRight, CheckCircle2, X } from "lucide-react";
+import { useDialog, Portal } from "../lib/dialog";
+import {
+  inputClass, labelClass, optionalClass, errorBoxClass,
+  isValidEmail, isValidPhone, EMAIL_ERROR, PHONE_ERROR, focusField
+} from "../lib/forms";
+import FieldError, { errorProps } from "./FieldError";
+import { isPreviewHost } from "../lib/preview";
+import { SAMPLE_CAMPAIGNS } from "../content/sampleCampaigns";
 
 interface Campaign {
   id: string;
@@ -23,83 +32,17 @@ export default function CampaignsTab() {
     email: "",
     phone: "",
     instagram: "",
-    pitch: "",
-    escrowConsent: true
+    pitch: ""
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
   const [activeCampaigns, setActiveCampaigns] = useState<Campaign[]>([]);
-
-  const campaigns: Campaign[] = [
-    {
-      id: "sabya-2026",
-      brand: "Sabyasachi Heritage",
-      title: "Royal Couture & Bridal Campaign Showcase",
-      niche: "Royal Ethnic Couture",
-      budget: "₹3,50,000 - ₹8,00,000",
-      requirements: "150K+ Reach with verified lifestyle aesthetics",
-      duration: "3 Weeks",
-      location: "Jaipur Palace / Mumbai Studio",
-      perks: [
-        "Private runway session with brand curators",
-        "Keep 1 custom-tailored bespoke ensemble (valued at ₹4L)",
-        "Premium cover photography in Vogue India",
-        "Direct verified star bank wire escort"
-      ],
-      description: "Step into the royal lineage of Indian haute couture. Sabyasachi Heritage is selecting 5 elite creators nationwide for our prestigious Autumn Bridal Collection. Creators will walk the historic courtyards of Jaipur palace and showcase intricate hand-woven zardozi creations."
-    },
-    {
-      id: "taj-2026",
-      brand: "Taj Luxury Hotels",
-      title: "The Art of Slow Living - Summer Retreat",
-      niche: "Premium Hospitality & Travel",
-      budget: "₹2,00,000 + Luxe Stay",
-      requirements: "80K+ Reach, premium travel videography focus",
-      duration: "4 Days (Active)",
-      location: "Udaipur & Goa Properties",
-      perks: [
-        "4-Night presidential suite hospitality",
-        "Fully covered premium culinary curation and spa treatments",
-        "Travel cost allowances (Business Class flights covered)",
-        "Long-term ambassador options"
-      ],
-      description: "Immerse in unmatched Indian hospitality. Taj Luxury Hotels invites 6 travel and lifestyle connoisseurs to capture the quiet, warm essence of our iconic heritage properties. High-definition cinematic reels and photo essays are expected."
-    },
-    {
-      id: "vogue-2026",
-      brand: "Vogue India",
-      title: "Avant-Garde digital cover shoot",
-      niche: "High Fashion & Editorial",
-      budget: "₹5,00,000",
-      requirements: "300K+ Reach, professional editorial experience",
-      duration: "Single Cover Event",
-      location: "Mumbai Studios",
-      perks: [
-        "Primary model feature on the Digital Cover edition",
-        "Full publicity and editorial interview with Chief Curator",
-        "High-definition photography asset usage rights",
-        "VIP invitations to the Vogue Fashion Gala 2026"
-      ],
-      description: "Break the barriers of convention. Vogue India is curating a special digital cover celebrating 'Indo-Futurism'. We are seeking a verified creator with deep expressive posture and bold stylistic integrity to lead the campaign."
-    },
-    {
-      id: "oneplus-2026",
-      brand: "OnePlus Elite",
-      title: "Nord Creator Wave: Fusing Tech & Style",
-      niche: "Premium Tech & Lifestyle",
-      budget: "₹1,80,000 + Flagship Device",
-      requirements: "50K+ Reach, high-quality unboxing and transition reels",
-      duration: "2 Months",
-      location: "Pan-India Digital Campaign",
-      perks: [
-        "Keep OnePlus Flagship ecosystem (Phone, Watch, Buds valued at ₹1.2L)",
-        "Featured on official OnePlus India social accounts",
-        "Direct contract for upcoming device launches",
-        "Sponsored tech-setup makeover"
-      ],
-      description: "OnePlus is looking for 10 creators who represent the perfect convergence of high technology and daily style. Review, unbox, and design interactive transition reels showcasing our upcoming Nord ecosystem with minimal aesthetics."
-    }
-  ];
+  const [loadState, setLoadState] = useState<"loading" | "ready" | "error" | "sample">("loading");
+  const [invalidField, setInvalidField] = useState("");
+  const closeDrawer = () => setSelectedCampaign(null);
+  const dialogRef = useDialog<HTMLDivElement>(!!selectedCampaign, closeDrawer);
 
   useEffect(() => {
     fetch("/api/campaigns")
@@ -108,20 +51,24 @@ export default function CampaignsTab() {
         throw new Error();
       })
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setActiveCampaigns(data);
-        } else {
-          setActiveCampaigns(campaigns);
-        }
+        setActiveCampaigns(Array.isArray(data) ? data : []);
+        setLoadState("ready");
       })
       .catch(() => {
-        setActiveCampaigns(campaigns);
+        if (isPreviewHost()) {
+          setActiveCampaigns(SAMPLE_CAMPAIGNS);
+          setLoadState("sample");
+        } else {
+          setLoadState("error");
+        }
       });
   }, []);
 
   const handleApplyClick = (campaign: Campaign) => {
     setSelectedCampaign(campaign);
     setSuccessMessage(false);
+    setErrorMsg("");
+    setInvalidField("");
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -131,307 +78,325 @@ export default function CampaignsTab() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.phone) return;
+    if (!selectedCampaign || isSubmitting) return;
+    const problem =
+      !formData.name.trim() ? { field: "campaign-name", message: "Please enter your full name." } :
+      !isValidEmail(formData.email) ? { field: "campaign-email", message: EMAIL_ERROR } :
+      !isValidPhone(formData.phone) ? { field: "campaign-phone", message: PHONE_ERROR } :
+      !formData.instagram.trim() ? { field: "campaign-social", message: "Please add your social handle or a link to your profile." } : null;
+    if (problem) {
+      setInvalidField(problem.field);
+      setErrorMsg(problem.message);
+      focusField(problem.field);
+      return;
+    }
 
     setIsSubmitting(true);
+    setInvalidField("");
+    setErrorMsg("");
 
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setSuccessMessage(true);
-      if (selectedCampaign) {
+    fetch("/api/enquiries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "campaign",
+        subject: `${selectedCampaign.brand} — ${selectedCampaign.title}`,
+        refId: selectedCampaign.id,
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        details: { instagram: formData.instagram, pitch: formData.pitch }
+      })
+    })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || "Your application could not be sent.");
+        setSubmittedEmail(formData.email);
+        setSuccessMessage(true);
         setAppliedCampaigns((prev) => [...prev, selectedCampaign.id]);
-      }
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        instagram: "",
-        pitch: "",
-        escrowConsent: true
-      });
-    }, 1500);
+        setFormData({ name: "", email: "", phone: "", instagram: "", pitch: "" });
+      })
+      .catch((err: Error) => {
+        // Never show a fake confirmation
+        setErrorMsg((err.message || "Your application could not be sent.") + " Your details are still here — please try again.");
+      })
+      .finally(() => setIsSubmitting(false));
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 py-6 md:py-12 space-y-8" id="campaigns-tab-container">
-      {/* Title */}
-      <div className="text-center md:text-left space-y-2">
-        <span className="font-sans text-xs tracking-[0.3em] text-[#8E8D8A] uppercase font-bold block">
-          FSIA Collaboration Desk
-        </span>
-        <h2 className="font-serif-display text-3xl md:text-5xl font-bold tracking-tight text-[#111]">
-          Live Brand Campaigns
-        </h2>
-        <p className="font-serif-text italic text-[#666] text-sm md:text-base max-w-2xl">
-          Apply directly to premium brand sponsorships. Forever Star India operates 100% secure escrow contracts ensuring creators receive full payment within 24 hours of campaign verification.
-        </p>
+    <div className="page pt-10 md:pt-14 pb-16" id="campaigns-tab-container">
+      <header className="max-w-3xl space-y-3">
+        <p className="eyebrow">For creators</p>
+        <h1 className="h-page">{routeForTab("campaigns").heading}</h1>
+        <p className="lede">{routeForTab("campaigns").intro}</p>
+      </header>
+
+      <div className="mt-10" aria-live="polite">
+        {loadState === "loading" && <p className="text-ink-2">Loading campaigns…</p>}
+        {loadState === "error" && (
+          <p className="border border-line bg-surface p-6 text-ink-2">
+            Campaigns could not be loaded right now. Please refresh the page or try again later.
+          </p>
+        )}
+        {loadState === "sample" && (
+          <p className="border border-line bg-surface p-6 text-ink-2">
+            Preview: these are sample briefs to show the layout. Real campaigns are listed on the live site, and applying works there.
+          </p>
+        )}
+        {loadState === "ready" && activeCampaigns.length === 0 && (
+          <p className="border border-line bg-surface p-6 text-ink-2">
+            There are no open campaigns at the moment. New briefs are added here as brands send them.
+          </p>
+        )}
       </div>
 
-      {/* Campaigns list */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {activeCampaigns.map((campaign) => {
-          const isApplied = appliedCampaigns.includes(campaign.id);
-          return (
-            <motion.div
-              key={campaign.id}
-              className="bg-white/60 border border-black/5 rounded-2xl p-6 flex flex-col justify-between space-y-6 hover:shadow-md transition-all relative overflow-hidden"
-              whileHover={{ y: -3 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="space-y-4">
-                {/* Brand Name & Budget */}
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="text-[10px] font-sans text-champagne font-bold tracking-widest uppercase block">
-                      {campaign.brand}
-                    </span>
-                    <h3 className="font-serif-display text-xl font-bold text-[#111] mt-0.5">
-                      {campaign.title}
-                    </h3>
-                  </div>
-                  <span className="bg-[#111] text-[#FAF9F6] text-[10px] font-sans font-bold tracking-wider px-3 py-1 rounded-full whitespace-nowrap">
-                    {campaign.budget}
-                  </span>
+      {activeCampaigns.length > 0 && (
+        <ul className="divide-y divide-line border-y border-line">
+          {activeCampaigns.map((campaign) => {
+            const isApplied = appliedCampaigns.includes(campaign.id);
+            const facts = [
+              ["Budget", campaign.budget],
+              ["Niche", campaign.niche],
+              ["Duration", campaign.duration],
+              ["Location", campaign.location],
+              ["Who can apply", campaign.requirements]
+            ].filter(([, v]) => v && String(v).trim());
+            return (
+              <li key={campaign.id} className="py-8 grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+                <div className="space-y-3 min-w-0">
+                  {campaign.brand && <p className="eyebrow">{campaign.brand}</p>}
+                  <h2 className="font-display text-[1.625rem] leading-tight text-ink">{campaign.title}</h2>
+                  {campaign.description && <p className="text-ink-2 leading-relaxed">{campaign.description}</p>}
+                  {campaign.perks?.length > 0 && (
+                    <div>
+                      <h3 className="text-[0.8125rem] font-semibold uppercase tracking-[0.08em] text-ink-3 mb-2">Includes</h3>
+                      <ul className="list-disc pl-5 space-y-1 text-[0.9375rem] text-ink-2 marker:text-ink-3">
+                        {campaign.perks.map((perk, idx) => (
+                          <li key={idx}>{perk}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
-
-                {/* Tags */}
-                <div className="flex flex-wrap gap-2 text-[10px] font-sans">
-                  <span className="bg-[#FAF9F6] border border-black/5 text-[#555] px-2.5 py-1 rounded-md flex items-center gap-1 font-semibold">
-                    <Briefcase className="w-3.5 h-3.5 text-champagne" /> {campaign.niche}
-                  </span>
-                  <span className="bg-[#FAF9F6] border border-black/5 text-[#555] px-2.5 py-1 rounded-md flex items-center gap-1 font-semibold">
-                    <Calendar className="w-3.5 h-3.5 text-champagne" /> {campaign.duration}
-                  </span>
-                  <span className="bg-[#FAF9F6] border border-black/5 text-[#555] px-2.5 py-1 rounded-md flex items-center gap-1 font-semibold">
-                    <Users className="w-3.5 h-3.5 text-champagne" /> {campaign.requirements}
-                  </span>
-                </div>
-
-                {/* Description */}
-                <p className="text-xs text-[#555] font-serif-text leading-relaxed">
-                  {campaign.description}
-                </p>
-
-                {/* Key perks */}
-                <div className="space-y-1.5 pt-2">
-                  <span className="block text-[8px] font-sans tracking-[0.2em] text-[#8E8D8A] uppercase font-bold">
-                    VIP COMPENSATIONS & PERKS:
-                  </span>
-                  <ul className="text-[11px] font-serif-text text-[#444] space-y-1 pl-1">
-                    {campaign.perks.map((perk, idx) => (
-                      <li key={idx} className="flex items-start gap-1.5 leading-tight">
-                        <span className="text-champagne mt-0.5">•</span>
-                        <span>{perk}</span>
-                      </li>
+                <div className="space-y-4">
+                  <dl className="divide-y divide-line border-y border-line text-[0.9375rem]">
+                    {facts.map(([label, value]) => (
+                      <div key={label} className="flex justify-between gap-6 py-2.5">
+                        <dt className="text-ink-3">{label}</dt>
+                        <dd className="text-ink text-right font-medium">{value}</dd>
+                      </div>
                     ))}
-                  </ul>
+                  </dl>
+                  {loadState === "sample" ? (
+                    <p className="text-[0.9375rem] text-ink-3">Applications open on the live site.</p>
+                  ) : isApplied ? (
+                    <p className="inline-flex items-center gap-2 text-[0.9375rem] font-semibold text-[#2f6b45]">
+                      <CheckCircle2 className="w-4 h-4" aria-hidden="true" /> Application sent
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleApplyClick(campaign)}
+                      aria-label={`Apply for ${campaign.brand ? `${campaign.brand}: ` : ""}${campaign.title}`}
+                      className="btn btn-primary"
+                    >
+                      Apply for this campaign <ArrowRight className="w-4 h-4" aria-hidden="true" />
+                    </button>
+                  )}
                 </div>
-              </div>
-
-              {/* Action Button */}
-              <div className="pt-4 border-t border-black/5 flex items-center justify-between">
-                <span className="text-[9px] font-mono text-[#8E8D8A] uppercase">
-                  LOC: {campaign.location}
-                </span>
-                {isApplied ? (
-                  <span className="text-emerald-600 font-sans text-xs font-bold flex items-center gap-1 bg-emerald-50 px-3.5 py-1.5 rounded-lg border border-emerald-100">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> APPLICATION SUBMITTED
-                  </span>
-                ) : (
-                  <button
-                    onClick={() => handleApplyClick(campaign)}
-                    className="bg-[#111] hover:bg-[#222] text-[#FAF9F6] text-xs font-sans font-bold tracking-widest py-2 px-5 rounded-lg uppercase transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
-                  >
-                    APPLY NOW <ArrowRight className="w-3.5 h-3.5 text-champagne" />
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
       {/* Slide-over Form Overlay for Campaign Application */}
+      <Portal>
       <AnimatePresence>
         {selectedCampaign && (
-          <div className="fixed inset-0 z-50 flex justify-end overflow-hidden bg-black/30 backdrop-blur-sm">
-            <div className="absolute inset-0" onClick={() => setSelectedCampaign(null)} />
-            
+          <div className="fixed inset-0 z-[60] flex justify-end overflow-hidden bg-black/30 backdrop-blur-sm">
+            <div className="absolute inset-0" onClick={closeDrawer} aria-hidden="true" />
+
             <motion.div
+              ref={dialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="campaign-dialog-title"
+              tabIndex={-1}
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 180 }}
-              className="relative w-full md:max-w-xl h-full bg-[#FAF9F6] shadow-2xl flex flex-col border-l border-black/5 z-10"
+              className="relative w-full md:max-w-xl h-full bg-paper shadow-2xl flex flex-col border-l border-line z-10 outline-none"
               id="campaign-application-drawer"
             >
               {/* Header */}
-              <div className="p-5 md:p-8 border-b border-black/5 flex items-center justify-between bg-[#F4F3F0]">
+              <div className="p-5 md:p-8 border-b border-black/10 flex items-center justify-between gap-4 bg-[#F4F3F0]">
                 <div>
-                  <span className="font-sans text-[10px] tracking-[0.25em] text-[#8E8D8A] uppercase font-bold">
-                    Campaign Application Gate
+                  <span className="eyebrow">
+                    Campaign application
                   </span>
-                  <h3 className="font-serif-display text-lg md:text-xl text-[#111] tracking-tight mt-1">
+                  <h2 id="campaign-dialog-title" className="font-serif-display text-lg md:text-xl text-[#111] tracking-tight mt-1">
                     Apply for {selectedCampaign.brand}
-                  </h3>
+                  </h2>
+                  <p className="text-sm text-[#2e2c29] mt-0.5">{selectedCampaign.title}</p>
                 </div>
                 <button
-                  onClick={() => setSelectedCampaign(null)}
-                  className="w-10 h-10 rounded-full border border-black/5 flex items-center justify-center text-[#222] hover:bg-white transition-all cursor-pointer"
+                  type="button"
+                  onClick={closeDrawer}
+                  aria-label="Close campaign application"
+                  className="w-11 h-11 shrink-0 rounded-[4px] flex items-center justify-center text-ink hover:bg-sunken transition-colors cursor-pointer"
                 >
-                  ✖
+                  <X className="w-5 h-5" aria-hidden="true" />
                 </button>
               </div>
 
               {/* Form Content */}
               <div className="flex-1 overflow-y-auto p-5 md:p-8 space-y-6">
                 {!successMessage ? (
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Safe Escrow Info */}
-                    <div className="p-4 bg-white border border-black/5 rounded-xl text-xs text-[#555] font-serif-text space-y-2">
-                      <div className="flex items-center gap-2 text-champagne font-bold uppercase tracking-widest text-[9px] font-sans">
-                        <ShieldCheck className="w-4 h-4 text-champagne" />
-                        SECURED INR BANK WIRE GUARANTEE
-                      </div>
-                      FSIA acts as a central financial clearing agent. Upon contract signing, Sabyasachi / brand escrow secures 100% of the funds. Payout is processed instantly following visual content publication checks.
-                    </div>
+                  <form onSubmit={handleSubmit} noValidate className="space-y-5">
+                    <p className="text-[0.9375rem] text-ink-2 leading-relaxed">
+                      Your application goes to our team. If your profile fits the brief, we share it with the brand and contact you about terms before any work starts.
+                    </p>
+                    <p className="text-[0.875rem] text-ink-3">Fields marked * are required.</p>
 
-                    {/* Basic Info */}
-                    <div className="space-y-4">
-                      <div className="space-y-1.5">
-                        <label className="block text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
-                          Full Legal Name
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          name="name"
-                          value={formData.name}
-                          onChange={handleInputChange}
-                          placeholder="e.g., Deepika Sharma"
-                          className="w-full px-4 py-3 bg-white border border-black/10 rounded-lg text-sm placeholder:text-[#BBB] focus:outline-none focus:border-champagne"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <label className="block text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
-                            Primary Email Address
-                          </label>
-                          <input
-                            type="email"
-                            required
-                            name="email"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            placeholder="creator@gmail.com"
-                            className="w-full px-4 py-3 bg-white border border-black/10 rounded-lg text-sm placeholder:text-[#BBB] focus:outline-none focus:border-champagne"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="block text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
-                            WhatsApp Phone Number
-                          </label>
-                          <input
-                            type="tel"
-                            required
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleInputChange}
-                            placeholder="+91 XXXXX XXXXX"
-                            className="w-full px-4 py-3 bg-white border border-black/10 rounded-lg text-sm placeholder:text-[#BBB] focus:outline-none focus:border-champagne"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="block text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
-                          Social handle / Media links
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          name="instagram"
-                          value={formData.instagram}
-                          onChange={handleInputChange}
-                          placeholder="instagram.com/username or youtube.com/@channel"
-                          className="w-full px-4 py-3 bg-white border border-black/10 rounded-lg text-sm placeholder:text-[#BBB] focus:outline-none focus:border-champagne"
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="block text-[10px] font-sans font-bold tracking-[0.2em] text-[#666] uppercase">
-                          Brief Pitch / Style Concept
-                        </label>
-                        <textarea
-                          rows={4}
-                          name="pitch"
-                          value={formData.pitch}
-                          onChange={handleInputChange}
-                          placeholder="How would you creatively present Sabyasachi's wedding couture? Describe your editorial style, lighting preference, and aesthetic mood."
-                          className="w-full px-4 py-3 bg-white border border-black/10 rounded-lg text-sm placeholder:text-[#BBB] focus:outline-none focus:border-champagne font-serif-text"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Escrow consent */}
-                    <label className="flex items-start gap-2 cursor-pointer pt-2">
+                    <div>
+                      <label htmlFor="campaign-name" className={labelClass}>Full name *</label>
                       <input
-                        type="checkbox"
-                        checked={formData.escrowConsent}
-                        onChange={(e) => setFormData(prev => ({ ...prev, escrowConsent: e.target.checked }))}
-                        className="rounded text-champagne accent-[#E1C699] focus:ring-champagne mt-0.5"
+                        id="campaign-name"
+                        type="text"
+                        name="name"
+                        autoComplete="name"
+                        aria-required="true"
+                        {...errorProps("campaign-name", invalidField)}
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        
+                        className={inputClass}
                       />
-                      <span className="text-[10px] font-sans text-[#555] leading-relaxed">
-                        I agree to the <strong>FSIA Verified escrow arbitration protocols</strong>. I authorize the board to review my social audit parameters and coordinate direct bank wiring contract upon compliance with campaign briefs.
-                      </span>
-                    </label>
+                      <FieldError fieldId="campaign-name" invalidField={invalidField} message={errorMsg} />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div>
+                        <label htmlFor="campaign-email" className={labelClass}>Email *</label>
+                        <input
+                          id="campaign-email"
+                          type="email"
+                          name="email"
+                          inputMode="email"
+                          autoComplete="email"
+                          aria-required="true"
+                          {...errorProps("campaign-email", invalidField)}
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          placeholder="you@example.com"
+                          className={inputClass}
+                        />
+                        <FieldError fieldId="campaign-email" invalidField={invalidField} message={errorMsg} />
+                      </div>
+                      <div>
+                        <label htmlFor="campaign-phone" className={labelClass}>WhatsApp number *</label>
+                        <input
+                          id="campaign-phone"
+                          type="tel"
+                          name="phone"
+                          inputMode="tel"
+                          autoComplete="tel"
+                          aria-required="true"
+                          {...errorProps("campaign-phone", invalidField)}
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          placeholder="+91 98765 43210"
+                          className={inputClass}
+                        />
+                        <FieldError fieldId="campaign-phone" invalidField={invalidField} message={errorMsg} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="campaign-social" className={labelClass}>Social handle or profile link *</label>
+                      <input
+                        id="campaign-social"
+                        type="text"
+                        name="instagram"
+                        aria-required="true"
+                        {...errorProps("campaign-social", invalidField)}
+                        value={formData.instagram}
+                        onChange={handleInputChange}
+                        placeholder="instagram.com/username or youtube.com/@channel"
+                        className={inputClass}
+                      />
+                      <FieldError fieldId="campaign-social" invalidField={invalidField} message={errorMsg} />
+                    </div>
+
+                    <div>
+                      <label htmlFor="campaign-pitch" className={labelClass}>
+                        Why you are a good fit <span className={optionalClass}>(optional)</span>
+                      </label>
+                      <textarea
+                        id="campaign-pitch"
+                        rows={4}
+                        name="pitch"
+                        value={formData.pitch}
+                        onChange={handleInputChange}
+                        placeholder="A few lines on why this brief suits you, and links to similar work."
+                        className={inputClass}
+                      />
+                    </div>
+
+                    {errorMsg && !invalidField && (
+                      <div role="alert" className={errorBoxClass}>
+                        {errorMsg}
+                      </div>
+                    )}
 
                     {/* Submit Button */}
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-xs tracking-[0.25em] font-bold py-4 rounded-lg uppercase flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+                      aria-busy={isSubmitting}
+                      className="btn btn-primary w-full disabled:opacity-70 disabled:cursor-wait"
                     >
                       {isSubmitting ? (
                         <>
-                          <div className="w-4 h-4 border-2 border-t-transparent border-[#FAF9F6] rounded-full animate-spin" />
-                          SEALING AUDIT...
+                          <span className="w-4 h-4 border-2 border-t-transparent border-[#FAF9F6] rounded-full animate-spin" aria-hidden="true" />
+                          Sending…
                         </>
                       ) : (
                         <>
-                          DISPATCH APPLICATION
-                          <ArrowRight className="w-4 h-4" />
+                          Send application
+                          <ArrowRight className="w-4 h-4" aria-hidden="true" />
                         </>
                       )}
                     </button>
                   </form>
                 ) : (
                   /* Success Screen */
-                  <div className="p-6 md:p-8 border border-champagne/30 bg-white/80 rounded-2xl shadow-xl text-center space-y-6 relative overflow-hidden">
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 border border-champagne/5 rounded-full pointer-events-none" />
-                    <div className="w-16 h-16 rounded-full bg-[#111] flex items-center justify-center text-champagne mx-auto">
-                      <CheckCircle2 className="w-8 h-8 text-champagne" />
+                  <div role="status" className="p-6 md:p-8 border border-line bg-surface text-center space-y-6 relative overflow-hidden">
+                    <div className="w-12 h-12 flex items-center justify-center text-[#2f6b45] mx-auto">
+                      <CheckCircle2 className="w-8 h-8" aria-hidden="true" />
                     </div>
 
                     <div className="space-y-1">
-                      <span className="font-sans text-[9px] tracking-[0.3em] text-[#8E8D8A] uppercase font-bold">
-                        Verification Seal Accepted
+                      <span className="eyebrow">
+                        Application received
                       </span>
-                      <h4 className="font-serif-display text-xl md:text-2xl text-[#111] font-bold">
-                        Application Transmitted
-                      </h4>
+                      <h3 className="font-serif-display text-xl md:text-2xl text-[#111] font-bold">
+                        Thank you for applying
+                      </h3>
                     </div>
 
-                    <p className="text-xs text-[#555] font-serif-text leading-relaxed">
-                      Your Sabyasachi collaboration bid is signed and sealed on the FSIA Escrow Registry. The official brand representative and an FSIA liaison will evaluate your profile aesthetics and get in touch with you at <strong className="text-[#111]">{formData.email}</strong> or WhatsApp within 12 business hours.
+                    <p className="text-sm text-[#2e2c29] leading-relaxed">
+                      Your application for <strong className="text-[#111]">{selectedCampaign?.brand}</strong> has been sent to our team. We'll review your profile and get in touch at <strong className="text-[#111]">{submittedEmail}</strong> or on WhatsApp.
                     </p>
 
                     <button
-                      onClick={() => setSelectedCampaign(null)}
-                      className="w-full bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-xs tracking-[0.25em] py-3.5 px-6 rounded-lg uppercase cursor-pointer"
+                      type="button"
+                      onClick={closeDrawer}
+                      className="btn btn-primary w-full"
                     >
-                      RETURN TO LIVE CAMPAIGNS
+                      Back to campaigns
                     </button>
                   </div>
                 )}
@@ -440,6 +405,7 @@ export default function CampaignsTab() {
           </div>
         )}
       </AnimatePresence>
+      </Portal>
     </div>
   );
 }

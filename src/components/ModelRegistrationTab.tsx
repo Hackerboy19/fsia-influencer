@@ -1,785 +1,567 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { routeForTab } from "../seo";
+import { resizeImageFile } from "../lib/image";
+import {
+  inputClass, labelClass, helpClass, optionalClass, errorBoxClass,
+  isValidEmail, isValidPhone, EMAIL_ERROR, PHONE_ERROR, focusField
+} from "../lib/forms";
+import FieldError, { errorProps } from "./FieldError";
+import { CREATOR_CATEGORIES, OTHER_CATEGORY } from "../content/creatorCategories";
+import { toast } from "react-hot-toast";
+import { ANTI_FRAUD_NOTE } from "../content/organiser";
 import { motion, AnimatePresence } from "motion/react";
-import { 
-  Sparkles, 
-  Instagram, 
-  UserPlus, 
-  CheckCircle2, 
-  Phone, 
-  HelpCircle, 
-  ArrowRight, 
-  ShieldCheck, 
-  Globe, 
-  Image as ImageIcon,
-  ChevronDown,
-  Briefcase,
-  Star
+import {
+  Instagram,
+  CheckCircle2,
+  Phone,
+  ArrowRight,
+  ArrowLeft,
+  ShieldCheck,
+  Mail,
+  Upload,
+  Link as LinkIcon
 } from "lucide-react";
-import DirectoryTab from "./DirectoryTab";
 
-interface RunwayCategory {
-  id: string;
-  title: string;
-}
+const CITIES = ["Mumbai", "New Delhi", "Bangalore", "Pune", "Chennai", "Kochi", "Hyderabad", "Kolkata", "Jaipur", "Ahmedabad", "Goa", "Other"];
 
-const PRESET_PORTRAITS = [
-  { 
-    name: "Sienna Brown (Editorial Noir)", 
-    url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format&fit=crop",
-    alt: "Sienna Brown - FSIA verified Indian influencer on premier brand collaboration platform"
-  },
-  { 
-    name: "Gold Glare (Couture Radiance)", 
-    url: "https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?q=80&w=600&auto=format&fit=crop",
-    alt: "Couture Radiance portrait representing creator economy monetization on the FSIA verified creator network"
-  },
-  { 
-    name: "Aria Sterling (High Fashion Minimal)", 
-    url: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=600&auto=format&fit=crop",
-    alt: "Aria Sterling - FSIA verified Indian influencer ready for elite brand collaborations"
-  },
-  { 
-    name: "Mystic Crimson (Royal Velvet)", 
-    url: "https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=600&auto=format&fit=crop",
-    alt: "Mystic Crimson portrait illustrating successful brand partnerships on the premium influencer marketing platform"
-  },
+const STEPS = [
+  { title: "About you", hint: "Name, category and city" },
+  { title: "Your profile", hint: "Photo, audience and bio" },
+  { title: "Contact & submit", hint: "How we reach you" }
 ];
 
-function SplitApplyButton() {
-  const [isOpen, setIsOpen] = useState(false);
+// Unsent answers survive a reload or an accidental tab switch (cleared after a successful submit)
+const DRAFT_KEY = "fsia_registration_draft";
+const DRAFT_FIELDS = ["name", "category", "categoryOther", "role", "city", "bio", "reach", "engagement", "quote", "email", "phone", "portfolioUrls"] as const;
+type Draft = Partial<Record<(typeof DRAFT_FIELDS)[number], string>>;
 
-  const handleScrollToForm = () => {
-    const el = document.getElementById("registration-form-section");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
-    }
-    setIsOpen(false);
-  };
+function readDraft(): Draft {
+  try {
+    return JSON.parse(sessionStorage.getItem(DRAFT_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
 
-  const handleOpenCollaboration = () => {
-    const event = new CustomEvent("open-vip-collaboration");
-    window.dispatchEvent(event);
-    setIsOpen(false);
-  };
+function navigateTo(tab: string) {
+  window.dispatchEvent(new CustomEvent("change-tab", { detail: tab }));
+}
 
-  return (
-    <div className="relative inline-flex items-center" id="split-apply-button-wrapper">
-      {/* Left side: Primary CTA */}
-      <button
-        onClick={handleScrollToForm}
-        className="h-14 bg-stone-900 hover:bg-stone-800 text-stone-100 font-sans text-xs tracking-[0.25em] font-bold pl-8 pr-6 rounded-l-xl uppercase flex items-center gap-2 transition-all cursor-pointer border-r border-stone-800 active:scale-[0.98] shadow-sm"
-      >
-        <Sparkles className="w-4 h-4 text-[#E1C699] animate-pulse" />
-        Get Verified
-      </button>
-
-      {/* Right side: Dropdown Toggle */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="h-14 bg-stone-900 hover:bg-stone-800 text-stone-100 px-4 rounded-r-xl transition-all cursor-pointer flex items-center justify-center active:scale-[0.98] shadow-sm"
-        aria-label="Toggle creator options"
-      >
-        <ChevronDown className={`w-4 h-4 transition-transform duration-300 text-stone-400 ${isOpen ? "rotate-180 text-stone-100" : ""}`} />
-      </button>
-
-      {/* Dropdown Options */}
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-            
-            <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              className="absolute top-full mt-2 right-0 w-64 bg-white border border-stone-200 rounded-xl shadow-xl z-50 overflow-hidden"
-            >
-              <div className="py-1">
-                <button
-                  onClick={handleScrollToForm}
-                  className="w-full px-4 py-3.5 text-left text-xs font-sans font-bold text-stone-900 hover:bg-stone-50 flex items-center gap-2.5 transition-colors border-b border-stone-100"
-                >
-                  <UserPlus className="w-4 h-4 text-stone-500" />
-                  JOIN VERIFIED CREATOR NETWORK
-                </button>
-                <button
-                  onClick={handleOpenCollaboration}
-                  className="w-full px-4 py-3.5 text-left text-xs font-sans font-bold text-stone-900 hover:bg-stone-50 flex items-center gap-2.5 transition-colors border-b border-stone-100"
-                >
-                  <ShieldCheck className="w-4 h-4 text-stone-500" />
-                  B2B BRAND COLLABORATIONS
-                </button>
-                <div className="px-4 py-3 bg-stone-50/50">
-                  <p className="text-[10px] font-serif-text text-zinc-500 leading-normal">
-                    Secure elite campaigns, global PR coverage, and content monetization.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </div>
-  );
+function openBrandEnquiry() {
+  window.dispatchEvent(new CustomEvent("open-vip-collaboration"));
 }
 
 export default function ModelRegistrationTab() {
-  const [categories, setCategories] = useState<RunwayCategory[]>([]);
-  const [loadingCats, setLoadingCats] = useState(true);
+  const [step, setStep] = useState(0);
+  const draft = useRef(readDraft()).current;
 
-  // Form states
-  const [name, setName] = useState("");
-  const [category, setCategory] = useState("");
-  const [role, setRole] = useState("Finalist Creator");
-  const [city, setCity] = useState("Mumbai");
-  const [imageType, setImageType] = useState<"preset" | "custom" | "upload">("preset");
-  const [presetImage, setPresetImage] = useState(PRESET_PORTRAITS[0].url);
+  // Form state
+  const [name, setName] = useState(draft.name || "");
+  // A draft from before the category list existed may hold a runway section id: start over then
+  const [category, setCategory] = useState(
+    draft.category && (CREATOR_CATEGORIES.includes(draft.category) || draft.category === OTHER_CATEGORY) ? draft.category : ""
+  );
+  const [categoryOther, setCategoryOther] = useState(draft.categoryOther || "");
+  const [role, setRole] = useState(draft.role || "");
+  const [city, setCity] = useState(draft.city || "");
+  const [imageType, setImageType] = useState<"upload" | "custom">("upload");
   const [customImage, setCustomImage] = useState("");
   const [uploadedFileName, setUploadedFileName] = useState("");
   const [isDragActive, setIsDragActive] = useState(false);
-  const [bio, setBio] = useState("");
-  const [reach, setReach] = useState("250K");
-  const [engagement, setEngagement] = useState("4.8%");
-  const [quote, setQuote] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [portfolioUrls, setPortfolioUrls] = useState("");
+  const [bio, setBio] = useState(draft.bio || "");
+  const [reach, setReach] = useState(draft.reach || "");
+  const [engagement, setEngagement] = useState(draft.engagement || "");
+  const [quote, setQuote] = useState(draft.quote || "");
+  const [email, setEmail] = useState(draft.email || "");
+  const [phone, setPhone] = useState(draft.phone || "");
+  const [portfolioUrls, setPortfolioUrls] = useState(draft.portfolioUrls || "");
 
-  // Submission states
+  // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successData, setSuccessData] = useState<any | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const [invalidField, setInvalidField] = useState("");
 
   useEffect(() => {
-    // Fetch active categories
-    fetch("/api/creators")
-      .then((res) => {
-        if (!res.ok) throw new Error();
-        return res.json();
-      })
-      .then((data) => {
-        const cats = data.map((sec: any) => ({
-          id: sec.id,
-          title: sec.title
-        }));
-        setCategories(cats);
-        if (cats.length > 0) {
-          setCategory(cats[0].id);
-        }
-        setLoadingCats(false);
-      })
-      .catch(() => {
-        const fallback = [
-          { id: "miss-india", title: "Forever Miss India 2026" },
-          { id: "super-hero", title: "Super Hero Awards" },
-          { id: "teen-india", title: "Forever Teen India 2026" },
-          { id: "mrs-india", title: "Forever Mrs India 2026" }
-        ];
-        setCategories(fallback);
-        setCategory(fallback[0].id);
-        setLoadingCats(false);
-      });
-  }, []);
-
-  const playChime = () => {
+    const values: Draft = { name, category, categoryOther, role, city, bio, reach, engagement, quote, email, phone, portfolioUrls };
     try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(880, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.15);
-      gain.gain.setValueAtTime(0.15, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.6);
-    } catch (e) {
-      // Ignored
+      if (successData) sessionStorage.removeItem(DRAFT_KEY);
+      else sessionStorage.setItem(DRAFT_KEY, JSON.stringify(values));
+    } catch {}
+  }, [name, category, categoryOther, role, city, bio, reach, engagement, quote, email, phone, portfolioUrls, successData]);
+
+  // Moving between steps puts keyboard focus on the first field of the new step
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
     }
+    focusField(["reg-name", "reg-reach", "reg-email"][step]);
+  }, [step]);
+
+  const handleFile = (file?: File) => {
+    if (!file) return;
+    resizeImageFile(file)
+      .then((dataUrl) => {
+        setCustomImage(dataUrl);
+        setUploadedFileName(file.name);
+      })
+      .catch(() => toast.error("That file could not be read as an image."));
+  };
+
+  const finalImage = customImage;
+
+  // Per-step validation: the message names the problem and focus moves to the field
+  type Problem = { field: string; message: string } | null;
+  const validateStep = (index: number): Problem => {
+    if (index === 0) {
+      if (!name.trim()) return { field: "reg-name", message: "Please enter your full name." };
+      if (!category) return { field: "reg-category", message: "Please choose a category." };
+      if (category === OTHER_CATEGORY && categoryOther.trim().length < 2) {
+        return { field: "reg-category-other", message: "Please type your category (for example, Astrology or Cricket)." };
+      }
+    }
+    if (index === 1 && imageType === "custom" && customImage && !/^https?:\/\//i.test(customImage)) {
+      return { field: "reg-image-link", message: "The image link must start with http:// or https://" };
+    }
+    if (index === 2) {
+      if (!isValidEmail(email)) return { field: "reg-email", message: EMAIL_ERROR };
+      if (!isValidPhone(phone)) return { field: "reg-phone", message: PHONE_ERROR };
+    }
+    return null;
+  };
+
+  const showProblem = (problem: Problem) => {
+    setInvalidField(problem?.field || "");
+    setErrorMsg(problem?.message || "");
+    if (problem) focusField(problem.field);
+  };
+
+  const goNext = () => {
+    const problem = validateStep(step);
+    showProblem(problem);
+    if (!problem) setStep((s) => Math.min(s + 1, STEPS.length - 1));
+  };
+
+  const goBack = () => {
+    showProblem(null);
+    setStep((s) => Math.max(s - 1, 0));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !phone || !category) {
-      setErrorMsg("Please fill out all mandatory fields.");
+    if (isSubmitting) return;
+    if (step < STEPS.length - 1) {
+      goNext();
+      return;
+    }
+    const problem = validateStep(0) || validateStep(1) || validateStep(2);
+    if (problem) {
+      const problemStep = ["reg-name", "reg-category", "reg-category-other"].includes(problem.field) ? 0 : problem.field === "reg-image-link" ? 1 : 2;
+      setStep(problemStep);
+      showProblem(problem);
       return;
     }
 
     setIsSubmitting(true);
     setErrorMsg("");
 
-    const finalImage = imageType === "preset" ? presetImage : (customImage || PRESET_PORTRAITS[0].url);
-    const portfolioArray = portfolioUrls
-      ? portfolioUrls.split(",").map(url => url.trim()).filter(Boolean)
-      : [finalImage];
-
-    const payload = {
-      name,
-      category,
-      role,
-      city,
-      image: finalImage,
-      bio,
-      reach,
-      engagement,
-      quote: quote || "Elegance is the only beauty that never fades.",
-      portfolio: portfolioArray,
-      email,
-      phone
-    };
+    // No stand-in photo: a profile only ever shows the creator's own picture
+    const image = finalImage;
+    const portfolio = portfolioUrls
+      ? portfolioUrls.split(",").map((url) => url.trim()).filter(Boolean)
+      : image ? [image] : [];
 
     fetch("/api/influencer-applications", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Server rejected registration submission.");
-        return res.json();
+      body: JSON.stringify({
+        name: name.trim(),
+        category: categoryTitle,
+        role: role.trim(),
+        city,
+        image,
+        bio: bio.trim(),
+        reach: reach.trim(),
+        engagement: engagement.trim(),
+        quote: quote.trim(),
+        portfolio,
+        email: email.trim(),
+        phone: phone.trim()
       })
-      .then((data) => {
-        setIsSubmitting(false);
-        playChime();
+    })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || "Your application could not be submitted.");
         setSuccessData(data.application);
       })
-      .catch((err) => {
-        console.warn("Emulating offline successful model registration:", err);
-        const mockApp = {
-          id: "inf-app-mock-" + Math.floor(Math.random() * 900000),
-          ...payload,
-          status: "pending",
-          timestamp: new Date().toLocaleDateString("en-IN", {
-            year: "numeric",
-            month: "long",
-            day: "numeric"
-          })
-        };
-        setIsSubmitting(false);
-        playChime();
-        setSuccessData(mockApp);
-      });
+      .catch((err: Error) => {
+        // Never pretend it worked: the applicant must know to try again
+        setErrorMsg(
+          (err.message || "Your application could not be submitted.") +
+            " Your details are still here — please try again in a moment."
+        );
+      })
+      .finally(() => setIsSubmitting(false));
   };
 
   const handleReset = () => {
+    setStep(0);
     setName("");
-    setRole("Finalist Creator");
-    setCity("Mumbai");
-    setImageType("preset");
-    setPresetImage(PRESET_PORTRAITS[0].url);
+    setCategory("");
+    setCategoryOther("");
+    setRole("");
+    setCity("");
+    setImageType("upload");
     setCustomImage("");
     setUploadedFileName("");
-    setIsDragActive(false);
     setBio("");
-    setReach("250K");
-    setEngagement("4.8%");
+    setReach("");
+    setEngagement("");
     setQuote("");
     setEmail("");
     setPhone("");
     setPortfolioUrls("");
+    setErrorMsg("");
+    setInvalidField("");
     setSuccessData(null);
   };
 
+  const categoryTitle = category === OTHER_CATEGORY ? categoryOther.trim() : category;
+
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-16 pb-16 bg-[#FCFBFA]" id="influencer-registration-tab-container">
-      {/* 1. HERO SECTION (SEO OPTIMIZED HOOK) */}
-      <section className="text-center py-12 md:py-20 flex flex-col items-center justify-center space-y-6 max-w-4xl mx-auto px-4">
-        <span className="font-sans text-[10px] md:text-xs tracking-[0.35em] text-[#8E8D8A] uppercase font-bold flex items-center justify-center gap-1.5">
-          <Sparkles className="w-4 h-4 text-stone-500 animate-pulse" />
-          OFFICIAL VERIFICATION GATEWAY
-        </span>
-        <h1 className="font-serif text-5xl md:text-7xl text-stone-900 leading-tight">
-          India's Premier Verified Influencer Network
-        </h1>
-        <p className="text-lg md:text-xl text-zinc-600 max-w-3xl mt-6 font-serif-text leading-relaxed">
-          Join FSIA Influencer to unlock paid brand collaborations, official creator verification, and exclusive PR opportunities. We connect top-tier Instagram and YouTube creators with global brands.
+    <div className="page pb-16" id="influencer-registration-tab-container">
+      <header className="max-w-3xl space-y-3 pt-10 md:pt-14 pb-10">
+        <p className="eyebrow">Award application</p>
+        <h1 className="h-page">{routeForTab("apply").heading}</h1>
+        <p className="lede">{routeForTab("apply").intro}</p>
+        <p className="text-[0.9375rem] text-ink-2">
+          Representing a brand?{" "}
+          <button type="button" onClick={openBrandEnquiry} className="link cursor-pointer">Send a brand enquiry instead</button>
         </p>
-        <div className="mt-10">
-          <SplitApplyButton />
-        </div>
-      </section>
+      </header>
 
-      {/* 2. THE DIRECTORY GRID */}
-      <DirectoryTab 
-        hideHero={true} 
-        hideFooter={true} 
-        onOpenCollaboration={(name) => {
-          const event = new CustomEvent("open-vip-collaboration");
-          window.dispatchEvent(event);
-        }}
-        onSelectCreator={() => {}}
-      />
-
-      {/* 5. REGISTRATION FORM SECTION */}
-      <section id="registration-form-section" className="max-w-4xl mx-auto px-4 pt-8">
-        <div className="border-t border-stone-200 pt-16 space-y-10">
-          <div className="text-center space-y-3">
-            <h2 className="font-serif text-3xl text-stone-900 text-center mb-2">
-              Join The Elite Roster
-            </h2>
-            <p className="text-zinc-600 text-sm text-center mb-8">
-              Submit your portfolio to get FSIA Verified and access exclusive brand campaigns.
-            </p>
-          </div>
-
-          <AnimatePresence mode="wait">
-            {!successData ? (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="bg-white/80 backdrop-blur-xl border border-stone-200 shadow-sm rounded-2xl p-8 max-w-2xl mx-auto space-y-6"
-              >
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Secure Triage Notice */}
-                  <div className="p-4 bg-stone-50 border border-stone-200/60 rounded-2xl flex items-start gap-3">
-                    <ShieldCheck className="w-5 h-5 text-stone-700 shrink-0 mt-0.5" />
-                    <div className="space-y-1">
-                      <h4 className="text-[10px] font-sans font-bold tracking-wider text-stone-900 uppercase">Haute Couture Verification Pipeline</h4>
-                      <p className="text-[11px] text-zinc-600 font-serif-text leading-relaxed">
-                        Profiles approved by FSIA administrators are directly integrated into our live interactive 3D Runway and model directories. Verify your contact details to receive direct WhatsApp updates.
+      {/* 2. STEP-BY-STEP FORM */}
+      <div className="grid gap-10 lg:gap-14 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] items-start">
+      <section id="registration-form-section" aria-label="Application form" className="max-w-2xl scroll-mt-6">
+        <AnimatePresence mode="wait">
+          {!successData ? (
+            <motion.div
+              key="form"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="bg-surface border border-line p-6 md:p-8"
+            >
+              {/* Progress */}
+              <ol className="grid grid-cols-3 gap-2 mb-8" aria-label="Registration progress">
+                {STEPS.map((s, i) => {
+                  const done = i < step;
+                  const current = i === step;
+                  return (
+                    <li key={s.title} aria-current={current ? "step" : undefined}>
+                      <div className={`h-1 ${i <= step ? "bg-ink" : "bg-line"}`} />
+                      <p className={`mt-2 text-sm font-semibold ${current ? "text-[#111]" : done ? "text-[#2e2c29]" : "text-[#57554f]"}`}>
+                        <span className="mr-1">{done ? "✓" : `${i + 1}.`}</span>
+                        {s.title}
                       </p>
-                    </div>
-                  </div>
+                      <p className="hidden sm:block text-[0.8125rem] text-ink-3">{s.hint}</p>
+                    </li>
+                  );
+                })}
+              </ol>
 
-                  {/* Basic Fields */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="block text-[10px] font-sans font-bold tracking-wider text-stone-700 uppercase">
-                        Full Professional Name *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="e.g., Deepika Padukone"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="w-full px-4 py-3 bg-white border border-stone-200 rounded-xl text-xs text-[#222] focus:outline-none focus:border-[#E1C699] focus:ring-1 focus:ring-[#E1C699]"
-                      />
+              <form onSubmit={handleSubmit} noValidate className="space-y-5">
+                {step === 0 && (
+                  <>
+                    <div>
+                      <label htmlFor="reg-name" className={labelClass}>Full name *</label>
+                      <input id="reg-name" type="text" autoComplete="name" placeholder="e.g. Priya Sharma" aria-required="true"
+                        {...errorProps("reg-name", invalidField)} value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
+                      <FieldError fieldId="reg-name" invalidField={invalidField} message={errorMsg} />
                     </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <div>
+                        <label htmlFor="reg-category" className={labelClass}>Category *</label>
+                        <select id="reg-category" value={category} onChange={(e) => setCategory(e.target.value)}
+                          aria-required="true" {...errorProps("reg-category", invalidField)} className={inputClass}>
+                          <option value="" disabled>Choose your main category</option>
+                          {CREATOR_CATEGORIES.map((cat) => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                          <option value={OTHER_CATEGORY}>Other (type your own)</option>
+                        </select>
+                        <FieldError fieldId="reg-category" invalidField={invalidField} message={errorMsg} />
+                        {category === OTHER_CATEGORY && (
+                          <div className="mt-3">
+                            <label htmlFor="reg-category-other" className={labelClass}>Your category *</label>
+                            <input id="reg-category-other" type="text" maxLength={60} placeholder="e.g. Astrology, Cricket, Agriculture"
+                              aria-required="true" {...errorProps("reg-category-other", invalidField)}
+                              value={categoryOther} onChange={(e) => setCategoryOther(e.target.value)} className={inputClass} />
+                            <FieldError fieldId="reg-category-other" invalidField={invalidField} message={errorMsg} />
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <label htmlFor="reg-city" className={labelClass}>City</label>
+                        <select id="reg-city" value={city} onChange={(e) => setCity(e.target.value)} className={inputClass}>
+                          <option value="">Choose your city</option>
+                          {CITIES.map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label htmlFor="reg-role" className={labelClass}>Title or achievement <span className={optionalClass}>(optional)</span></label>
+                      <input id="reg-role" type="text" placeholder="e.g. Fashion creator, Mumbai"
+                        value={role} onChange={(e) => setRole(e.target.value)} className={inputClass} />
+                    </div>
+                  </>
+                )}
 
-                    <div className="space-y-2">
-                      <label className="block text-[10px] font-sans font-bold tracking-wider text-stone-700 uppercase">
-                        Runway Category Selection *
-                      </label>
-                      <select
-                        value={category}
-                        onChange={(e) => setCategory(e.target.value)}
-                        className="w-full px-4 py-3 bg-white border border-stone-200 rounded-xl text-xs text-[#222] focus:outline-none focus:border-[#E1C699]"
-                        disabled={loadingCats}
-                      >
-                        {categories.map((cat) => (
-                          <option key={cat.id} value={cat.id}>
-                            {cat.title}
-                          </option>
+                {step === 1 && (
+                  <>
+                    <div>
+                      <p className={labelClass}>Profile photo</p>
+                      <div className="flex gap-1 bg-sunken border border-line rounded-[4px] p-1 mb-3" role="tablist">
+                        {([
+                          ["upload", "Upload", Upload],
+                          ["custom", "Paste a link", LinkIcon]
+                        ] as const).map(([id, label, Icon]) => (
+                          <button key={id} type="button" role="tab" aria-selected={imageType === id}
+                            onClick={() => setImageType(id)}
+                            className={`flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-sm font-semibold cursor-pointer ${imageType === id ? "bg-[#111] text-white" : "text-[#2e2c29] hover:bg-white"}`}>
+                            <Icon className="w-4 h-4" /> {label}
+                          </button>
                         ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Roster Role & Location */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="block text-[10px] font-sans font-bold tracking-wider text-stone-700 uppercase">
-                        Target Role / Title
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Winner, Forever Miss India 2026 / Rising Influencer"
-                        value={role}
-                        onChange={(e) => setRole(e.target.value)}
-                        className="w-full px-4 py-3 bg-white border border-stone-200 rounded-xl text-xs text-[#222] focus:outline-none focus:border-[#E1C699]"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="block text-[10px] font-sans font-bold tracking-wider text-stone-700 uppercase">
-                        Operating City Hub
-                      </label>
-                      <select
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                        className="w-full px-4 py-3 bg-white border border-stone-200 rounded-xl text-xs text-[#222] focus:outline-none focus:border-[#E1C699]"
-                      >
-                        {["Mumbai", "New Delhi", "Bangalore", "Pune", "Chennai", "Kochi", "Hyderabad", "Kolkata", "Jaipur", "Ahmedabad", "Goa"].map((c) => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Social Reach & Engagement */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-1.5">
-                        <Instagram className="w-4 h-4 text-pink-600" />
-                        <label className="block text-[10px] font-sans font-bold tracking-wider text-stone-700 uppercase">
-                          Audited Reach (Followers)
-                        </label>
                       </div>
-                      <input
-                        type="text"
-                        placeholder="e.g., 250K or 1.2M"
-                        value={reach}
-                        onChange={(e) => setReach(e.target.value)}
-                        className="w-full px-4 py-3 bg-white border border-stone-200 rounded-xl text-xs text-[#222] focus:outline-none focus:border-[#E1C699]"
-                      />
-                    </div>
 
-                    <div className="space-y-2">
-                      <label className="block text-[10px] font-sans font-bold tracking-wider text-stone-700 uppercase">
-                        Audited Engagement Rate (%)
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. 5.4% or 7.2%"
-                        value={engagement}
-                        onChange={(e) => setEngagement(e.target.value)}
-                        className="w-full px-4 py-3 bg-white border border-stone-200 rounded-xl text-xs text-[#222] focus:outline-none focus:border-[#E1C699]"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Portrait Image Selection */}
-                  <div className="space-y-3 bg-stone-50 p-5 rounded-2xl border border-stone-200/60">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                      <label className="block text-[10px] font-sans font-bold tracking-wider text-stone-900 uppercase flex items-center gap-1">
-                        <ImageIcon className="w-4 h-4 text-stone-500" />
-                        Runway Portrait Image
-                      </label>
-                      <div className="flex bg-white rounded-lg border border-stone-200 p-0.5 text-[9px] font-bold w-full sm:w-auto">
-                        <button
-                          type="button"
-                          onClick={() => setImageType("preset")}
-                          className={`flex-1 sm:flex-initial px-2 py-1 rounded transition-all cursor-pointer whitespace-nowrap text-center ${imageType === "preset" ? "bg-stone-900 text-white" : "text-stone-500 hover:text-stone-900"}`}
-                        >
-                          COUTURE PRESETS
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setImageType("upload")}
-                          className={`flex-1 sm:flex-initial px-2 py-1 rounded transition-all cursor-pointer whitespace-nowrap text-center ${imageType === "upload" ? "bg-stone-900 text-white" : "text-stone-500 hover:text-stone-900"}`}
-                        >
-                          UPLOAD PORTRAIT
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setImageType("custom")}
-                          className={`flex-1 sm:flex-initial px-2 py-1 rounded transition-all cursor-pointer whitespace-nowrap text-center ${imageType === "custom" ? "bg-stone-900 text-white" : "text-stone-500 hover:text-stone-900"}`}
-                        >
-                          IMAGE URL
-                        </button>
-                      </div>
-                    </div>
-
-                    {imageType === "preset" && (
-                      <div className="space-y-3">
-                        <p className="text-[10px] text-zinc-500 font-serif-text">Select one of our high-resolution couture presets to instantly populate your catwalk profile card:</p>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                          {PRESET_PORTRAITS.map((p) => {
-                            const isSelected = presetImage === p.url;
-                            return (
-                              <button
-                                key={p.name}
-                                type="button"
-                                onClick={() => {
-                                  setPresetImage(p.url);
-                                  setCustomImage("");
-                                }}
-                                className={`group relative aspect-[3/4] rounded-xl overflow-hidden border-2 cursor-pointer transition-all ${isSelected ? "border-stone-800 scale-[1.02]" : "border-transparent hover:border-stone-400"}`}
-                              >
-                                <img src={p.url} alt={p.alt || p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
-                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-2 text-left">
-                                  <span className="text-[8px] text-white font-sans font-bold block leading-tight truncate">{p.name}</span>
-                                </div>
-                                {isSelected && (
-                                  <div className="absolute top-2 right-2 bg-stone-900 text-[#E1C699] p-0.5 rounded-full shadow">
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
-                                  </div>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {imageType === "upload" && (
-                      <div className="space-y-3">
-                        <p className="text-[10px] text-zinc-500 font-serif-text">Drag and drop your professional headshot or select a local photo file. Images are securely embedded into your creator profile.</p>
-                        
+                      {imageType === "upload" && (
                         <div
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            setIsDragActive(true);
-                          }}
+                          onDragOver={(e) => { e.preventDefault(); setIsDragActive(true); }}
                           onDragLeave={() => setIsDragActive(false)}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            setIsDragActive(false);
-                            const file = e.dataTransfer.files?.[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onloadend = () => {
-                                  setCustomImage(reader.result as string);
-                                  setUploadedFileName(file.name);
-                                  setPresetImage("");
-                              };
-                              reader.readAsDataURL(file);
-                            }
-                          }}
-                          className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all flex flex-col items-center justify-center gap-3 cursor-pointer ${
-                            isDragActive 
-                              ? "border-stone-800 bg-stone-100/50" 
-                              : "border-stone-200 hover:border-stone-400 bg-white"
-                          }`}
-                          onClick={() => {
-                            document.getElementById("portrait-file-input")?.click();
-                          }}
+                          onDrop={(e) => { e.preventDefault(); setIsDragActive(false); handleFile(e.dataTransfer.files?.[0]); }}
+                          onClick={() => document.getElementById("portrait-file-input")?.click()}
+                          className={`border-2 border-dashed rounded-[4px] p-5 flex items-center gap-4 cursor-pointer ${isDragActive ? "border-[#111] bg-stone-50" : "border-field hover:border-ink"}`}
                         >
-                          <input
-                            type="file"
-                            id="portrait-file-input"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onloadend = () => {
-                                  setCustomImage(reader.result as string);
-                                  setUploadedFileName(file.name);
-                                  setPresetImage("");
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }}
-                          />
-                          
+                          <input type="file" id="portrait-file-input" accept="image/*" className="hidden"
+                            onChange={(e) => handleFile(e.target.files?.[0])} />
                           {customImage ? (
-                            <div className="flex flex-col items-center gap-2">
-                              <img 
-                                src={customImage} 
-                                alt="Uploaded headshot" 
-                                className="w-20 h-20 rounded-xl object-cover border border-stone-200 shadow-sm"
-                                referrerPolicy="no-referrer"
-                              />
-                              <p className="text-[10px] font-mono text-stone-900 font-bold">
-                                {uploadedFileName || "image_upload.png"}
-                              </p>
-                              <span className="text-[8px] font-sans bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                                Ready to Walk
-                              </span>
-                            </div>
+                            <img src={customImage} alt="Your uploaded profile photo" className="w-16 h-16 rounded-[2px] object-cover border border-stone-200" />
                           ) : (
-                            <>
-                              <div className="p-3 bg-stone-50 border border-stone-200 rounded-full text-neutral-500">
-                                <ImageIcon className="w-6 h-6 text-stone-600" />
-                              </div>
-                              <div>
-                                <p className="text-xs font-sans font-bold text-stone-900 uppercase tracking-wider">Drag & Drop Headshot Here</p>
-                                <p className="text-[9px] text-zinc-500 font-serif-text italic mt-0.5">or click to browse local files (PNG, JPG up to 10MB)</p>
-                              </div>
-                            </>
+                            <div className="w-16 h-16 rounded-[2px] bg-stone-100 flex items-center justify-center"><Upload className="w-6 h-6 text-[#2e2c29]" /></div>
                           )}
+                          <div>
+                            <p className="text-sm font-semibold text-[#111]">{customImage ? uploadedFileName || "Photo added" : "Tap to upload or drag a photo here"}</p>
+                            <p className="text-[0.875rem] text-[#47453f]">JPG or PNG. Large photos are resized automatically.</p>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {imageType === "custom" && (
-                      <div className="space-y-2">
-                        <label className="text-[9px] font-sans font-bold text-stone-600 uppercase block">Paste Image URL (Unsplash, Pinterest, etc.)</label>
-                        <input
-                          type="url"
-                          placeholder="https://images.unsplash.com/photo-..."
-                          value={customImage}
-                          onChange={(e) => {
-                            setCustomImage(e.target.value);
-                            setPresetImage("");
-                          }}
-                          className="w-full px-4 py-3 bg-white border border-stone-200 rounded-xl text-xs text-[#222] focus:outline-none focus:border-[#E1C699]"
-                        />
-                        <p className="text-[9px] text-zinc-400 font-serif-text italic">Note: Make sure the URL is public and starts with http/https.</p>
-                      </div>
-                    )}
-                  </div>
+                      {imageType === "custom" && (
+                        <div>
+                          <input id="reg-image-link" type="url" placeholder="https://…" value={customImage}
+                            {...errorProps("reg-image-link", invalidField, "reg-image-link-help")}
+                            onChange={(e) => setCustomImage(e.target.value)} className={inputClass} aria-label="Image link" />
+                          <FieldError fieldId="reg-image-link" invalidField={invalidField} message={errorMsg} />
+                          <p id="reg-image-link-help" className={helpClass}>Use a public link that starts with https://</p>
+                        </div>
+                      )}
+                    </div>
 
-                  {/* Bio, Philosophy, Contacts */}
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="block text-[10px] font-sans font-bold tracking-wider text-stone-700 uppercase">
-                          Fashion Philosophy (Inspirational Quote)
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <div>
+                        <label htmlFor="reg-reach" className={labelClass}>
+                          <span className="inline-flex items-center gap-1.5"><Instagram className="w-4 h-4" /> Followers</span>
                         </label>
-                        <input
-                          type="text"
-                          placeholder="e.g., Couture is the language of quiet confidence."
-                          value={quote}
-                          onChange={(e) => setQuote(e.target.value)}
-                          className="w-full px-4 py-3 bg-white border border-stone-200 rounded-xl text-xs text-[#222] focus:outline-none focus:border-[#E1C699]"
-                        />
+                        <input id="reg-reach" type="text" inputMode="text" placeholder="e.g. 250K or 1.2M"
+                          value={reach} onChange={(e) => setReach(e.target.value)} className={inputClass} />
                       </div>
-
-                      <div className="space-y-2">
-                        <label className="block text-[10px] font-sans font-bold tracking-wider text-stone-700 uppercase">
-                          Additional Portfolio Image URLs (Comma Separated, Optional)
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="url1, url2, url3 (to build your custom 3D carousel)"
-                          value={portfolioUrls}
-                          onChange={(e) => setPortfolioUrls(e.target.value)}
-                          className="w-full px-4 py-3 bg-white border border-stone-200 rounded-xl text-xs text-[#222] focus:outline-none focus:border-[#E1C699]"
-                        />
+                      <div>
+                        <label htmlFor="reg-engagement" className={labelClass}>Engagement rate</label>
+                        <input id="reg-engagement" type="text" placeholder="e.g. 4.8%"
+                          value={engagement} onChange={(e) => setEngagement(e.target.value)} className={inputClass} />
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="block text-[10px] font-sans font-bold tracking-wider text-stone-700 uppercase">
-                        Professional Biography & Pitch (Passions & Experience)
-                      </label>
-                      <textarea
-                        rows={3}
-                        placeholder="Provide a detailed overview of your creative voice, style aesthetic, and why you would be an ideal luxury brand ambassador for our runway partners."
-                        value={bio}
-                        onChange={(e) => setBio(e.target.value)}
-                        className="w-full px-4 py-3 bg-white border border-stone-200 rounded-xl text-xs text-[#222] focus:outline-none focus:border-[#E1C699] font-serif-text leading-relaxed text-stone-800"
-                      />
+                    <div>
+                      <label htmlFor="reg-bio" className={labelClass}>Short bio <span className={optionalClass}>(optional)</span></label>
+                      <textarea id="reg-bio" rows={3} placeholder="Your niche, style and the brands you'd love to work with."
+                        value={bio} onChange={(e) => setBio(e.target.value)} className={inputClass} />
                     </div>
-                  </div>
 
-                  {/* Private Contact Details (For administrative vetting) */}
-                  <div className="border-t border-stone-200 pt-6 space-y-4">
-                    <h3 className="text-xs font-sans font-bold text-stone-900 uppercase tracking-wider">Secure Coordination Credentials</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="block text-[10px] font-sans font-bold tracking-wider text-stone-700 uppercase">
-                          Secure Email Address *
-                        </label>
-                        <input
-                          type="email"
-                          required
-                          placeholder="name@agency.in"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="w-full px-4 py-3 bg-white border border-stone-200 rounded-xl text-xs text-[#222] focus:outline-none focus:border-[#E1C699]"
-                        />
-                      </div>
+                    <details className="group">
+                      <summary className="text-sm font-semibold text-[#111] cursor-pointer select-none">+ Add portfolio links (optional)</summary>
+                      <input type="text" placeholder="https://… , https://…" value={portfolioUrls}
+                        onChange={(e) => setPortfolioUrls(e.target.value)} className={inputClass + " mt-2"} aria-label="Portfolio links" />
+                      <p className={helpClass}>Separate several links with commas.</p>
+                    </details>
+                  </>
+                )}
 
-                      <div className="space-y-2">
-                        <label className="block text-[10px] font-sans font-bold tracking-wider text-stone-700 uppercase">
-                          Mobile Number (WhatsApp Preferred) *
-                        </label>
+                {step === 2 && (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <div>
+                        <label htmlFor="reg-email" className={labelClass}>Email *</label>
                         <div className="relative">
-                          <input
-                            type="tel"
-                            required
-                            placeholder="+91 XXXXX XXXXX"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            className="w-full pl-10 pr-4 py-3 bg-white border border-stone-200 rounded-xl text-xs text-[#222] focus:outline-none focus:border-[#E1C699]"
-                          />
-                          <Phone className="w-4 h-4 text-stone-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <Mail aria-hidden="true" className="w-4 h-4 text-ink-3 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <input id="reg-email" type="email" autoComplete="email" inputMode="email" placeholder="you@example.com"
+                            aria-required="true" {...errorProps("reg-email", invalidField)}
+                            value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass + " pl-10"} />
                         </div>
+                        <FieldError fieldId="reg-email" invalidField={invalidField} message={errorMsg} />
+                      </div>
+                      <div>
+                        <label htmlFor="reg-phone" className={labelClass}>Mobile (WhatsApp) *</label>
+                        <div className="relative">
+                          <Phone aria-hidden="true" className="w-4 h-4 text-ink-3 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <input id="reg-phone" type="tel" autoComplete="tel" inputMode="tel" placeholder="+91 98765 43210"
+                            aria-required="true" {...errorProps("reg-phone", invalidField)}
+                            value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass + " pl-10"} />
+                        </div>
+                        <FieldError fieldId="reg-phone" invalidField={invalidField} message={errorMsg} />
                       </div>
                     </div>
-                  </div>
 
-                  {/* Error log */}
-                  {errorMsg && (
-                    <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-xs rounded-lg font-semibold">
-                      {errorMsg}
+                    <div>
+                      <label htmlFor="reg-quote" className={labelClass}>Your motto <span className={optionalClass}>(optional)</span></label>
+                      <input id="reg-quote" type="text" placeholder="A line that sums up your style"
+                        value={quote} onChange={(e) => setQuote(e.target.value)} className={inputClass} />
                     </div>
-                  )}
 
-                  {/* Submit Button */}
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="bg-stone-900 text-[#C9A227] hover:bg-stone-800 transition-colors w-full py-3 rounded-lg font-semibold flex items-center justify-center gap-2 shadow hover:shadow-md disabled:opacity-50"
-                  >
+                    {/* Review before submitting */}
+                    <div className="bg-sunken border border-line p-4 flex gap-4 items-center">
+                      {finalImage ? (
+                        <img src={finalImage} alt="" className="w-14 h-14 rounded-[4px] object-cover border border-line" referrerPolicy="no-referrer" />
+                      ) : (
+                        <span className="w-14 h-14 rounded-[4px] bg-sunken border border-line shrink-0" aria-hidden="true" />
+                      )}
+                      <div className="min-w-0 text-sm">
+                        <p className="font-semibold text-[#111] truncate">{name || "—"}</p>
+                        <p className="text-[#2e2c29] truncate">{[categoryTitle, city, reach ? `${reach} followers` : ""].filter(Boolean).join(" · ")}</p>
+                        <button type="button" onClick={() => setStep(0)} className="text-[0.875rem] font-semibold text-[#111] underline underline-offset-2 cursor-pointer">Edit details</button>
+                      </div>
+                    </div>
+
+                    <p className="flex items-start gap-2 text-[0.875rem] text-[#2e2c29]">
+                      <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0" />
+                      If we approve your application, your name, photo, category, city, bio, audience figures and motto are shown on a public profile. Your email and phone number are never published; our team uses them only to contact you.
+                    </p>
+                  </>
+                )}
+
+                {errorMsg && !invalidField && (
+                  <div role="alert" className={errorBoxClass}>
+                    {errorMsg}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between gap-3 pt-2">
+                  {step > 0 ? (
+                    <button type="button" onClick={goBack}
+                      className="btn btn-secondary">
+                      <ArrowLeft className="w-4 h-4" /> Back
+                    </button>
+                  ) : <span />}
+                  <button type="submit" disabled={isSubmitting} aria-busy={isSubmitting}
+                    className="btn btn-primary disabled:opacity-60 disabled:cursor-wait">
                     {isSubmitting ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-t-transparent border-[#C9A227] rounded-full animate-spin" />
-                        SUBMITTING PORTFOLIO...
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Submitting…
                       </>
+                    ) : step < STEPS.length - 1 ? (
+                      <>Continue <ArrowRight className="w-4 h-4" /></>
                     ) : (
-                      <>
-                        Submit Portfolio for Review
-                      </>
+                      <>Submit application <CheckCircle2 className="w-4 h-4" /></>
                     )}
                   </button>
-                </form>
-              </motion.div>
-            ) : (
-              /* Receipt Card of Application */
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="space-y-6"
-              >
-                <div className="p-6 md:p-8 border border-stone-200 bg-white/95 backdrop-blur-md rounded-3xl shadow-xl text-center space-y-6 relative overflow-hidden">
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 border border-stone-100 rounded-full pointer-events-none" />
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-60 h-60 border border-stone-100 rounded-full pointer-events-none" />
-
-                  <div className="mx-auto w-16 h-16 rounded-full bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-700">
-                    <CheckCircle2 className="w-8 h-8" />
-                  </div>
-
-                  <div className="space-y-1">
-                    <span className="font-sans text-[9px] tracking-[0.3em] text-[#8E8D8A] uppercase font-bold">
-                      FSIA Official Runway Submission
-                    </span>
-                    <h3 className="font-serif-display text-2xl md:text-3xl text-stone-900 font-bold">
-                      Application Sealed & Pending
-                    </h3>
-                  </div>
-
-                  <p className="text-xs text-zinc-600 font-serif-text max-w-lg mx-auto leading-relaxed">
-                    Thank you, <strong className="text-stone-900">{successData.name}</strong>. Your runway registration has been successfully transmitted to the FSIA Haute Couture Review Board. You will be contacted at <strong className="text-stone-900">{successData.email}</strong> or on WhatsApp at <strong className="text-stone-900">{successData.phone}</strong> upon administrative profile verification.
-                  </p>
-
-                  {/* Document details box */}
-                  <div className="max-w-md mx-auto border border-stone-200 py-4 space-y-2 text-left text-xs font-serif-text bg-stone-50/50 p-4 rounded-xl">
-                    <div className="flex justify-between">
-                      <span className="text-stone-500 font-sans text-[10px] uppercase font-bold">APPLICATION ID:</span>
-                      <span className="font-mono text-stone-900 font-bold">{successData.id}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-stone-500 font-sans text-[10px] uppercase font-bold">DESIGNEE CATEGORY:</span>
-                      <span className="text-stone-900 font-semibold">{successData.category}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-stone-500 font-sans text-[10px] uppercase font-bold">TARGET RUNWAY ROLE:</span>
-                      <span className="text-stone-900 font-semibold">{successData.role}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-stone-500 font-sans text-[10px] uppercase font-bold">AUDITED FOLLOWER REACH:</span>
-                      <span className="text-stone-900 font-semibold font-mono">{successData.reach}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-stone-500 font-sans text-[10px] uppercase font-bold">APPLICATION STATUS:</span>
-                      <span className="font-sans text-[10px] font-bold text-amber-700 uppercase bg-amber-50 px-2 py-0.5 rounded border border-amber-200 flex items-center gap-1">
-                        PENDING AUDIT
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2 max-w-sm mx-auto">
-                    <button
-                      onClick={handleReset}
-                      className="px-6 py-3 bg-stone-900 hover:bg-stone-800 text-stone-100 font-sans text-[10px] font-bold tracking-widest uppercase rounded-lg cursor-pointer transition-colors w-full"
-                    >
-                      NEW APPLICATION
-                    </button>
-                  </div>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                <p className="text-[0.8125rem] text-ink-3 text-center">Step {step + 1} of {STEPS.length}</p>
+              </form>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="done"
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-surface border border-line p-6 md:p-8 text-center space-y-5"
+            >
+              <div className="mx-auto w-12 h-12 flex items-center justify-center text-[#2f6b45]">
+                <CheckCircle2 className="w-7 h-7" />
+              </div>
+              <div className="space-y-1">
+                <h2 className="font-serif-display text-2xl md:text-3xl text-[#111] font-bold">Application received</h2>
+                <p className="text-[15px] text-[#2e2c29] max-w-md mx-auto">
+                  Thank you, <strong>{successData.name}</strong>. Our team will review your profile and contact you at{" "}
+                  <strong>{successData.email}</strong> or on WhatsApp.
+                </p>
+              </div>
+              <dl className="max-w-sm mx-auto text-left text-[0.9375rem] bg-sunken border border-line p-4 space-y-2">
+                <div className="flex justify-between gap-3"><dt className="text-[#47453f]">Reference</dt><dd className="font-mono font-semibold text-[#111]">{successData.id}</dd></div>
+                <div className="flex justify-between gap-3"><dt className="text-[#47453f]">Category</dt><dd className="font-semibold text-[#111]">{categoryTitle}</dd></div>
+                <div className="flex justify-between gap-3"><dt className="text-[#47453f]">Status</dt><dd className="font-semibold text-amber-800">Pending review</dd></div>
+              </dl>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <button onClick={() => navigateTo("campaigns")}
+                  className="btn btn-primary">
+                  Browse brand campaigns
+                </button>
+                <button onClick={handleReset}
+                  className="btn btn-secondary">
+                  Register someone else
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <p className="mt-6 text-[0.9375rem] text-ink-2">
+          Want to see published profiles first?{" "}
+          <a href="/talent/" onClick={(e) => { e.preventDefault(); navigateTo("directory"); }} className="link">
+            Browse the directory
+          </a>
+        </p>
       </section>
+
+      {/* What is collected, why, and what happens next: only what the application workflow actually does */}
+      <aside aria-labelledby="apply-info" className="lg:sticky lg:top-8 space-y-8 lg:border-l lg:border-line lg:pl-10">
+        <div>
+          <h2 id="apply-info" className="label-caps pb-3 border-b border-line">What we ask for and why</h2>
+          <dl className="divide-y divide-line">
+            {[
+              ["Name, category, city, title", "Shown on your public profile so brands can find you."],
+              ["Photo, bio, followers, engagement", "Shown on your profile. Audience figures are labelled as supplied by you."],
+              ["Email and mobile", "Used by our team to contact you about your application. Not shown on your profile."]
+            ].map(([term, text]) => (
+              <div key={term} className="py-3.5">
+                <dt className="font-semibold text-ink">{term}</dt>
+                <dd className="text-[0.9375rem] text-ink-2 mt-0.5">{text}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+        <div>
+          <h2 className="label-caps pb-3 border-b border-line">What happens next</h2>
+          <ol className="divide-y divide-line">
+            {[
+              "You get a reference number straight away.",
+              "Our team reviews your application.",
+              "If it is approved, your profile is published in the directory.",
+              "You can ask us to correct or remove it at any time."
+            ].map((text, i) => (
+              <li key={text} className="py-3 flex gap-3 text-[0.9375rem] text-ink-2">
+                <span className="font-display text-bronze tabular-nums w-5 shrink-0" aria-hidden="true">{i + 1}</span>
+                <span>{text}</span>
+              </li>
+            ))}
+          </ol>
+          <p className="mt-4 text-[0.875rem] text-ink-3 border-l-2 border-line-strong pl-3">{ANTI_FRAUD_NOTE}</p>
+        </div>
+      </aside>
+      </div>
     </div>
   );
 }
