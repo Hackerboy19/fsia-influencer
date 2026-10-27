@@ -26,14 +26,14 @@ export interface GallerySection {
 export const gallerySections: GallerySection[] = [
   {
     id: "miss-india",
-    title: "Miss India 2026",
-    subtitle: "The Reign of Couture & Prestige",
+    title: "Fashion & Modelling",
+    subtitle: "Fashion, beauty and runway creators",
     zOffset: 0,
     primaryColor: "#E1C699", // Champagne Gold
     creators: [
       {
         name: "Aishwarya Sen",
-        role: "Winner, Miss India 2026",
+        role: "Fashion creator",
         city: "Mumbai",
         image: "https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?q=80&w=600&auto=format&fit=crop",
         bio: "An epitome of modern intellect and poise, Aishwarya championed rural girls' education and visual arts while walking the runways of Milan and Paris Couture Weeks. Her advocacy combined with high-fashion presence sets a new gold standard.",
@@ -53,7 +53,7 @@ export const gallerySections: GallerySection[] = [
       },
       {
         name: "Meera Deshmukh",
-        role: "1st Runner Up, Miss India 2026",
+        role: "Classical dancer and fashion creator",
         city: "New Delhi",
         image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format&fit=crop",
         bio: "A classical Odissi dancer and high-fashion enthusiast, Meera blends deep-rooted cultural heritage with sharp, high-fashion styling. She represents the seamless dialogue between classical antiquity and modern avant-garde design.",
@@ -61,8 +61,7 @@ export const gallerySections: GallerySection[] = [
           reach: "1.2M",
           engagement: "7.1%",
           verified: true,
-          "Campaigns": "12 Global Brands",
-          "Dance Laurels": "National Sangeet Natak Awardee"
+          "Campaigns": "12 Global Brands"
         },
         quote: "True elegance is a resonance between our ancestral rhythms and the modern canvas.",
         portfolio: [
@@ -74,8 +73,8 @@ export const gallerySections: GallerySection[] = [
   },
   {
     id: "super-hero",
-    title: "Super Hero Awards",
-    subtitle: "Visionary Social Impact & Leadership",
+    title: "Social Impact",
+    subtitle: "Creators working on social causes",
     zOffset: -8,
     primaryColor: "#A3B18A", // Soft Sage / Platinum
     creators: [
@@ -108,8 +107,7 @@ export const gallerySections: GallerySection[] = [
           reach: "980K",
           engagement: "8.2%",
           verified: true,
-          "Circular Runway": "100% Fully Circular",
-          "Design Laurels": "Green Fashion Award 2025"
+          "Circular Runway": "100% Fully Circular"
         },
         quote: "Couture doesn't need to leave a scar on the Earth to take your breath away.",
         portfolio: [
@@ -120,8 +118,8 @@ export const gallerySections: GallerySection[] = [
   },
   {
     id: "verified-influencers",
-    title: "Verified VIP Influencers",
-    subtitle: "The Standard of Modern Digital Authority",
+    title: "Lifestyle & Design",
+    subtitle: "Lifestyle, design and culture creators",
     zOffset: -16,
     primaryColor: "#C5C3C0", // Brushed Platinum
     creators: [

@@ -163,14 +163,14 @@ export const DB_PATH = path.join(process.cwd(), "server", "db.json");
 const INITIAL_CREATORS: GallerySection[] = [
   {
     id: "miss-india",
-    title: "Miss India 2026",
-    subtitle: "The Reign of Couture & Prestige",
+    title: "Fashion & Modelling",
+    subtitle: "Fashion, beauty and runway creators",
     zOffset: 0,
     primaryColor: "#E1C699",
     creators: [
       {
         name: "Aishwarya Sen",
-        role: "Winner, Miss India 2026",
+        role: "Fashion creator",
         city: "Mumbai",
         image: "https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?q=80&w=600&auto=format&fit=crop",
         bio: "An epitome of modern intellect and poise, Aishwarya championed rural girls' education and visual arts while walking the runways of Milan and Paris Couture Weeks. Her advocacy combined with high-fashion presence sets a new gold standard.",
@@ -190,7 +190,7 @@ const INITIAL_CREATORS: GallerySection[] = [
       },
       {
         name: "Meera Deshmukh",
-        role: "1st Runner Up, Miss India 2026",
+        role: "Classical dancer and fashion creator",
         city: "New Delhi",
         image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format&fit=crop",
         bio: "A classical Odissi dancer and high-fashion enthusiast, Meera blends deep-rooted cultural heritage with sharp, high-fashion styling. She represents the seamless dialogue between classical antiquity and modern avant-garde design.",
@@ -198,8 +198,7 @@ const INITIAL_CREATORS: GallerySection[] = [
           reach: "1.2M",
           engagement: "7.1%",
           verified: true,
-          "Campaigns": "12 Global Brands",
-          "Dance Laurels": "National Sangeet Natak Awardee"
+          "Campaigns": "12 Global Brands"
         },
         quote: "True elegance is a resonance between our ancestral rhythms and the modern canvas.",
         portfolio: [
@@ -211,8 +210,8 @@ const INITIAL_CREATORS: GallerySection[] = [
   },
   {
     id: "super-hero",
-    title: "Super Hero Awards",
-    subtitle: "Visionary Social Impact & Leadership",
+    title: "Social Impact",
+    subtitle: "Creators working on social causes",
     zOffset: -8,
     primaryColor: "#A3B18A",
     creators: [
@@ -245,8 +244,7 @@ const INITIAL_CREATORS: GallerySection[] = [
           reach: "980K",
           engagement: "8.2%",
           verified: true,
-          "Circular Runway": "100% Fully Circular",
-          "Design Laurels": "Green Fashion Award 2025"
+          "Circular Runway": "100% Fully Circular"
         },
         quote: "Couture doesn't need to leave a scar on the Earth to take your breath away.",
         portfolio: [
@@ -257,8 +255,8 @@ const INITIAL_CREATORS: GallerySection[] = [
   },
   {
     id: "verified-influencers",
-    title: "Verified VIP Influencers",
-    subtitle: "The Standard of Modern Digital Authority",
+    title: "Lifestyle & Design",
+    subtitle: "Lifestyle, design and culture creators",
     zOffset: -16,
     primaryColor: "#C5C3C0",
     creators: [
@@ -553,6 +551,12 @@ const PUBLIC_AWARD = "Influencer Award";
 // A null replacement keeps the first capture group. An all-caps match gets an all-caps
 // replacement unless the rule is marked "asIs" (the acronym FSIA is always upper case).
 const DEBRAND_RULES: [RegExp, string | null, "asIs"?][] = [
+  // Only one award exists (Boss, 2026-10-27): older section names and titles that read as other
+  // awards or as a verification are shown under neutral niche names. The stored data is unchanged.
+  [/\b(?:Winner|(?:1st|2nd|3rd) Runner[- ]Up|Runner[- ]Up),?\s+Miss India \d{4}\b/gi, "Fashion creator"],
+  [/\bMiss India \d{4}\b/gi, "Fashion & Modelling"],
+  [/\bSuper Hero Awards?\b/gi, "Social Impact"],
+  [/\bVerified VIP Influencers\b/gi, "Lifestyle & Design"],
   [/FSIA\s*[—-]\s*Forever Star India Awards/gi, PUBLIC_BRAND],
   [/Forever Star India(?: Awards| Association)?(?: \(FSIA\))?/gi, PUBLIC_BRAND],
   [/\b(?:Forever|FSIA) Influencer Awards\b/gi, PUBLIC_BRAND],
