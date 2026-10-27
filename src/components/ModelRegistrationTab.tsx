@@ -235,7 +235,9 @@ export default function ModelRegistrationTab() {
       <header className="max-w-3xl space-y-3 pt-10 md:pt-14 pb-10">
         <p className="eyebrow">Award application</p>
         <h1 className="h-page">{routeForTab("apply").heading}</h1>
-        <p className="lede">{routeForTab("apply").intro}</p>
+        <p className="lede">
+          This is how creators join the directory. It takes about two minutes. Our team reads every application and calls you about the fee and next steps.
+        </p>
         <p className="text-[0.9375rem] text-ink-2">
           Representing a brand?{" "}
           <button type="button" onClick={openBrandEnquiry} className="link cursor-pointer">Send a brand enquiry instead</button>

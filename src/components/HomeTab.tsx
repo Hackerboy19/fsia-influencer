@@ -154,16 +154,14 @@ function Hero({
   const side = withPhoto.slice(1, 4);
   const shortcuts = categories.slice(0, 6);
 
-  const facts: { icon: React.ReactNode; value: string; label: string }[] =
+  const facts: { value: number; label: string }[] =
     status === "loading" || !profiles.length
       ? []
       : [
-          { icon: <Users className="w-[18px] h-[18px]" />, value: String(profiles.length), label: profiles.length === 1 ? "Profile" : "Profiles" },
-          { icon: <LayoutGrid className="w-[18px] h-[18px]" />, value: String(categories.length), label: categories.length === 1 ? "Category" : "Categories" },
-          { icon: <MapPin className="w-[18px] h-[18px]" />, value: String(cities.length), label: cities.length === 1 ? "City" : "Cities" }
+          { value: profiles.length, label: profiles.length === 1 ? "profile" : "profiles" },
+          { value: categories.length, label: categories.length === 1 ? "category" : "categories" },
+          { value: cities.length, label: cities.length === 1 ? "city" : "cities" }
         ];
-  facts.push({ icon: <BadgeCheck className="w-[18px] h-[18px]" />, value: "Reviewed", label: "By our team" });
-  if (APPLICATIONS_OPEN) facts.push({ icon: <CircleCheck className="w-[18px] h-[18px]" />, value: "Open", label: "Registration" });
 
   return (
     <section aria-labelledby="home-title" className="relative overflow-hidden bg-ivory border-b border-line">
@@ -197,7 +195,7 @@ function Hero({
           )}
           <h1 id="home-title">
             <span className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-4">
-              <span className="eyebrow tracking-[0.18em]">{AWARD_NAME} · India's creator directory</span>
+              <span className="text-[0.875rem] font-semibold text-ink-2">{AWARD_NAME} directory</span>
               {APPLICATIONS_OPEN && (
                 <span className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold text-[#2f6b45]">
                   <span className="w-2 h-2 rounded-full bg-[#2f6b45]" aria-hidden="true" /> Registration open
@@ -205,11 +203,11 @@ function Hero({
               )}
             </span>
             <span className="h-display block">
-              Discover Creators. <span className="accent">Build Meaningful Collaborations.</span>
+              Find the right creator <span className="accent">for your brand.</span>
             </span>
           </h1>
           <p className="text-[1.0625rem] leading-relaxed text-ink-2 max-w-[34rem]">
-            Explore reviewed creator profiles from across India and send us an enquiry to collaborate. Creators join by applying for the {AWARD_NAME}.
+            Indian creators who applied for the {AWARD_NAME}. Our team reads every profile before it goes live. Pick someone you like and send us a brief.
           </p>
 
           <HeroSearch onBrowse={onBrowse} />
@@ -240,18 +238,18 @@ function Hero({
             </nav>
           )}
 
-          <ul className="grid grid-cols-2 sm:flex sm:flex-wrap gap-x-7 gap-y-4 pt-1" aria-label="At a glance">
-            {facts.map((f) => (
-              <li key={f.label} className="flex items-center gap-2.5">
-                <span className="icon-dot" aria-hidden="true">{f.icon}</span>
-                <span className="leading-tight">
-                  <span className="block font-bold text-ink tabular-nums">{f.value}</span>
-                  <span className="block text-[0.8125rem] text-ink-3">{f.label}</span>
+          {facts.length > 0 && (
+            <p className="text-[0.9375rem] text-ink-2">
+              {facts.map((f, i) => (
+                <span key={f.label}>
+                  {i > 0 && <span className="text-ink-3" aria-hidden="true"> · </span>}
+                  <strong className="font-semibold text-ink tabular-nums">{f.value}</strong> {f.label}
                 </span>
-              </li>
-            ))}
-          </ul>
-          {sample && <p className="text-[0.8125rem] text-ink-3">Counts and photos on this preview come from sample profiles.</p>}
+              ))}
+              {" "}in the directory so far.
+              {sample && <span className="block text-[0.8125rem] text-ink-3 mt-1">This preview shows sample profiles.</span>}
+            </p>
+          )}
 
           <BrandCreatorCards onBrandEnquiry={onBrandEnquiry} onNavigate={onNavigate} className="sm:grid-cols-2 xl:hidden" />
         </div>
@@ -328,7 +326,7 @@ function FeatureStrip({ profiles, onGo }: { profiles: ProfileView[]; onGo: HomeT
       target: { tab: "home", hash: "the-award" },
       href: "/#the-award",
       thumb: (
-        <span className="w-full h-full bg-gradient-to-br from-[#2A251E] to-[#4A3A22] text-[#E1C699] flex items-center justify-center" aria-hidden="true">
+        <span className="w-full h-full bg-[#2A251E] text-[#E1C699] flex items-center justify-center" aria-hidden="true">
           <Trophy className="w-7 h-7" />
         </span>
       )
@@ -347,9 +345,9 @@ function FeatureStrip({ profiles, onGo }: { profiles: ProfileView[]; onGo: HomeT
   ];
   return (
     <nav aria-label="Explore the site" className="page-wide relative z-[1] -mt-px pt-5">
-      <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <ul className="-mx-4 px-4 sm:mx-0 sm:px-0 flex sm:grid gap-3 sm:grid-cols-2 xl:grid-cols-5 overflow-x-auto sm:overflow-visible snap-x scrollbar-none">
         {items.map((it, i) => (
-          <li key={it.title} className={i === items.length - 1 ? "sm:max-xl:col-span-2" : undefined}>
+          <li key={it.title} className={`shrink-0 w-[15.5rem] sm:w-auto snap-start ${i === items.length - 1 ? "sm:max-xl:col-span-2" : ""}`}>
             <a href={it.href} onClick={inApp(() => onGo(it.target))} className="card group flex items-center gap-3.5 xl:gap-3 p-2 pr-3 xl:pr-2 h-full">
               <span className="w-[5.5rem] xl:w-14 xl:h-14 h-16 shrink-0 overflow-hidden rounded-[3px] bg-sunken text-ink-3 flex items-center justify-center">{it.thumb}</span>
               <span className="min-w-0 flex-1">
@@ -536,10 +534,7 @@ function LatestGuides({ onGo }: { onGo: HomeTabProps["onGo"] }) {
         <ul className="divide-y divide-line">
           {rest.slice(0, 3).map((post) => (
             <li key={post.id}>
-              <a href={`/green-light/#guide-${post.id}`} onClick={inApp(() => onGo(target(post.id)))} className="group flex gap-3 py-3 first:pt-0">
-                <span className="w-14 h-14 shrink-0 rounded-[3px] bg-bronze-soft text-bronze font-display text-[1.375rem] italic flex items-center justify-center" aria-hidden="true">
-                  {post.category === "For Brands" ? "B" : post.category === "Awards" ? "A" : "C"}
-                </span>
+              <a href={`/green-light/#guide-${post.id}`} onClick={inApp(() => onGo(target(post.id)))} className="group block py-3 first:pt-0">
                 <span className="min-w-0">
                   <span className="block font-semibold text-ink leading-snug group-hover:underline underline-offset-4 decoration-1">{post.title}</span>
                   <span className="block text-[0.75rem] text-ink-3 mt-1">{post.category} · {post.readMinutes} min read</span>
@@ -707,9 +702,8 @@ export default function HomeTab({ profiles, status, onNavigate, onGo, onSelectPr
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <div className="relative overflow-hidden rounded-[4px] border border-line bg-[linear-gradient(120deg,#F6EEDF,#EFE3CC)] p-6 sm:p-7">
-            <p className="eyebrow">Explore Magazine</p>
-            <h2 className="mt-2 font-semibold text-[1.375rem] text-ink leading-tight">Be part of the next feature</h2>
+          <div className="relative overflow-hidden rounded-[4px] border border-line bg-[#F3EADA] p-6 sm:p-7">
+            <h2 className="font-semibold text-[1.375rem] text-ink leading-tight">Be part of the next feature</h2>
             <p className="mt-2 text-[0.9375rem] text-ink-2 max-w-md">
               Book a cover story, an inside feature or a digital spotlight for yourself or your brand. We reply with dates and rates.
             </p>
@@ -717,10 +711,8 @@ export default function HomeTab({ profiles, status, onNavigate, onGo, onSelectPr
               Send a booking request <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </a>
           </div>
-          <div className="surface-dark relative overflow-hidden rounded-[4px] bg-[linear-gradient(120deg,#1B1A17,#3A2E1E)] text-white p-6 sm:p-7">
-            <Trophy className="absolute -right-4 -bottom-6 w-44 h-44 text-[#E1C699]/15" aria-hidden="true" strokeWidth={1.25} />
-            <p className="text-[0.8125rem] font-semibold uppercase tracking-[0.08em] text-[#E1C699]">{APPLICATIONS_OPEN ? "Registration open" : "The award"}</p>
-            <h2 className="mt-2 font-semibold text-[1.375rem] leading-tight">{AWARD_NAME}, first edition</h2>
+          <div className="surface-dark relative overflow-hidden rounded-[4px] bg-[#211D18] text-white p-6 sm:p-7">
+            <h2 className="font-semibold text-[1.375rem] leading-tight">{AWARD_NAME}, first edition{APPLICATIONS_OPEN && <span className="block mt-1 text-[0.9375rem] font-normal text-[#E1C699]">Registration is open</span>}</h2>
             <p className="mt-2 text-[0.9375rem] text-[#CFCAC0] max-w-md">Open to Indian creators in every niche. Our team reviews every application and calls you about the fee and next steps.</p>
             <div className="mt-5 flex flex-wrap gap-3 relative">
               <TabLink tab="apply" onNavigate={onNavigate} className="btn btn-primary">{APPLY_LABEL}</TabLink>
@@ -734,7 +726,6 @@ export default function HomeTab({ profiles, status, onNavigate, onGo, onSelectPr
       <section aria-labelledby="for-creators" className="page-wide section scroll-mt-4">
         <div className="grid gap-10 lg:gap-16 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
           <div className="space-y-4 lg:sticky lg:top-8 self-start">
-            <p className="eyebrow">For creators</p>
             <h2 id="for-creators" className="h-section">Join by applying for the {AWARD_NAME}</h2>
             <p className="text-ink-2 max-w-md">
               For now, applying for the award is how creators join {BRAND_NAME}. After the awards, the platform opens to every creator.
@@ -787,7 +778,6 @@ export default function HomeTab({ profiles, status, onNavigate, onGo, onSelectPr
       {/* What review means: who supplies what */}
       <section aria-labelledby="how-profiles" className="page-wide section scroll-mt-4">
         <div className="max-w-2xl space-y-3">
-          <p className="eyebrow">How profiles are reviewed</p>
           <h2 id="how-profiles" className="h-section">What “Reviewed” means on a profile</h2>
           <p className="text-ink-2">
             A profile marked Reviewed was read and approved by our team before it was published. It is not an audit of the creator’s audience.
@@ -815,7 +805,6 @@ export default function HomeTab({ profiles, status, onNavigate, onGo, onSelectPr
       <section aria-labelledby="the-award" className="bg-sunken border-y border-line">
         <div className="page-wide section grid gap-10 lg:gap-16 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
           <div className="space-y-4">
-            <p className="eyebrow">The award</p>
             <h2 id="the-award" className="h-section">{AWARD.name}</h2>
             <p className="text-[0.9375rem] text-ink-2">
               {APPLICATIONS_OPEN && <><strong className="font-semibold text-[#2f6b45]">Registration is open.</strong>{" "}</>}

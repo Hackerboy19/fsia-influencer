@@ -10,7 +10,6 @@ import CampaignsTab from "./components/CampaignsTab";
 import MembershipTab from "./components/MembershipTab";
 import ModelRegistrationTab from "./components/ModelRegistrationTab";
 import FaqTab from "./components/FaqTab";
-import CursorParticleTrail from "./components/CursorParticleTrail";
 import SiteFooter from "./components/SiteFooter";
 import HomeTab from "./components/HomeTab";
 import SiteHeader, { NavTarget } from "./components/SiteHeader";
@@ -303,7 +302,6 @@ export default function App() {
             />
           </Suspense>
         )}
-        <CursorParticleTrail active={activeTab === "catwalk"} color={readableAccent(settings.primaryColor)} />
       </div>
 
       <SiteHeader

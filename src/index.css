@@ -56,7 +56,7 @@ p, li, dd { text-wrap: pretty; }
   .page { width: 100%; max-width: 75rem; margin-inline: auto; padding-inline: 1.25rem; }
   @media (min-width: 768px) { .page { padding-inline: 2rem; } }
 
-  .eyebrow { font-size: 0.8125rem; line-height: 1.25rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-bronze); }
+  .eyebrow { font-size: 0.875rem; line-height: 1.25rem; font-weight: 600; color: var(--color-bronze); }
   .display { font-family: var(--font-display); font-weight: 500; letter-spacing: -0.015em; color: var(--color-ink); }
   .h-page { font-family: var(--font-display); font-weight: 500; letter-spacing: -0.015em; color: var(--color-ink); font-size: 2.25rem; line-height: 1.1; }
   @media (min-width: 768px) { .h-page { font-size: 3rem; } }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, ArrowRight, CheckCircle2, Phone, Landmark, MapPin, Users, Clock, ShieldCheck } from "lucide-react";
+import { X, ArrowRight, CheckCircle2, Phone, Landmark, MapPin } from "lucide-react";
 import { Creator, gallerySections } from "../data";
 import { useDialog, Portal } from "../lib/dialog";
 import { initials } from "../lib/profile";
@@ -207,11 +207,7 @@ export default function VipCollaborationForm({ isOpen, onClose, preselectedCreat
                   </button>
                 </div>
                 {!submittedCredential && (
-                  <ul className="mt-4 grid grid-cols-3 gap-2 text-[0.75rem] leading-snug text-[#CFCAC0]">
-                    <li className="flex items-start gap-1.5"><Clock className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[#E1C699]" aria-hidden="true" /> Takes 2 minutes</li>
-                    <li className="flex items-start gap-1.5"><Users className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[#E1C699]" aria-hidden="true" /> Our team reads every enquiry</li>
-                    <li className="flex items-start gap-1.5"><ShieldCheck className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[#E1C699]" aria-hidden="true" /> Details never published</li>
-                  </ul>
+                  <p className="mt-2 text-[0.875rem] leading-snug text-[#CFCAC0]">Someone from our team reads it and replies by email or phone. We don't publish your details.</p>
                 )}
               </div>
 
