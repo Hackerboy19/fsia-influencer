@@ -41,12 +41,12 @@ export const ROUTES: RouteMeta[] = [
   {
     tab: "home",
     path: "/",
-    title: `Influencer Award & Creator Profiles in India | ${SITE_NAME}`,
+    title: `Influencer Award India: Apply Free, Registration Open | ${SITE_NAME}`,
     description:
-      `Browse reviewed profiles of Indian influencers, apply for the ${AWARD_NAME} to join, and send brand collaboration enquiries to our team.`,
-    heading: "Indian influencer profiles, reviewed before they are published",
+      `Apply free for the ${AWARD_NAME}, open to Indian creators in every niche. Registration is open. Approved creators get a reviewed profile that brands can search.`,
+    heading: `${AWARD_NAME} for Indian creators`,
     intro:
-      `${SITE_NAME} is a creator directory for India. Creators join by applying for the ${AWARD_NAME}: once our team approves the application, they get a public profile with their category, city and work. After the awards, the platform opens to every creator. Brands browse those profiles, see open campaigns and send collaboration enquiries, which our team follows up directly.`,
+      `The ${AWARD_NAME} is open to creators in every niche across India, and registration is open now. Applying is free. Our team reviews every application; approved creators get a public profile in the ${SITE_NAME} directory, where brands search by niche and city and send collaboration enquiries. After the awards, the platform opens to every creator.`,
     indexable: true,
     priority: "1.0",
     changefreq: "weekly"

@@ -61,7 +61,7 @@ function HeroSearch({ onBrowse, categories }: { onBrowse: HomeTabProps["onBrowse
     >
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_11rem_auto] sm:items-end">
         <div>
-          <label htmlFor="home-search" className="field-label">Search the directory</label>
+          <label htmlFor="home-search" className="field-label">Brands: search the creator directory</label>
           <div className="relative">
             <Search className="w-4 h-4 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
             <input
@@ -141,20 +141,24 @@ export default function HomeTab({ profiles, status, onNavigate, onSelectProfile,
         <div className={`grid gap-10 lg:gap-14 items-center ${hasHeroProfiles ? "lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]" : ""}`}>
           <div className="space-y-6 min-w-0">
             <p className="eyebrow flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span>Creator directory · India</span>
+              <span>{AWARD_NAME} · India</span>
               {APPLICATIONS_OPEN && (
                 <span className="inline-flex items-center gap-1.5 normal-case tracking-normal font-semibold text-[#2f6b45]">
                   <span className="w-2 h-2 rounded-full bg-[#2f6b45]" aria-hidden="true" /> Award applications open
                 </span>
               )}
             </p>
-            <h1 className="h-hero max-w-[16ch]">
-              Find Indian creators, <em>reviewed</em> before they are listed
+            <h1 className="h-hero max-w-[17ch]">
+              The {AWARD_NAME} for Indian creators, <em>reviewed</em> by our team
             </h1>
             <p className="lede max-w-[36rem]">
-              Search creator profiles by niche and city. Every profile is submitted by the creator and approved by our team
-              before it is published. Brands send enquiries; we reply with creators who fit.
+              Open to creators in every niche, and free to apply. Approved creators get a public profile in our directory,
+              where brands search by niche and city and send us enquiries.
             </p>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+              <TabLink tab="apply" onNavigate={onNavigate} className="btn btn-primary h-12 px-6">{APPLY_LABEL}</TabLink>
+              <a href="#the-award" className="link">How the award works</a>
+            </div>
             <HeroSearch onBrowse={onBrowse} categories={categories} />
             {status !== "loading" && profiles.length > 0 && (
               <p className="text-[0.9375rem] text-ink-2">
