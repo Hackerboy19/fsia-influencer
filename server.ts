@@ -8,6 +8,7 @@ import { getDb, saveDb, logAction, hashPassword, verifyPassword, needsRehash, cr
 import { isValidEmail, isValidPhone, PHONE_ERROR } from "./server/validation";
 import { injectMeta, metaFor } from "./server/pageMeta";
 import { SITE_URL } from "./src/seo";
+import { cleanSocial } from "./src/lib/social";
 
 // Initialize express app
 const app = express();
@@ -103,9 +104,9 @@ const limitSubmissions = (req: express.Request, res: express.Response, next: exp
   if (Number(req.headers["content-length"] || 0) > MAX_PUBLIC_BODY_BYTES || JSON.stringify(req.body || {}).length > MAX_PUBLIC_BODY_BYTES) {
     return res.status(413).json({ error: "This submission is too large. Please use a smaller photo." });
   }
-  // Form fields are plain values; only the portfolio list and enquiry details are nested
+  // Form fields are plain values; only the portfolio list, social links and enquiry details are nested
   for (const [key, value] of Object.entries(req.body || {})) {
-    const nestedOk = (key === "portfolio" && Array.isArray(value)) || (key === "details" && value && typeof value === "object" && !Array.isArray(value));
+    const nestedOk = (key === "portfolio" && Array.isArray(value)) || ((key === "details" || key === "social") && value && typeof value === "object" && !Array.isArray(value));
     if (value !== null && typeof value === "object" && !nestedOk) {
       return res.status(400).json({ error: `Invalid value for ${key}.` });
     }
@@ -329,7 +330,8 @@ app.post("/api/creators", authenticateAdmin, (req, res) => {
         verified: creator.stats?.verified !== false
       },
       quote: creator.quote || "",
-      portfolio: creator.portfolio || (creator.image ? [creator.image] : [])
+      portfolio: creator.portfolio || (creator.image ? [creator.image] : []),
+      social: cleanSocial(creator.social)
     };
 
     section.creators.push(newCreator);
@@ -368,6 +370,7 @@ app.put("/api/creators", authenticateAdmin, (req, res) => {
         ...updatedCreator.stats
       }
     };
+    if ("social" in updatedCreator) section.creators[idx].social = cleanSocial(updatedCreator.social);
 
     saveDb(db);
     logAction(`Updated creator profile: ${originalName}`);
@@ -774,7 +777,7 @@ app.get("/api/influencer-applications", authenticateAdmin, (req, res) => {
 
 app.post("/api/influencer-applications", limitSubmissions, (req, res) => {
   try {
-    const { name, category, role, city, image, bio, reach, engagement, portfolio, quote, email, phone } = req.body;
+    const { name, category, role, city, image, bio, reach, engagement, portfolio, quote, email, phone, social } = req.body;
     if (!name || !email || !phone || !category) {
       return res.status(400).json({ error: "Full Name, Email, Phone Contact, and Runway Category are required." });
     }
@@ -809,6 +812,7 @@ app.post("/api/influencer-applications", limitSubmissions, (req, res) => {
       engagement: engagement || "",
       portfolio: portfolioArray,
       quote: quote || "",
+      social: cleanSocial(social),
       email,
       phone,
       status: "pending" as const,
@@ -873,7 +877,8 @@ app.post("/api/influencer-applications/:id/approve", authenticateAdmin, (req, re
             verified: true
           },
           quote: application.quote || "",
-          portfolio: application.portfolio && application.portfolio.length > 0 ? application.portfolio : application.image ? [application.image] : []
+          portfolio: application.portfolio && application.portfolio.length > 0 ? application.portfolio : application.image ? [application.image] : [],
+          social: cleanSocial(application.social)
         };
         section.creators.push(newCreator);
         logAction(`Approved & added model registration: ${application.name} to Runway: ${section.title}`);

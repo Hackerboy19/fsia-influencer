@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { X, Link2, Check, ChevronLeft, ChevronRight, Heart, Info, CalendarCheck, MapPin, Images } from "lucide-react";
+import { X, Link2, Check, ChevronLeft, ChevronRight, Heart, Info, CalendarCheck, MapPin, Images, Instagram, Youtube, Facebook, Twitter, Linkedin, Globe } from "lucide-react";
+import type { SocialId } from "../lib/social";
+
+const SOCIAL_ICONS: Record<SocialId, typeof Globe> = { instagram: Instagram, youtube: Youtube, facebook: Facebook, x: Twitter, linkedin: Linkedin, website: Globe };
 import toast from "react-hot-toast";
 import type { ProfileView } from "../lib/profile";
 import { profileHref } from "../lib/profileLink";
@@ -147,6 +150,22 @@ export default function CreatorDetailPanel({ profile, onClose, onOpenCollaborati
                   <p className="mt-4 inline-flex items-center gap-1.5 text-[1.0625rem] text-paper/75">
                     <MapPin className="w-4 h-4" aria-hidden="true" /> {p.city}, India
                   </p>
+                )}
+                {p.social.length > 0 && (
+                  <ul className="mt-5 flex flex-wrap gap-x-5 gap-y-2" aria-label={`${p.name} on social media`} id="profile-social">
+                    {p.social.map((s) => {
+                      const Icon = SOCIAL_ICONS[s.id];
+                      return (
+                        <li key={s.id}>
+                          <a href={s.url} target="_blank" rel="noopener noreferrer nofollow"
+                            className="inline-flex items-center gap-2 text-[0.9375rem] text-paper/85 hover:text-paper underline-offset-4 hover:underline">
+                            <Icon className="w-4 h-4 text-[#E1C699]" aria-hidden="true" />
+                            <span className="sr-only">{s.label}: </span>{s.text}
+                          </a>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 )}
                 {p.quote && (
                   <blockquote className="mt-8 max-w-xl font-display italic text-[1.375rem] md:text-[1.625rem] leading-snug text-paper/90">

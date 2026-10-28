@@ -14,6 +14,7 @@ import AdminPagesSeo from "./AdminPagesSeo";
 import AdminPhotoGallery from "./AdminPhotoGallery";
 import { ADMIN_TOKEN_KEY, ADMIN_UNAUTHORIZED_EVENT, downloadCsv } from "../lib/adminSession";
 import { toast } from "react-hot-toast";
+import { SOCIAL_PLATFORMS, cleanSocial, socialList, socialUrl, type SocialLinks } from "../lib/social";
 
 interface Creator {
   name: string;
@@ -29,6 +30,7 @@ interface Creator {
   };
   quote: string;
   portfolio: string[];
+  social?: Partial<Record<string, string>>;
 }
 
 interface GallerySection {
@@ -92,6 +94,7 @@ interface InfluencerApplication {
   engagement: string;
   portfolio: string[];
   quote: string;
+  social?: Partial<Record<string, string>>;
   email: string;
   phone: string;
   status: "pending" | "approved" | "declined";
@@ -169,10 +172,11 @@ export default function AdminTab() {
     image: "",
     bio: "",
     quote: "",
-    reach: "1.2M",
-    engagement: "6.5%",
+    reach: "",
+    engagement: "",
     verified: true,
-    portfolioUrls: ""
+    portfolioUrls: "",
+    social: {} as SocialLinks
   });
 
   const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false);
@@ -554,10 +558,11 @@ export default function AdminTab() {
       image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format",
       bio: "",
       quote: "",
-      reach: "1.2M",
-      engagement: "6.5%",
+      reach: "",
+      engagement: "",
       verified: true,
-      portfolioUrls: ""
+      portfolioUrls: "",
+      social: {}
     });
     setCrudError("");
     setCrudSuccess("");
@@ -574,10 +579,11 @@ export default function AdminTab() {
       image: creator.image,
       bio: creator.bio,
       quote: creator.quote,
-      reach: creator.stats.reach || "1.0M",
-      engagement: creator.stats.engagement || "5.0%",
+      reach: String(creator.stats.reach || ""),
+      engagement: String(creator.stats.engagement || ""),
       verified: creator.stats.verified !== false,
-      portfolioUrls: creator.portfolio && creator.portfolio.length > 0 ? creator.portfolio.join(", ") : creator.image
+      portfolioUrls: creator.portfolio && creator.portfolio.length > 0 ? creator.portfolio.join(", ") : creator.image,
+      social: cleanSocial(creator.social)
     });
     setCrudError("");
     setCrudSuccess("");
@@ -611,13 +617,16 @@ export default function AdminTab() {
         city: creatorForm.city,
         image: creatorForm.image,
         bio: creatorForm.bio,
-        quote: creatorForm.quote || "Elegance is standard.",
+        quote: creatorForm.quote,
+        // Keep extra facts (Platforms, Languages…) that this form does not show
         stats: {
+          ...(editingCreator?.creator.stats || {}),
           reach: creatorForm.reach,
           engagement: creatorForm.engagement,
           verified: creatorForm.verified
         },
-        portfolio: urlsArray
+        portfolio: urlsArray,
+        social: cleanSocial(creatorForm.social)
       }
     };
 
@@ -2005,6 +2014,19 @@ export default function AdminTab() {
                               </div>
                             </div>
 
+                            {socialList(app.social).length > 0 && (
+                              <div>
+                                <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block mb-1">SOCIAL MEDIA</span>
+                                <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                                  {socialList(app.social).map((sl) => (
+                                    <li key={sl.id}>
+                                      <a href={sl.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 text-[#111]">{sl.label}: {sl.text}</a>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
                             {app.portfolio && app.portfolio.length > 0 && (
                               <div>
                                 <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block mb-1">SUBMITTED PORTFOLIO</span>
@@ -2183,6 +2205,32 @@ export default function AdminTab() {
                     </label>
                   </div>
                 </div>
+
+                <fieldset className="space-y-2" id="creator-social-fields">
+                  <legend className="text-[11px] font-sans font-semibold text-[#555]">Social media (optional)</legend>
+                  <p className="text-[11px] text-[#777]">Type a handle like @username or paste the full link. Empty boxes are not shown on the profile.</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {SOCIAL_PLATFORMS.map((sp) => {
+                      const value = creatorForm.social[sp.id] || "";
+                      const bad = !!value.trim() && !socialUrl(sp.id, value);
+                      return (
+                        <div key={sp.id} className="space-y-1">
+                          <label htmlFor={`creator-social-${sp.id}`} className="text-[11px] font-sans text-[#555]">{sp.label}</label>
+                          <input
+                            id={`creator-social-${sp.id}`}
+                            type="text"
+                            placeholder={sp.placeholder}
+                            value={value}
+                            aria-invalid={bad || undefined}
+                            onChange={(e) => setCreatorForm((prev) => ({ ...prev, social: { ...prev.social, [sp.id]: e.target.value } }))}
+                            className={`w-full px-3 py-2 bg-white border rounded-lg text-xs ${bad ? "border-red-400" : "border-black/10"}`}
+                          />
+                          {bad && <p className="text-[11px] text-red-600">{sp.label}: not a valid handle or link, so it will not be shown.</p>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </fieldset>
 
                 <div className="space-y-1">
                   <label className="text-[11px] font-sans font-semibold text-[#555]">About</label>

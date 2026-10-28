@@ -16,6 +16,7 @@ export interface Creator {
   };
   quote: string;
   portfolio: string[];
+  social?: Record<string, string>;
 }
 
 export interface GallerySection {
@@ -109,6 +110,7 @@ export interface InfluencerApplication {
   engagement: string; // engagement rate (e.g. "4.5%")
   portfolio: string[]; // list of photo URLs
   quote: string;
+  social?: Record<string, string>;
   email: string;
   phone: string;
   status: "pending" | "approved" | "declined";

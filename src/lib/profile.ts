@@ -1,4 +1,5 @@
 import type { Creator } from "../data";
+import { socialList } from "./social";
 
 // Text that older versions of the approval step filled in when a creator left a field
 // blank. It was never written by the creator, so it is not shown on public profiles.
@@ -37,6 +38,8 @@ export interface ProfileView {
   /** Extra facts the admin added (e.g. "Campaigns": "12 brands") */
   facts: { label: string; value: string }[];
   portfolio: string[];
+  /** Usable social links only, in a fixed order */
+  social: ReturnType<typeof socialList>;
 }
 
 export function slugify(name: string): string {
@@ -73,6 +76,7 @@ export function toProfile(creator: Creator, category = ""): ProfileView {
     engagement: clean(String(stats.engagement ?? "")),
     reviewed: stats.verified !== false,
     facts,
+    social: socialList(creator.social),
     // The cover photo is shown separately, so it is not repeated in the gallery
     portfolio: Array.from(new Set((creator.portfolio || []).filter(isImageUrl).map((u) => u.trim()))).filter((u) => u !== image)
   };

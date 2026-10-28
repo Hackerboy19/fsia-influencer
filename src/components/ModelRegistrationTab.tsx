@@ -10,6 +10,7 @@ import FieldError, { errorProps } from "./FieldError";
 import { CREATOR_CATEGORIES, OTHER_CATEGORY } from "../content/creatorCategories";
 import { toast } from "react-hot-toast";
 import { ANTI_FRAUD_NOTE } from "../content/organiser";
+import { cleanSocial, socialUrl } from "../lib/social";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Instagram,
@@ -33,7 +34,7 @@ const STEPS = [
 
 // Unsent answers survive a reload or an accidental tab switch (cleared after a successful submit)
 const DRAFT_KEY = "fsia_registration_draft";
-const DRAFT_FIELDS = ["name", "category", "categoryOther", "role", "city", "bio", "reach", "engagement", "quote", "email", "phone", "portfolioUrls"] as const;
+const DRAFT_FIELDS = ["name", "category", "categoryOther", "role", "city", "bio", "reach", "engagement", "quote", "email", "phone", "portfolioUrls", "instagram", "youtube"] as const;
 type Draft = Partial<Record<(typeof DRAFT_FIELDS)[number], string>>;
 
 function readDraft(): Draft {
@@ -76,6 +77,8 @@ export default function ModelRegistrationTab() {
   const [email, setEmail] = useState(draft.email || "");
   const [phone, setPhone] = useState(draft.phone || "");
   const [portfolioUrls, setPortfolioUrls] = useState(draft.portfolioUrls || "");
+  const [instagram, setInstagram] = useState(draft.instagram || "");
+  const [youtube, setYoutube] = useState(draft.youtube || "");
 
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -84,12 +87,12 @@ export default function ModelRegistrationTab() {
   const [invalidField, setInvalidField] = useState("");
 
   useEffect(() => {
-    const values: Draft = { name, category, categoryOther, role, city, bio, reach, engagement, quote, email, phone, portfolioUrls };
+    const values: Draft = { name, category, categoryOther, role, city, bio, reach, engagement, quote, email, phone, portfolioUrls, instagram, youtube };
     try {
       if (successData) safeSession.removeItem(DRAFT_KEY);
       else safeSession.setItem(DRAFT_KEY, JSON.stringify(values));
     } catch {}
-  }, [name, category, categoryOther, role, city, bio, reach, engagement, quote, email, phone, portfolioUrls, successData]);
+  }, [name, category, categoryOther, role, city, bio, reach, engagement, quote, email, phone, portfolioUrls, instagram, youtube, successData]);
 
   // Moving between steps puts keyboard focus on the first field of the new step
   const firstRender = useRef(true);
@@ -126,6 +129,12 @@ export default function ModelRegistrationTab() {
     if (index === 1 && imageType === "custom" && customImage && !/^https?:\/\//i.test(customImage)) {
       return { field: "reg-image-link", message: "The image link must start with http:// or https://" };
     }
+    if (index === 1 && instagram.trim() && !socialUrl("instagram", instagram)) {
+      return { field: "reg-instagram", message: "Please enter your Instagram handle (like @yourname) or your instagram.com link." };
+    }
+    if (index === 1 && youtube.trim() && !socialUrl("youtube", youtube)) {
+      return { field: "reg-youtube", message: "Please enter your YouTube channel (like @channel) or your youtube.com link." };
+    }
     if (index === 2) {
       if (!isValidEmail(email)) return { field: "reg-email", message: EMAIL_ERROR };
       if (!isValidPhone(phone)) return { field: "reg-phone", message: PHONE_ERROR };
@@ -159,7 +168,7 @@ export default function ModelRegistrationTab() {
     }
     const problem = validateStep(0) || validateStep(1) || validateStep(2);
     if (problem) {
-      const problemStep = ["reg-name", "reg-category", "reg-category-other"].includes(problem.field) ? 0 : problem.field === "reg-image-link" ? 1 : 2;
+      const problemStep = ["reg-name", "reg-category", "reg-category-other"].includes(problem.field) ? 0 : ["reg-image-link", "reg-instagram", "reg-youtube"].includes(problem.field) ? 1 : 2;
       setStep(problemStep);
       showProblem(problem);
       return;
@@ -188,6 +197,7 @@ export default function ModelRegistrationTab() {
         engagement: engagement.trim(),
         quote: quote.trim(),
         portfolio,
+        social: cleanSocial({ instagram, youtube }),
         email: email.trim(),
         phone: phone.trim()
       })
@@ -224,6 +234,8 @@ export default function ModelRegistrationTab() {
     setEmail("");
     setPhone("");
     setPortfolioUrls("");
+    setInstagram("");
+    setYoutube("");
     setErrorMsg("");
     setInvalidField("");
     setSuccessData(null);
@@ -390,6 +402,23 @@ export default function ModelRegistrationTab() {
                       </div>
                     </div>
 
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <div>
+                        <label htmlFor="reg-instagram" className={labelClass}>Instagram <span className={optionalClass}>(optional)</span></label>
+                        <input id="reg-instagram" type="text" autoComplete="off" placeholder="@yourname"
+                          {...errorProps("reg-instagram", invalidField)}
+                          value={instagram} onChange={(e) => setInstagram(e.target.value)} className={inputClass} />
+                        <FieldError fieldId="reg-instagram" invalidField={invalidField} message={errorMsg} />
+                      </div>
+                      <div>
+                        <label htmlFor="reg-youtube" className={labelClass}>YouTube <span className={optionalClass}>(optional)</span></label>
+                        <input id="reg-youtube" type="text" autoComplete="off" placeholder="@yourchannel"
+                          {...errorProps("reg-youtube", invalidField)}
+                          value={youtube} onChange={(e) => setYoutube(e.target.value)} className={inputClass} />
+                        <FieldError fieldId="reg-youtube" invalidField={invalidField} message={errorMsg} />
+                      </div>
+                    </div>
+
                     <div>
                       <label htmlFor="reg-bio" className={labelClass}>Short bio <span className={optionalClass}>(optional)</span></label>
                       <textarea id="reg-bio" rows={3} placeholder="Your niche, style and the brands you'd love to work with."
@@ -452,7 +481,7 @@ export default function ModelRegistrationTab() {
 
                     <p className="flex items-start gap-2 text-[0.875rem] text-[#2e2c29]">
                       <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0" />
-                      If we approve your application, your name, photo, category, city, bio, audience figures and motto are shown on a public profile. Your email and phone number are never published; our team uses them only to contact you.
+                      If we approve your application, your name, photo, category, city, bio, audience figures, social media links and motto are shown on a public profile. Your email and phone number are never published; our team uses them only to contact you.
                     </p>
                   </>
                 )}

@@ -350,6 +350,7 @@ try {
             ]),
             'quote' => (string)($creator['quote'] ?? ''),
             'portfolio' => !empty($creator['portfolio']) && is_array($creator['portfolio']) ? array_values($creator['portfolio']) : ($image !== '' ? [$image] : []),
+            'social' => (object)clean_social($creator['social'] ?? []),
         ];
         $db['creators'][$si]['creators'][] = $new;
         $store->log('Added creator: ' . $new['name'] . ' to section: ' . $db['creators'][$si]['title']);
@@ -376,6 +377,9 @@ try {
         $existing = $db['creators'][$si]['creators'][$ci];
         $merged = array_merge($existing, $updated);
         $merged['stats'] = array_merge($existing['stats'] ?? [], is_array($updated['stats'] ?? null) ? $updated['stats'] : []);
+        if (array_key_exists('social', $updated)) {
+            $merged['social'] = (object)clean_social($updated['social']);
+        }
         $db['creators'][$si]['creators'][$ci] = $merged;
         $store->log('Updated creator profile: ' . $originalName);
         $store->save();
@@ -611,6 +615,7 @@ try {
                 return $u === $image ? $image : safe_image($u, '', false);
             }, array_slice($portfolio, 0, 12)))) : [],
             'quote' => str_cut((string)($body['quote'] ?? ''), 500),
+            'social' => (object)clean_social($body['social'] ?? []),
             'email' => str_cut($body['email'], 200),
             'phone' => str_cut($body['phone'], 50),
             'status' => 'pending',
@@ -649,6 +654,7 @@ try {
                 'stats' => ['reach' => (string)($app['reach'] ?? ''), 'engagement' => (string)($app['engagement'] ?? ''), 'verified' => true],
                 'quote' => (string)($app['quote'] ?? ''),
                 'portfolio' => !empty($app['portfolio']) ? $app['portfolio'] : (!empty($app['image']) ? [$app['image']] : []),
+                'social' => (object)clean_social((array)($app['social'] ?? [])),
             ];
             $store->log('Approved & added model registration: ' . $app['name'] . ' to Runway: ' . $db['creators'][$si]['title']);
         }

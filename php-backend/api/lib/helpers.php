@@ -330,3 +330,26 @@ function debrand_value($value)
     }
     return $value;
 }
+
+/**
+ * Social media links on a profile: only known platforms, short single-line text.
+ * The site turns each value into a safe https link when it shows the profile.
+ */
+function clean_social($input): array
+{
+    $out = [];
+    if (!is_array($input)) {
+        return $out;
+    }
+    foreach (['instagram', 'youtube', 'facebook', 'x', 'linkedin', 'website'] as $key) {
+        $v = $input[$key] ?? '';
+        if (!is_string($v)) {
+            continue;
+        }
+        $v = trim(preg_replace('/[\x00-\x1F\x7F]/u', '', $v) ?? '');
+        if ($v !== '') {
+            $out[$key] = str_cut($v, 200);
+        }
+    }
+    return $out;
+}
