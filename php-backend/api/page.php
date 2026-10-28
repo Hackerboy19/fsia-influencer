@@ -91,6 +91,14 @@ function page_meta(string $path, string $slug, array $settings, $sections): ?arr
         if (isset($page['ogImage']) && !preg_match('#^(https?://|/)#i', $page['ogImage'])) {
             unset($page['ogImage']);
         }
+        $kw = clip_text($raw['keywords'] ?? '', 300);
+        if ($kw !== '') {
+            $page['keywords'] = $kw;
+        }
+        $schema = clean_schema($raw['schema'] ?? '');
+        if ($schema !== '') {
+            $page['schema'] = $schema;
+        }
         if (($raw['noindex'] ?? false) === true || ($raw['hidden'] ?? false) === true) {
             $page['noindex'] = true;
         }
@@ -110,12 +118,29 @@ function page_meta(string $path, string $slug, array $settings, $sections): ?arr
                         'description' => $bio !== '' ? $bio : "$title. See the profile and send an enquiry.",
                         'ogImage' => $img,
                         'url' => SITE_URL . '/creators/?profile=' . rawurlencode($slug),
+                        'keywords' => $page['keywords'] ?? '',
+                        'schema' => $page['schema'] ?? '',
                     ];
                 }
             }
         }
     }
     return $page ?: null;
+}
+
+/** Admin JSON-LD: an object or a list of objects, re-encoded compactly; anything else is dropped */
+function clean_schema($raw): string
+{
+    if (!is_string($raw) || trim($raw) === '' || strlen($raw) > 20000) {
+        return '';
+    }
+    $data = json_decode($raw);
+    $ok = is_object($data) || (is_array($data) && $data && count(array_filter($data, 'is_object')) === count($data));
+    if (!$ok) {
+        return '';
+    }
+    $out = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    return is_string($out) && strlen($out) <= 10000 ? $out : '';
 }
 
 function set_attr(string $html, string $pattern, string $value): string
@@ -163,6 +188,30 @@ function inject_meta(string $html, array $m): string
     }
     if (!empty($m['noindex'])) {
         $html = set_attr($html, '#(<meta name="robots" content=")([^"]*)(")#', 'noindex, nofollow');
+    }
+    if (!empty($m['keywords'])) {
+        $kw = $esc($m['keywords']);
+        $html = (string)preg_replace_callback('#<meta name="description" content="[^"]*" />#', function ($t) use ($kw) {
+            return $t[0] . "\n    <meta name=\"keywords\" content=\"$kw\" />";
+        }, $html, 1);
+    }
+    if (!empty($m['schema'])) {
+        $block = '<script type="application/ld+json" id="page-schema">' . str_replace('<', '\u003c', $m['schema']) . "</script>\n  ";
+        $pos = strpos($html, '</head>');
+        if ($pos !== false) {
+            $html = substr($html, 0, $pos) . $block . substr($html, $pos);
+        }
+    }
+    if (!empty($m['heading'])) {
+        // The first H1 of the page content in the prerendered HTML (the app redraws it in the browser)
+        if (preg_match('#id="main-content"|class="seo-fallback"#', $html, $found, PREG_OFFSET_CAPTURE)) {
+            $at = $found[0][1];
+            $h = $esc($m['heading']);
+            $rest = (string)preg_replace_callback('#(<h1\b[^>]*>)[\s\S]*?(</h1>)#', function ($x) use ($h) {
+                return $x[1] . $h . $x[2];
+            }, substr($html, $at), 1);
+            $html = substr($html, 0, $at) . $rest;
+        }
     }
     return $html;
 }

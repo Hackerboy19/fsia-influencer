@@ -12,6 +12,11 @@ export interface MetaValues {
   ogImage?: string;
   noindex?: boolean;
   url?: string;
+  keywords?: string;
+  /** Page heading (H1) set in the admin */
+  heading?: string;
+  /** Valid compact JSON-LD from Admin → Pages & SEO */
+  schema?: string;
 }
 
 const setAttr = (html: string, pattern: RegExp, value: string) => html.replace(pattern, (_m, a, _old, b) => `${a}${escapeHtml(value)}${b}`);
@@ -43,6 +48,21 @@ export function injectMeta(html: string, m: MetaValues): string {
   }
   if (m.url) out = setAttr(out, /(<meta property="og:url" content=")([^"]*)(")/, m.url);
   if (m.noindex) out = setAttr(out, /(<meta name="robots" content=")([^"]*)(")/, "noindex, nofollow");
+  if (m.keywords) {
+    out = out.replace(/(<meta name="description" content="[^"]*" \/>)/, (tag) => `${tag}\n    <meta name="keywords" content="${escapeHtml(m.keywords!)}" />`);
+  }
+  if (m.schema) {
+    const block = `<script type="application/ld+json" id="page-schema">${m.schema.replace(/</g, "\\u003c")}</script>\n  `;
+    out = out.replace("</head>", () => block + "</head>");
+  }
+  if (m.heading) {
+    // The first H1 of the page content in the prerendered HTML (the app redraws it in the browser)
+    const at = out.search(/id="main-content"|class="seo-fallback"/);
+    if (at >= 0) {
+      const rest = out.slice(at).replace(/(<h1\b[^>]*>)[\s\S]*?(<\/h1>)/, (_m, a, b) => a + escapeHtml(m.heading!) + b);
+      out = out.slice(0, at) + rest;
+    }
+  }
   return out;
 }
 
@@ -64,7 +84,9 @@ export function metaFor(pathname: string, profileSlug: string, settings: any, se
             title,
             description: bio || `${title}. See the profile and send an enquiry.`,
             ogImage: typeof c.image === "string" && /^(https?:\/\/|\/)/i.test(c.image) ? c.image : page.ogImage,
-            url: `${siteUrl}/creators/?profile=${encodeURIComponent(profileSlug)}`
+            url: `${siteUrl}/creators/?profile=${encodeURIComponent(profileSlug)}`,
+            keywords: page.keywords,
+            schema: page.schema
           };
         }
       }

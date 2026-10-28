@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
-import { Upload, RotateCcw, Save, ExternalLink, Globe, Share2, Loader2 } from "lucide-react";
-import { ROUTES, SITE_URL, OG_IMAGE, absoluteUrl, cleanPageOverrides, setPageOverrides, type PageOverride } from "../seo";
+import { Upload, RotateCcw, Save, ExternalLink, Globe, Share2, Loader2, Heading, Code2, Eye, X, Monitor, Smartphone } from "lucide-react";
+import { ROUTES, SITE_URL, OG_IMAGE, absoluteUrl, cleanPageOverrides, cleanSchema, setPageOverrides, type PageOverride } from "../seo";
+import { pageHeadings, originalText } from "../lib/headingOverrides";
+import { Portal } from "../lib/dialog";
 import { setHomeHero, setNavLabels, NAV_ITEMS, type HomeHero } from "../lib/siteContent";
 import { uploadImage } from "../lib/adminUpload";
 
@@ -11,7 +13,47 @@ import { uploadImage } from "../lib/adminUpload";
 
 const PAGES = ROUTES.filter((r) => r.tab !== "admin");
 
-type TextKey = "title" | "description" | "heading" | "intro" | "ogTitle" | "ogDescription";
+type TextKey = "title" | "description" | "heading" | "intro" | "ogTitle" | "ogDescription" | "keywords" | "h2a" | "h2b" | "h3a" | "h3b" | "h3c" | "schema";
+
+const HEADING_SLOTS = [
+  { key: "h2a", tag: "h2", n: 0, label: "H2 (1)" },
+  { key: "h2b", tag: "h2", n: 1, label: "H2 (2)" },
+  { key: "h3a", tag: "h3", n: 0, label: "H3 (1)" },
+  { key: "h3b", tag: "h3", n: 1, label: "H3 (2)" },
+  { key: "h3c", tag: "h3", n: 2, label: "H3 (3)" }
+] as const;
+
+/** The page's own H2 and H3 text, read from the live page in a hidden frame. */
+function useCurrentHeadings(path: string) {
+  const [found, setFound] = useState<{ h2: string[]; h3: string[] } | null>(null);
+  useEffect(() => {
+    setFound(null);
+    if (path === "__menu") return;
+    const frame = document.createElement("iframe");
+    frame.setAttribute("aria-hidden", "true");
+    frame.tabIndex = -1;
+    frame.style.cssText = "position:absolute;width:1280px;height:800px;left:-99999px;top:0;border:0;visibility:hidden";
+    let tries = 0;
+    let timer = 0;
+    const read = () => {
+      try {
+        const root = frame.contentDocument?.getElementById("main-content");
+        const h2 = root ? pageHeadings(root, "h2").slice(0, 2).map(originalText) : [];
+        const h3 = root ? pageHeadings(root, "h3").slice(0, 3).map(originalText) : [];
+        if ((h2.length || h3.length) && tries >= 3) return setFound({ h2, h3 });
+        if (++tries > 16) return setFound({ h2, h3 });
+      } catch {
+        return setFound({ h2: [], h3: [] });
+      }
+      timer = window.setTimeout(read, 500);
+    };
+    frame.onload = () => { timer = window.setTimeout(read, 500); };
+    frame.src = path;
+    document.body.appendChild(frame);
+    return () => { window.clearTimeout(timer); frame.remove(); };
+  }, [path]);
+  return found;
+}
 
 function Counter({ value, ideal, max }: { value: string; ideal: [number, number]; max: number }) {
   const n = value.length;
@@ -70,6 +112,8 @@ export default function AdminPagesSeo({ token }: { token: string }) {
   const [uploading, setUploading] = useState(false);
   const [dirty, setDirty] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const current = useCurrentHeadings(path);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/settings", { headers: { Authorization: `Bearer ${token}` } })
@@ -127,20 +171,32 @@ export default function AdminPagesSeo({ token }: { token: string }) {
     }
   };
 
+  // What gets saved (and what the preview shows): trimmed, capped, invalid values dropped
+  const buildPayload = () => {
+    const cleanedPages = cleanPageOverrides(pages);
+    const heroClean: HomeHero = {};
+    (["kicker", "headline", "accent", "intro"] as const).forEach((k) => {
+      const val = (hero[k] || "").trim();
+      if (val) heroClean[k] = val;
+    });
+    const navClean: Record<string, string> = {};
+    NAV_ITEMS.forEach(({ id }) => {
+      const val = (nav[id] || "").trim().slice(0, 30);
+      if (val) navClean[id] = val;
+    });
+    return { pages: cleanedPages, homeHero: heroClean, navLabels: navClean };
+  };
+
   const save = async () => {
+    const badSchema = (Object.entries(pages) as [string, PageOverride][]).find(([, po]) => !!po.schema && !!po.schema.trim() && !cleanSchema(po.schema));
+    if (badSchema) {
+      setPath(badSchema[0]);
+      toast.error("The JSON-LD schema is not valid JSON. Fix it or clear the box, then save.");
+      return;
+    }
     setSaving(true);
     try {
-      const cleaned = cleanPageOverrides(pages);
-      const heroClean: HomeHero = {};
-      (["kicker", "headline", "accent", "intro"] as const).forEach((k) => {
-        const v = (hero[k] || "").trim();
-        if (v) heroClean[k] = v;
-      });
-      const navClean: Record<string, string> = {};
-      NAV_ITEMS.forEach(({ id }) => {
-        const v = (nav[id] || "").trim().slice(0, 30);
-        if (v) navClean[id] = v;
-      });
+      const { pages: cleaned, homeHero: heroClean, navLabels: navClean } = buildPayload();
       const res = await fetch("/api/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -226,6 +282,9 @@ export default function AdminPagesSeo({ token }: { token: string }) {
               <button type="button" onClick={() => { setNav({}); setDirty(true); }} className="btn btn-secondary btn-sm">
                 <RotateCcw className="w-4 h-4" aria-hidden="true" /> Use built-in names
               </button>
+              <button type="button" onClick={() => setPreviewOpen(true)} className="btn btn-secondary btn-sm" >
+                <Eye className="w-4 h-4" aria-hidden="true" /> Preview
+              </button>
               <button type="button" onClick={save} disabled={saving || !dirty} className="btn btn-primary btn-sm disabled:opacity-50">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Save className="w-4 h-4" aria-hidden="true" />}
                 {dirty ? "Save changes" : "Saved"}
@@ -263,7 +322,10 @@ export default function AdminPagesSeo({ token }: { token: string }) {
             <button type="button" onClick={resetPage} className="btn btn-secondary btn-sm">
               <RotateCcw className="w-4 h-4" aria-hidden="true" /> Use built-in text
             </button>
-            <button type="button" onClick={save} disabled={saving || !dirty} className="btn btn-primary btn-sm disabled:opacity-50" id="save-pages-seo-btn">
+            <button type="button" onClick={() => setPreviewOpen(true)} className="btn btn-secondary btn-sm" >
+                <Eye className="w-4 h-4" aria-hidden="true" /> Preview
+              </button>
+              <button type="button" onClick={save} disabled={saving || !dirty} className="btn btn-primary btn-sm disabled:opacity-50" id="save-pages-seo-btn">
               {saving ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Save className="w-4 h-4" aria-hidden="true" />}
               {dirty ? "Save changes" : "Saved"}
             </button>
@@ -287,12 +349,12 @@ export default function AdminPagesSeo({ token }: { token: string }) {
 
         {/* 1. On the page */}
         <section className="bg-white border border-line rounded-[4px] p-5 space-y-4">
-          <h3 className="font-semibold text-[1.0625rem]">On the page</h3>
+          <h3 className="font-semibold text-[1.0625rem] flex items-center gap-2"><Heading className="w-4 h-4 text-bronze" aria-hidden="true" /> Heading tags (on-page SEO)</h3>
           {isHome ? (
             <>
               <Field id="hero-kicker" label="Small line above the headline" value={hero.kicker || ""} placeholder="Influencer Award directory" onChange={(x) => setHeroField("kicker", x)} max={80} />
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field id="hero-headline" label="Headline" value={hero.headline || ""} placeholder="Find the right creator" onChange={(x) => setHeroField("headline", x)} max={90} />
+                <Field id="hero-headline" label="H1 heading" value={hero.headline || ""} placeholder="Find the right creator" onChange={(x) => setHeroField("headline", x)} max={90} />
                 <Field id="hero-accent" label="Headline, second line (bronze)" value={hero.accent || ""} placeholder="for your brand." onChange={(x) => setHeroField("accent", x)} max={90} />
               </div>
               <Field
@@ -307,10 +369,29 @@ export default function AdminPagesSeo({ token }: { token: string }) {
             </>
           ) : (
             <>
-              <Field id="page-heading" label="Page heading" value={v("heading")} placeholder={base.heading} onChange={(x) => setField("heading", x)} max={140} />
+              <Field id="page-heading" label="H1 heading" hint="The main heading on the page. Use your main search words." value={v("heading")} placeholder={base.heading} onChange={(x) => setField("heading", x)} max={140} />
               <Field id="page-intro" label="Text under the heading" value={v("intro")} placeholder={base.intro} onChange={(x) => setField("intro", x)} max={600} multiline />
             </>
           )}
+          <div className="grid gap-4 sm:grid-cols-2 pt-2 border-t border-line" id="heading-tag-fields">
+            {HEADING_SLOTS.map((slot) => {
+              const own = current ? (slot.tag === "h2" ? current.h2 : current.h3)[slot.n] : undefined;
+              return (
+                <React.Fragment key={slot.key}>
+                  <Field
+                    id={`seo-${slot.key}`}
+                    label={slot.label}
+                    hint={current === null ? "Reading the page's own heading…" : own ? `Now: ${own}` : `This page has no ${slot.label.replace(/ \(.*/, "")} in this place.`}
+                    value={v(slot.key)}
+                    placeholder={own || "Leave empty to keep the page's own heading"}
+                    onChange={(x) => setField(slot.key, x)}
+                    max={140}
+                  />
+                </React.Fragment>
+              );
+            })}
+          </div>
+          <p className="text-[0.8125rem] text-ink-3">Empty boxes keep the page's own headings. H2 (1) replaces the first H2 on the page, H3 (1) the first H3, and so on.</p>
         </section>
 
         {/* 2. Google */}
@@ -320,8 +401,8 @@ export default function AdminPagesSeo({ token }: { token: string }) {
           </h3>
           <Field
             id="seo-title"
-            label="Title in Google and the browser tab"
-            hint="Put the main search words first, e.g. Influencer Award India."
+            label="Meta title"
+            hint="Shown in Google and the browser tab. Put the main search words first, e.g. Influencer Award India."
             value={v("title")}
             placeholder={base.title}
             onChange={(x) => setField("title", x)}
@@ -330,7 +411,7 @@ export default function AdminPagesSeo({ token }: { token: string }) {
           />
           <Field
             id="seo-description"
-            label="Description in Google"
+            label="Meta description"
             hint="One or two plain sentences that make someone click."
             value={v("description")}
             placeholder={base.description}
@@ -338,6 +419,15 @@ export default function AdminPagesSeo({ token }: { token: string }) {
             max={320}
             ideal={[110, 165]}
             multiline
+          />
+          <Field
+            id="seo-keywords"
+            label="Keywords (comma-separated)"
+            hint="e.g. influencer award, influencer award India, creator award. Google mostly ignores this tag; the title, headings and text matter more."
+            value={v("keywords")}
+            placeholder="influencer award, influencer award India"
+            onChange={(x) => setField("keywords", x)}
+            max={300}
           />
           <label className="flex items-start gap-2.5 text-[0.9375rem] cursor-pointer">
             <input type="checkbox" checked={!!o.noindex} onChange={(e) => setField("noindex", e.target.checked)} className="mt-1 w-4 h-4 accent-[var(--color-bronze-fill)]" />
@@ -364,7 +454,7 @@ export default function AdminPagesSeo({ token }: { token: string }) {
               <Field id="og-title" label="Share title" hint="Leave empty to use the Google title." value={v("ogTitle")} placeholder={title} onChange={(x) => setField("ogTitle", x)} max={120} ideal={[25, 70]} />
               <Field id="og-description" label="Share description" value={v("ogDescription")} placeholder={description} onChange={(x) => setField("ogDescription", x)} max={320} ideal={[60, 200]} multiline />
               <div className="space-y-1.5">
-                <label htmlFor="og-image" className="field-label !mb-0">Share image</label>
+                <label htmlFor="og-image" className="field-label !mb-0">Social share image (OG, 1200×630)</label>
                 <div className="flex gap-2">
                   <input id="og-image" type="url" value={o.ogImage || ""} placeholder="Default site image" onChange={(e) => setField("ogImage", e.target.value)} className="field flex-1 min-w-0" />
                   <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => onUpload(e.target.files?.[0])} />
@@ -393,8 +483,118 @@ export default function AdminPagesSeo({ token }: { token: string }) {
             </p>
           )}
         </section>
+
+        {/* 4. JSON-LD */}
+        <section className="bg-white border border-line rounded-[4px] p-5 space-y-3">
+          <h3 className="font-semibold text-[1.0625rem] flex items-center gap-2">
+            <Code2 className="w-4 h-4 text-bronze" aria-hidden="true" /> JSON-LD Schema Markup
+          </h3>
+          <p className="text-[0.875rem] text-ink-3">
+            The site already adds Organization, WebSite, WebPage and Breadcrumb schema to every page{path === "/faq/" ? ", and FAQPage here" : ""}. Paste extra schema here (one JSON object, or a list of objects). Only add facts that are true and shown on the page.
+          </p>
+          <textarea
+            id="seo-schema"
+            rows={8}
+            spellCheck={false}
+            value={v("schema")}
+            placeholder={'{\n  "@context": "https://schema.org",\n  "@type": "Event",\n  "name": "Influencer Award 2026"\n}'}
+            onChange={(e) => setField("schema", e.target.value)}
+            className="field !h-auto min-h-[10rem] py-2.5 font-mono text-[0.8125rem]"
+            aria-describedby="seo-schema-status"
+          />
+          {(() => {
+            const raw = v("schema").trim();
+            if (!raw) return <p id="seo-schema-status" className="text-[0.8125rem] text-ink-3">Empty: only the built-in schema is used.</p>;
+            const ok = cleanSchema(raw);
+            return ok ? (
+              <p id="seo-schema-status" className="text-[0.8125rem] text-[#2f6b45]">Valid JSON. It will be added to this page. Check it with Google's Rich Results Test after saving.</p>
+            ) : (
+              <p id="seo-schema-status" role="alert" className="text-[0.8125rem] text-[#a3341f]">This is not valid JSON-LD (it must be a JSON object or a list of objects). It will not be saved until it is fixed.</p>
+            );
+          })()}
+        </section>
       </div>
       )}
+      {previewOpen && (
+        <PreviewModal
+          path={path === "__menu" ? "/" : path}
+          payload={buildPayload()}
+          dirty={dirty}
+          onClose={() => setPreviewOpen(false)}
+        />
+      )}
     </div>
+  );
+}
+
+/** The real page in a frame, showing the unsaved changes. */
+function PreviewModal({ path, payload, dirty, onClose }: { path: string; payload: object; dirty: boolean; onClose: () => void }) {
+  const frameRef = useRef<HTMLIFrameElement>(null);
+  const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
+  const [ready, setReady] = useState(false);
+  const data = useRef(payload);
+  data.current = payload;
+  // Never leave the frame hidden if the page does not answer
+  useEffect(() => {
+    const t = window.setTimeout(() => setReady(true), 6000);
+    return () => window.clearTimeout(t);
+  }, [device]);
+
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin || e.source !== frameRef.current?.contentWindow) return;
+      if (e.data?.type !== "fsia-preview-ready") return;
+      frameRef.current?.contentWindow?.postMessage({ type: "fsia-preview", ...data.current }, window.location.origin);
+      window.setTimeout(() => setReady(true), 300);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("message", onMessage);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("message", onMessage);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+
+  return (
+    <Portal>
+    <div className="fixed inset-0 z-[90] bg-ink/70 flex flex-col" role="dialog" aria-modal="true" aria-label="Page preview" id="page-preview-modal">
+      <div className="bg-paper border-b border-line flex flex-wrap items-center justify-between gap-3 px-4 py-2.5">
+        <div className="min-w-0">
+          <p className="font-semibold text-ink">Preview of {path}</p>
+          <p className="text-[0.8125rem] text-ink-3">{dirty ? "Shows your changes before saving. Nothing is live until you press Save." : "No unsaved changes: this is how the page looks now."}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex border border-line rounded-[4px] overflow-hidden" role="group" aria-label="Screen size">
+            <button type="button" onClick={() => { setReady(false); setDevice("desktop"); }} aria-pressed={device === "desktop"} className={`px-3 h-9 inline-flex items-center gap-1.5 text-[0.875rem] cursor-pointer ${device === "desktop" ? "bg-ink text-paper" : "bg-white text-ink"}`}>
+              <Monitor className="w-4 h-4" aria-hidden="true" /> Desktop
+            </button>
+            <button type="button" onClick={() => { setReady(false); setDevice("mobile"); }} aria-pressed={device === "mobile"} className={`px-3 h-9 inline-flex items-center gap-1.5 text-[0.875rem] cursor-pointer ${device === "mobile" ? "bg-ink text-paper" : "bg-white text-ink"}`}>
+              <Smartphone className="w-4 h-4" aria-hidden="true" /> Mobile
+            </button>
+          </div>
+          <button type="button" onClick={onClose} className="btn btn-primary btn-sm" autoFocus>
+            <X className="w-4 h-4" aria-hidden="true" /> Close preview
+          </button>
+        </div>
+      </div>
+      <div className="flex-1 min-h-0 overflow-auto flex justify-center p-3">
+        <div className={`relative bg-paper h-full ${device === "mobile" ? "w-[390px] border border-line-strong rounded-[12px] overflow-hidden" : "w-full"}`}>
+          {!ready && (
+            <p className="absolute inset-0 flex items-center justify-center gap-2 text-ink-2">
+              <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Loading preview…
+            </p>
+          )}
+          <iframe
+            key={device}
+            ref={frameRef}
+            title="Page preview"
+            src={`${path}?fsia-preview=1`}
+            className={`w-full h-full border-0 ${ready ? "" : "opacity-0"}`}
+          />
+        </div>
+      </div>
+    </div>
+    </Portal>
   );
 }

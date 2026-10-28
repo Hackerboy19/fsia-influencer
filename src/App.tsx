@@ -22,6 +22,7 @@ import { AwardsTab, CategoriesTab, ForBrandsTab, ForCreatorsTab } from "./compon
 import type { RosterStatus } from "./components/RosterNotice";
 import { Toaster } from "react-hot-toast";
 import { TabId, routeForPath, routeForTab, applyRouteMeta, setPageOverrides, isHiddenTab } from "./seo";
+import { watchHeadingOverrides } from "./lib/headingOverrides";
 import { setHomeHero, setNavLabels } from "./lib/siteContent";
 import { BRAND_NAME } from "./content/brand";
 import { readableAccent } from "./lib/color";
@@ -66,6 +67,32 @@ export default function App() {
     primaryColor: "#E1C699"
   });
 
+  // Admin → Pages & SEO → Preview: the page opens in a frame and receives the unsaved
+  // changes from the admin panel. Nothing is saved; a reload shows the live site again.
+  const previewMode = useMemo(
+    () => typeof window !== "undefined" && window.parent !== window && new URLSearchParams(window.location.search).has("fsia-preview"),
+    []
+  );
+  const previewData = useRef<any>(null);
+  const applyPreview = useCallback((d: any) => {
+    setPageOverrides(d.pages);
+    setHomeHero(d.homeHero);
+    setNavLabels(d.navLabels);
+    setSettings((s: any) => ({ ...s, pages: d.pages, homeHero: d.homeHero, navLabels: d.navLabels, previewAt: Date.now() }));
+  }, []);
+  useEffect(() => {
+    if (!previewMode) return;
+    const onMessage = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin || e.source !== window.parent) return;
+      if (!e.data || e.data.type !== "fsia-preview") return;
+      previewData.current = e.data;
+      applyPreview(e.data);
+    };
+    window.addEventListener("message", onMessage);
+    window.parent.postMessage({ type: "fsia-preview-ready" }, window.location.origin);
+    return () => window.removeEventListener("message", onMessage);
+  }, [previewMode, applyPreview]);
+
   const refreshSections = useCallback(() => {
     // Never leave pages on "Loading profiles…": give up after 12 seconds and say so
     const controller = new AbortController();
@@ -97,10 +124,11 @@ export default function App() {
           setPageOverrides(data.pages);
           setHomeHero(data.homeHero); setNavLabels(data.navLabels);
           setSettings((s: any) => ({ ...s, ...data }));
+          if (previewData.current) applyPreview(previewData.current);
         }
       })
       .catch(() => {});
-  }, [refreshSections]);
+  }, [refreshSections, applyPreview]);
 
   useEffect(() => {
     try {
@@ -149,6 +177,16 @@ export default function App() {
     }
     contentScrollRef.current?.scrollTo({ top: 0 });
   }, [activeTab]);
+
+  // Admin heading replacements (Pages & SEO → H2 / H3) for the open page
+  useEffect(() => {
+    if (activeTab === "admin") return;
+    const route = routeForTab(activeTab);
+    const h2 = route.h2 || [];
+    const h3 = route.h3 || [];
+    if (![...h2, ...h3].some(Boolean)) return;
+    return watchHeadingOverrides(() => document.getElementById("main-content"), h2, h3);
+  }, [activeTab, settings]);
 
   useEffect(() => {
     const onPopState = () => {
@@ -284,6 +322,11 @@ export default function App() {
       style={{ ["--color-champagne" as any]: readableAccent(settings.primaryColor) }}
     >
       <Toaster position="top-right" reverseOrder={false} toastOptions={{ duration: 4000 }} />
+      {previewMode && (
+        <div role="status" className="fixed bottom-3 left-1/2 -translate-x-1/2 z-[80] bg-ink text-paper text-[0.8125rem] font-semibold px-4 py-2 rounded-[4px] shadow-lg pointer-events-none">
+          Preview: these changes are not saved yet
+        </div>
+      )}
 
       <a
         href="#main-content"

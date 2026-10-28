@@ -43,6 +43,13 @@ export interface RouteMeta {
   ogTitle?: string;
   ogDescription?: string;
   ogImage?: string;
+  // Set from the admin panel only
+  keywords?: string;
+  /** Extra JSON-LD added to the page (already checked to be valid JSON) */
+  schema?: string;
+  /** Replacement text for the page's first two H2 and first three H3 headings ("" keeps the page's own) */
+  h2?: string[];
+  h3?: string[];
 }
 
 /** What the admin can change per page. Saved in settings.pages, keyed by the page path ("/", "/creators/"). */
@@ -54,6 +61,14 @@ export interface PageOverride {
   ogTitle?: string;
   ogDescription?: string;
   ogImage?: string;
+  keywords?: string;
+  h2a?: string;
+  h2b?: string;
+  h3a?: string;
+  h3b?: string;
+  h3c?: string;
+  /** JSON-LD schema markup (one object or a list), stored as compact JSON */
+  schema?: string;
   noindex?: boolean;
   /** Taken off the menu, footer and Google; visiting the address shows a short notice */
   hidden?: boolean;
@@ -66,8 +81,26 @@ const LIMITS: Record<keyof Omit<PageOverride, "noindex" | "hidden">, number> = {
   intro: 600,
   ogTitle: 120,
   ogDescription: 320,
-  ogImage: 2000
+  ogImage: 2000,
+  keywords: 300,
+  h2a: 140,
+  h2b: 140,
+  h3a: 140,
+  h3b: 140,
+  h3c: 140,
+  schema: 10000
 };
+
+/** Valid JSON-LD (an object or a list of objects) as compact JSON, or "" */
+export function cleanSchema(raw: string): string {
+  try {
+    const parsed = JSON.parse(raw);
+    const ok = Array.isArray(parsed) ? parsed.length > 0 && parsed.every((x) => x && typeof x === "object" && !Array.isArray(x)) : !!parsed && typeof parsed === "object";
+    return ok ? JSON.stringify(parsed) : "";
+  } catch {
+    return "";
+  }
+}
 
 /** Keep only known fields, trimmed and capped; images must be http(s) or a site path. */
 export function cleanPageOverrides(input: unknown): Record<string, PageOverride> {
@@ -78,7 +111,12 @@ export function cleanPageOverrides(input: unknown): Record<string, PageOverride>
     const o: PageOverride = {};
     for (const key of Object.keys(LIMITS) as (keyof typeof LIMITS)[]) {
       const v = (raw as Record<string, unknown>)[key];
-      if (typeof v === "string" && v.trim()) o[key] = v.trim().slice(0, LIMITS[key]);
+      if (typeof v === "string" && v.trim()) o[key] = key === "schema" ? v.trim() : v.trim().slice(0, LIMITS[key]);
+    }
+    if (o.schema) {
+      const compact = o.schema.length <= LIMITS.schema * 2 ? cleanSchema(o.schema) : "";
+      if (compact && compact.length <= LIMITS.schema) o.schema = compact;
+      else delete o.schema;
     }
     if (o.ogImage && !/^(https?:\/\/|\/)/i.test(o.ogImage)) delete o.ogImage;
     if ((raw as Record<string, unknown>).noindex === true) o.noindex = true;
@@ -114,6 +152,10 @@ export function withOverrides(route: RouteMeta, overrides: Record<string, PageOv
     ogTitle: o.ogTitle || route.ogTitle,
     ogDescription: o.ogDescription || route.ogDescription,
     ogImage: o.ogImage || route.ogImage,
+    keywords: o.keywords || route.keywords,
+    schema: o.schema || route.schema,
+    h2: [o.h2a || "", o.h2b || ""],
+    h3: [o.h3a || "", o.h3b || "", o.h3c || ""],
     indexable: o.noindex || o.hidden ? false : route.indexable
   };
 }
@@ -464,4 +506,25 @@ export function applyRouteMeta(route: RouteMeta) {
   set('meta[property="og:description"], meta[name="twitter:description"]', "content", route.ogDescription || route.description);
   set('meta[property="og:url"]', "content", url);
   set('meta[property="og:image"], meta[name="twitter:image"]', "content", route.ogImage ? absoluteUrl(route.ogImage) : OG_IMAGE);
+
+  // Admin keywords and extra schema: added, changed or removed with the page
+  let kw = document.querySelector('meta[name="keywords"]');
+  if (route.keywords) {
+    if (!kw) {
+      kw = document.createElement("meta");
+      kw.setAttribute("name", "keywords");
+      document.head.appendChild(kw);
+    }
+    kw.setAttribute("content", route.keywords);
+  } else kw?.remove();
+  let ld = document.getElementById("page-schema");
+  if (route.schema) {
+    if (!ld) {
+      ld = document.createElement("script");
+      ld.id = "page-schema";
+      ld.setAttribute("type", "application/ld+json");
+      document.head.appendChild(ld);
+    }
+    if (ld.textContent !== route.schema) ld.textContent = route.schema;
+  } else ld?.remove();
 }
