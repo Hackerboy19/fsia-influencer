@@ -102,6 +102,7 @@ export default function ThreeGallery({
     // so no two frames ever share a spot (overlapping frames flickered into each other).
     // The stored zOffset is ignored here because sections can hold any number of creators.
     const SPACING = 3; // between pairs of portraits
+    let viewBack = 3.8; // how far in front of a section the camera stops (more on phones)
     const sectionZ: number[] = [];
     let hallEnd = -8; // just past the last portrait
     {
@@ -195,6 +196,7 @@ export default function ThreeGallery({
     textureLoader.setCrossOrigin("anonymous");
 
     const interactiveGroups: THREE.Group[] = [];
+    const leftSide = new Map<THREE.Group, boolean>();
     const creatorMap = new Map<string, Creator>();
     const meshToCreatorMap = new Map<THREE.Object3D, Creator>();
 
@@ -235,6 +237,7 @@ export default function ThreeGallery({
         const zPos = zOf(sIdx) - Math.floor(cIdx / 2) * SPACING + (isLeft ? 0 : -1.5); // staggered along runway
 
         creatorGroup.position.set(xPos, yPos, zPos);
+        leftSide.set(creatorGroup, isLeft);
 
         // Slight rotation angled towards center path
         creatorGroup.rotation.y = isLeft ? 0.25 : -0.25;
@@ -358,8 +361,8 @@ export default function ThreeGallery({
     const innerCore = new THREE.Mesh(wireframeGeo, wireframeMat);
     crystal.add(innerCore);
 
-    crystal.position.set(0, 1.2, 0); // floats down center path
-    scene.add(crystal);
+    crystal.position.set(0, 1.2, 0);
+    // Not added to the scene: on phones it covered the middle of the hall.
 
     // Subtle ambient dust particle field for majestic atmospheric volume
     const particleCount = 100;
@@ -431,7 +434,7 @@ export default function ThreeGallery({
         glidingToSection = false;
         targetRunwayZ += deltaY * 0.02;
         // Boundary constraints
-        targetRunwayZ = Math.min(3.8, Math.max(hallEnd + 6, targetRunwayZ));
+        targetRunwayZ = Math.min(viewBack, Math.max(hallEnd + 6, targetRunwayZ));
       }
     };
 
@@ -522,7 +525,7 @@ export default function ThreeGallery({
       if (selectedCreatorRef.current) return; // scroll disabled in focused modal
       glidingToSection = false;
       targetRunwayZ -= e.deltaY * 0.005;
-      targetRunwayZ = Math.min(3.8, Math.max(hallEnd + 6, targetRunwayZ));
+      targetRunwayZ = Math.min(viewBack, Math.max(hallEnd + 6, targetRunwayZ));
     };
 
     // Clicking / Tap to focus on a creator
@@ -616,9 +619,11 @@ export default function ThreeGallery({
         if (targetGroup) {
           const isLeft = targetGroup.position.x < 0;
           // Position camera at a gorgeous, offset angle close up
-          const targetCamX = targetGroup.position.x + (isLeft ? 1.5 : -1.5);
+          // Phones: look at the portrait almost straight on so it fills the screen
+          const narrowView = camera.aspect < 0.85;
+          const targetCamX = targetGroup.position.x + (isLeft ? 1 : -1) * (narrowView ? 0.35 : 1.5);
           const targetCamY = targetGroup.position.y + 0.1;
-          const targetCamZ = targetGroup.position.z + 1.2;
+          const targetCamZ = targetGroup.position.z + (narrowView ? 2.6 : 1.2);
 
           camera.position.lerp(new THREE.Vector3(targetCamX, targetCamY, targetCamZ), 0.05);
           targetLookAt.copy(targetGroup.position);
@@ -627,7 +632,7 @@ export default function ThreeGallery({
         // RUNWAY NAVIGATION MODE
         // Keep Runway positions sync'd with external section clicks
         const activeIdx = activeSectionIndexRef.current;
-        const targetSectionZ = zOf(sections[activeIdx] ? activeIdx : 0) + 3.8;
+        const targetSectionZ = zOf(sections[activeIdx] ? activeIdx : 0) + viewBack;
 
         if (activeIdx !== lastSeenSectionIdx) {
           // Changed outside the scene (arrows, station list, swipe): glide to that section
@@ -666,7 +671,7 @@ export default function ThreeGallery({
         let closestIdx = 0;
         let minDiff = Infinity;
         sections.forEach((sec, idx) => {
-          const diff = Math.abs(currentZ - (zOf(idx) + 3.8));
+          const diff = Math.abs(currentZ - (zOf(idx) + viewBack));
           if (diff < minDiff) {
             minDiff = diff;
             closestIdx = idx;
@@ -691,12 +696,34 @@ export default function ThreeGallery({
 
     animate();
 
+    // Phones in portrait see a narrow slice of the hall, so bring the portraits
+    // towards the middle, turn them to face the camera and widen the view a little.
+    const fitToScreen = (width: number, height: number) => {
+      const aspect = width / Math.max(1, height);
+      const narrow = aspect < 0.85;
+      const nextBack = narrow ? 6.4 : 3.8;
+      const shift = nextBack - viewBack;
+      viewBack = nextBack;
+      runwayZ += shift;
+      targetRunwayZ += shift;
+      camera.position.z += shift;
+      camera.aspect = aspect;
+      camera.fov = narrow ? 58 : 45;
+      camera.updateProjectionMatrix();
+      interactiveGroups.forEach((g) => {
+        const left = leftSide.get(g) ?? g.position.x < 0;
+        g.position.x = (left ? -1 : 1) * (narrow ? 1.0 : 2.4);
+        g.rotation.y = (left ? 1 : -1) * (narrow ? 0.12 : 0.25);
+        g.scale.setScalar(narrow ? 0.78 : 1);
+      });
+    };
+    fitToScreen(container.clientWidth, container.clientHeight);
+
     // 8. Fluid Responsiveness resizing
     const resizeObserver = new ResizeObserver((entries) => {
       if (!entries || entries.length === 0) return;
       const { width, height } = entries[0].contentRect;
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
+      fitToScreen(width, height);
       renderer.setSize(width, height);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     });
