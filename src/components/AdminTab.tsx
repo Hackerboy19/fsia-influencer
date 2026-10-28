@@ -1,3 +1,4 @@
+import { safeLocal } from "../lib/safeStorage";
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
@@ -274,7 +275,7 @@ export default function AdminTab() {
 
   // Restore and validate a saved session on load
   useEffect(() => {
-    const savedToken = localStorage.getItem(ADMIN_TOKEN_KEY);
+    const savedToken = safeLocal.getItem(ADMIN_TOKEN_KEY);
     if (!savedToken) return;
     fetch("/api/auth/me", { headers: { "Authorization": `Bearer ${savedToken}` } })
       .then((res) => (res.ok ? res.json() : Promise.reject()))
@@ -287,14 +288,14 @@ export default function AdminTab() {
         if (data.mustChangePassword) setAdminActiveSubTab("security");
         else fetchAdminData(savedToken);
       })
-      .catch(() => localStorage.removeItem(ADMIN_TOKEN_KEY));
+      .catch(() => safeLocal.removeItem(ADMIN_TOKEN_KEY));
   }, []);
 
   // Any 401 from an admin call means the session expired or was revoked
   useEffect(() => {
     const onUnauthorized = () => {
-      if (!localStorage.getItem(ADMIN_TOKEN_KEY)) return;
-      localStorage.removeItem(ADMIN_TOKEN_KEY);
+      if (!safeLocal.getItem(ADMIN_TOKEN_KEY)) return;
+      safeLocal.removeItem(ADMIN_TOKEN_KEY);
       setToken("");
       setIsLoggedIn(false);
       setStats(null);
@@ -321,7 +322,7 @@ export default function AdminTab() {
       const data = await res.json();
       if (res.ok && data.success) {
         setToken(data.token);
-        localStorage.setItem(ADMIN_TOKEN_KEY, data.token);
+        safeLocal.setItem(ADMIN_TOKEN_KEY, data.token);
         setCurrentUser(data.username);
         setMustChangePassword(!!data.mustChangePassword);
         setPassword("");
@@ -341,7 +342,7 @@ export default function AdminTab() {
 
   const handleLogout = () => {
     fetch("/api/auth/logout", { method: "POST", headers: { "Authorization": `Bearer ${token}` } }).catch(() => {});
-    localStorage.removeItem(ADMIN_TOKEN_KEY);
+    safeLocal.removeItem(ADMIN_TOKEN_KEY);
     setToken("");
     setIsLoggedIn(false);
     setStats(null);

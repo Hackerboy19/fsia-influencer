@@ -1,3 +1,4 @@
+import { safeSession } from "./lib/safeStorage";
 import React, { useState, useRef, useEffect, useMemo, lazy, Suspense, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Compass, ChevronLeft, ChevronRight } from "lucide-react";
@@ -103,14 +104,14 @@ export default function App() {
 
   useEffect(() => {
     try {
-      const saved = sessionStorage.getItem("fsia_moodboard");
+      const saved = safeSession.getItem("fsia_moodboard");
       if (saved) setMoodboardItems(JSON.parse(saved));
     } catch {}
   }, []);
 
   useEffect(() => {
     try {
-      sessionStorage.setItem("fsia_moodboard", JSON.stringify(moodboardItems));
+      safeSession.setItem("fsia_moodboard", JSON.stringify(moodboardItems));
     } catch {}
   }, [moodboardItems]);
 

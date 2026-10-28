@@ -1,3 +1,4 @@
+import { safeSession } from "../lib/safeStorage";
 import React, { useState, useEffect, useRef } from "react";
 import { getPageOverride, routeForTab } from "../seo";
 import { resizeImageFile } from "../lib/image";
@@ -37,7 +38,7 @@ type Draft = Partial<Record<(typeof DRAFT_FIELDS)[number], string>>;
 
 function readDraft(): Draft {
   try {
-    return JSON.parse(sessionStorage.getItem(DRAFT_KEY) || "{}");
+    return JSON.parse(safeSession.getItem(DRAFT_KEY) || "{}");
   } catch {
     return {};
   }
@@ -85,8 +86,8 @@ export default function ModelRegistrationTab() {
   useEffect(() => {
     const values: Draft = { name, category, categoryOther, role, city, bio, reach, engagement, quote, email, phone, portfolioUrls };
     try {
-      if (successData) sessionStorage.removeItem(DRAFT_KEY);
-      else sessionStorage.setItem(DRAFT_KEY, JSON.stringify(values));
+      if (successData) safeSession.removeItem(DRAFT_KEY);
+      else safeSession.setItem(DRAFT_KEY, JSON.stringify(values));
     } catch {}
   }, [name, category, categoryOther, role, city, bio, reach, engagement, quote, email, phone, portfolioUrls, successData]);
 
