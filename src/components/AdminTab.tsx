@@ -220,7 +220,16 @@ export default function AdminTab() {
           primaryColor: newCategoryColor
         })
       });
-      const data = await res.json();
+      // A preview host (Vercel) or a missing .htaccess returns a web page here, not the API's JSON
+      const data = await res.json().catch(() => null);
+      if (!data) {
+        setLoginError(
+          /\.vercel\.app$/i.test(window.location.hostname)
+            ? "Admin login does not work on the preview link: it has no server or database. Sign in on the live site at influencer.fsia.in/admin/."
+            : `The admin server did not answer (status ${res.status}). Check that api/ and .htaccess were uploaded next to index.html and that PHP 8 is selected.`
+        );
+        return;
+      }
       if (res.ok && data.success) {
         setCategorySuccess("Custom catwalk category successfully established!");
         setNewCategoryTitle("");
@@ -830,6 +839,11 @@ export default function AdminTab() {
               </div>
             </div>
 
+            {typeof window !== "undefined" && /\.vercel\.app$/i.test(window.location.hostname) && (
+              <p role="note" className="mb-5 text-left text-[0.875rem] text-ink border border-line-strong bg-bronze-soft px-3 py-2">
+                This is the preview link. Admin login works only on the live site: influencer.fsia.in/admin/
+              </p>
+            )}
             <form onSubmit={handleLogin} className="space-y-5 text-left">
               {loginError && (
                 <div className="p-3 bg-red-50 border border-red-100 text-red-600 rounded-lg text-xs flex items-center gap-2 font-medium">

@@ -25,6 +25,8 @@ const GROUPS: { title: string; links: FooterLinkItem[] }[] = [
     title: "For creators",
     links: [
       { label: APPLY_LABEL, tab: "apply" },
+      { label: "The award", tab: "awards" },
+      { label: "How joining works", tab: "forcreators" },
       { label: "Membership plans", tab: "membership" },
       { label: "Open campaigns", tab: "campaigns" }
     ]
@@ -33,6 +35,8 @@ const GROUPS: { title: string; links: FooterLinkItem[] }[] = [
     title: "For brands",
     links: [
       { label: "Brand enquiry", action: "enquiry" },
+      { label: "How it works for brands", tab: "forbrands" },
+      { label: "Browse by category", tab: "categories" },
       { label: "Guides and magazine", tab: "greenlight" }
     ]
   },

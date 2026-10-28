@@ -64,9 +64,16 @@ export default function CreatorDetailPanel({ profile, onClose, onOpenCollaborati
     }
   };
 
+  const stats = [
+    p.reach && { label: "Followers", value: p.reach, big: true },
+    p.engagement && { label: "Engagement", value: p.engagement, big: true },
+    p.city && { label: "Based in", value: p.city },
+    p.category && { label: "Category", value: p.category }
+  ].filter(Boolean) as { label: string; value: string; big?: boolean }[];
+
   return (
     <Portal>
-      <div className="fixed inset-0 z-[55] flex justify-center items-stretch md:items-start md:py-10 bg-ink/40" onClick={onClose}>
+      <div className="fixed inset-0 z-[55] bg-ink/50" onClick={onClose}>
         <motion.div
           ref={panelRef}
           role="dialog"
@@ -74,195 +81,137 @@ export default function CreatorDetailPanel({ profile, onClose, onOpenCollaborati
           aria-labelledby="profile-name"
           tabIndex={-1}
           onClick={(e) => e.stopPropagation()}
-          initial={reduced ? false : { opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={reduced ? { opacity: 0 } : { opacity: 0, y: 16 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
-          className="relative w-full md:max-w-5xl md:mx-6 bg-paper md:rounded-[4px] md:border md:border-line shadow-[0_20px_60px_-20px_rgba(27,26,23,0.35)] overflow-y-auto outline-none"
+          initial={reduced ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+          className="absolute inset-0 bg-paper overflow-y-auto outline-none"
           id="creator-detail-panel-container"
         >
-          {/* Top bar: breadcrumb back to the directory, share, close */}
-          <div className="sticky top-0 z-10 flex items-center justify-between gap-3 px-5 md:px-8 h-14 bg-paper/95 backdrop-blur border-b border-line">
-            <nav aria-label="Breadcrumb" className="min-w-0 text-[0.875rem] text-ink-3">
-              <ol className="flex items-center gap-1.5 min-w-0">
-                <li>
-                  <button type="button" onClick={onClose} className="inline-flex items-center gap-1 text-ink-2 hover:text-ink underline-offset-4 hover:underline cursor-pointer">
-                    <ChevronLeft className="w-4 h-4" aria-hidden="true" /> All profiles
-                  </button>
-                </li>
-                <li aria-hidden="true">/</li>
-                <li className="truncate text-ink" aria-current="page">{p.name}</li>
-              </ol>
-            </nav>
-            <div className="flex items-center gap-1 shrink-0">
-              {/* Always visible while scrolling: the main action on a profile */}
-              <button type="button" onClick={onOpenCollaboration} className="btn btn-sm btn-primary mr-1" id="profile-book-top-btn">
-                <CalendarCheck className="w-4 h-4" aria-hidden="true" /> <span className="hidden sm:inline">Book {firstName(p.name)}</span><span className="sm:hidden">Book</span>
-              </button>
-              {moodboardItems.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => window.dispatchEvent(new Event("open-moodboard"))}
-                  className="btn btn-sm text-ink-2 hover:text-ink"
-                >
-                  <Heart className="w-4 h-4" aria-hidden="true" /> Saved ({moodboardItems.length})
+          {/* Top bar: breadcrumb back to the directory, the main action, close */}
+          <div className="sticky top-0 z-20 bg-paper/95 backdrop-blur border-b border-line">
+            <div className="max-w-6xl mx-auto flex items-center justify-between gap-3 px-5 md:px-8 h-14">
+              <nav aria-label="Breadcrumb" className="min-w-0 text-[0.875rem] text-ink-3">
+                <ol className="flex items-center gap-1.5 min-w-0">
+                  <li>
+                    <button type="button" onClick={onClose} className="inline-flex items-center gap-1 text-ink-2 hover:text-ink underline-offset-4 hover:underline cursor-pointer">
+                      <ChevronLeft className="w-4 h-4" aria-hidden="true" /> All profiles
+                    </button>
+                  </li>
+                  <li aria-hidden="true">/</li>
+                  <li className="truncate text-ink" aria-current="page">{p.name}</li>
+                </ol>
+              </nav>
+              <div className="flex items-center gap-1 shrink-0">
+                <button type="button" onClick={onOpenCollaboration} className="btn btn-sm btn-primary mr-1" id="profile-book-top-btn">
+                  <CalendarCheck className="w-4 h-4" aria-hidden="true" /> <span className="hidden sm:inline">Book {firstName(p.name)}</span><span className="sm:hidden">Book</span>
                 </button>
-              )}
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Close profile"
-                id="close-creator-details-btn"
-                className="w-10 h-10 inline-flex items-center justify-center rounded-[4px] text-ink hover:bg-sunken cursor-pointer"
-              >
-                <X className="w-5 h-5" aria-hidden="true" />
-              </button>
+                {moodboardItems.length > 0 && (
+                  <button type="button" onClick={() => window.dispatchEvent(new Event("open-moodboard"))} className="btn btn-sm text-ink-2 hover:text-ink hidden sm:inline-flex">
+                    <Heart className="w-4 h-4" aria-hidden="true" /> Saved ({moodboardItems.length})
+                  </button>
+                )}
+                <button type="button" onClick={onClose} aria-label="Close profile" id="close-creator-details-btn" className="w-10 h-10 inline-flex items-center justify-center rounded-[4px] text-ink hover:bg-sunken cursor-pointer">
+                  <X className="w-5 h-5" aria-hidden="true" />
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Header: portrait with a strip of gallery photos, then name, facts and the main action */}
-          <div className={`grid gap-8 md:gap-10 px-5 md:px-10 pt-6 md:pt-10 pb-8 ${p.image ? "md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]" : ""}`}>
-            {p.image && (
-              <div className="space-y-2 min-w-0">
-                <button type="button" onClick={() => setPhotoIndex(0)} className="block w-full cursor-zoom-in" aria-label={`Open ${p.name}'s photos`}>
-                  <Photo src={p.image} name={p.name} eager alt={`Portrait of ${p.name}`} ratio="aspect-[4/5]" className="rounded-[3px]" sizes="(min-width: 768px) 440px, 100vw" />
-                </button>
-                {photos.length > 1 && (
-                  <ul className="grid grid-cols-5 gap-2" aria-label="More photos">
-                    {photos.slice(1, 5).map((src, i) => (
-                      <li key={src}>
-                        <button type="button" onClick={() => setPhotoIndex(i + 1)} className="block w-full cursor-zoom-in" aria-label={`Open photo ${i + 2} of ${photos.length}`}>
-                          <Photo src={src} name={p.name} ratio="aspect-square" className="rounded-[2px]" sizes="90px" />
-                        </button>
-                      </li>
-                    ))}
-                    <li>
-                      <a href="#profile-gallery" className="h-full aspect-square flex flex-col items-center justify-center gap-1 rounded-[2px] border border-line bg-surface text-[0.8125rem] font-semibold text-ink hover:border-ink">
-                        <Images className="w-4 h-4" aria-hidden="true" /> {photos.length}
-                        <span className="sr-only">photos: see the gallery</span>
-                      </a>
-                    </li>
-                  </ul>
-                )}
-              </div>
-            )}
-
-            <div className="space-y-6 min-w-0 md:pt-2">
-              <header className="space-y-3">
-                {!p.image && (
-                  <span aria-hidden="true" className="w-20 h-20 mb-2 inline-flex items-center justify-center bg-sunken font-display text-[1.75rem] text-ink-3 rounded-[2px]">{initials(p.name)}</span>
-                )}
-                {p.category && <p className="eyebrow">{p.category}</p>}
-                <h2 id="profile-name" className="display text-[2.5rem] md:text-[3.25rem] leading-[1.02]">{p.name}</h2>
-                {(p.role || p.city) && (
-                  <p className="text-[1.125rem] text-ink-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                    {p.role && <span>{p.role}</span>}
-                    {p.city && (
-                      <span className="inline-flex items-center gap-1 text-ink-3">
-                        <MapPin className="w-4 h-4" aria-hidden="true" /> {p.city}
-                      </span>
-                    )}
-                  </p>
-                )}
-                {sample ? (
-                  <p className="flex items-start gap-2 border border-line-strong bg-bronze-soft px-3 py-2 text-[0.875rem] text-ink">
-                    <Info className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
-                    <span>Sample profile for this preview. It is not a real creator.</span>
-                  </p>
-                ) : p.reviewed ? (
-                  <p className="text-[0.875rem] text-ink-2 flex items-start gap-2">
-                    <Check className="w-4 h-4 mt-0.5 text-bronze shrink-0" aria-hidden="true" />
-                    <span>
-                      <strong className="font-semibold text-ink">Reviewed:</strong> our team read the application and approved this profile before it was published.
-                      Audience figures are not audited.{" "}
-                      <a href="/faq/" className="link font-normal">What this means</a>
-                    </span>
-                  </p>
-                ) : null}
-              </header>
-
-              {hasAudience && (
-                <section aria-labelledby="profile-audience" className="space-y-1.5">
-                  <h3 id="profile-audience" className="sr-only">Audience</h3>
-                  <dl className="grid grid-cols-2 bg-surface border border-line rounded-[3px] divide-x divide-line">
-                    {p.reach && (
-                      <div className="px-4 py-3">
-                        <dt className="text-[0.8125rem] text-ink-3">Followers</dt>
-                        <dd className="font-display text-[2rem] leading-tight text-ink tabular-nums">{p.reach}</dd>
-                      </div>
-                    )}
-                    {p.engagement && (
-                      <div className="px-4 py-3">
-                        <dt className="text-[0.8125rem] text-ink-3">Engagement rate</dt>
-                        <dd className="font-display text-[2rem] leading-tight text-ink tabular-nums">{p.engagement}</dd>
-                      </div>
-                    )}
-                  </dl>
-                  <p className="text-[0.8125rem] text-ink-3">Supplied by the creator; not independently audited.</p>
-                </section>
+          {/* Cover: a dark editorial band with the name, and the portrait standing over its lower edge */}
+          <header className="bg-ink text-paper">
+            <div className={`max-w-6xl mx-auto px-5 md:px-8 grid gap-8 md:gap-14 ${p.image ? "md:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]" : ""}`}>
+              {p.image && (
+                <div className="md:order-2 pt-6 md:pt-12 -mb-0 md:-mb-24 relative z-10">
+                  <button type="button" onClick={() => setPhotoIndex(0)} className="block w-full cursor-zoom-in" aria-label={`Open ${p.name}'s photos`}>
+                    <Photo src={p.image} name={p.name} eager alt={`Portrait of ${p.name}`} ratio="aspect-[4/5]" className="shadow-[0_30px_60px_-30px_rgba(0,0,0,0.6)]" sizes="(min-width: 768px) 420px, 100vw" />
+                  </button>
+                  {photos.length > 1 && (
+                    <a href="#profile-gallery" className="mt-3 md:mt-0 md:absolute md:left-4 md:bottom-4 inline-flex items-center gap-2 bg-paper/95 text-ink text-[0.8125rem] font-semibold px-3 py-2 hover:bg-white">
+                      <Images className="w-4 h-4" aria-hidden="true" /> {photos.length} photos
+                    </a>
+                  )}
+                </div>
               )}
-
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-3">
+              <div className="md:order-1 min-w-0 pb-10 md:py-16 flex flex-col justify-center">
+                {!p.image && (
+                  <span aria-hidden="true" className="w-20 h-20 mb-6 inline-flex items-center justify-center bg-white/10 font-display text-[1.75rem] text-paper">{initials(p.name)}</span>
+                )}
+                <p className="text-[0.875rem] font-semibold text-[#E1C699]">
+                  {[p.category, p.role].filter(Boolean).join(" · ") || "Creator profile"}
+                </p>
+                <h2 id="profile-name" className="mt-4 font-display font-medium tracking-[-0.02em] text-paper text-[2.75rem] sm:text-[3.5rem] md:text-[4.5rem] leading-[0.98] break-words">
+                  {p.name}
+                </h2>
+                {p.city && (
+                  <p className="mt-4 inline-flex items-center gap-1.5 text-[1.0625rem] text-paper/75">
+                    <MapPin className="w-4 h-4" aria-hidden="true" /> {p.city}, India
+                  </p>
+                )}
+                {p.quote && (
+                  <blockquote className="mt-8 max-w-xl font-display italic text-[1.375rem] md:text-[1.625rem] leading-snug text-paper/90">
+                    “{p.quote}”
+                  </blockquote>
+                )}
+                <div className="mt-8 flex flex-wrap items-center gap-3">
                   <button type="button" onClick={onOpenCollaboration} className="btn btn-primary h-12 px-6" id="profile-book-btn">
                     <CalendarCheck className="w-4 h-4" aria-hidden="true" /> Book or enquire
                   </button>
-                  <button type="button" onClick={copyLink} className="btn btn-secondary h-12">
+                  <button type="button" onClick={copyLink} className="btn h-12 px-5 text-paper border border-paper/40 hover:border-paper" aria-live="polite">
                     {copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Link2 className="w-4 h-4" aria-hidden="true" />}
                     {copied ? "Link copied" : "Share profile"}
                   </button>
                 </div>
-                <p className="text-[0.8125rem] text-ink-3">Our team contacts the creator for you and replies by email or phone.</p>
+                {sample ? (
+                  <p className="mt-6 inline-flex items-start gap-2 text-[0.875rem] text-paper/80">
+                    <Info className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" /> Sample profile for this preview. It is not a real creator.
+                  </p>
+                ) : p.reviewed ? (
+                  <p className="mt-6 inline-flex items-start gap-2 text-[0.875rem] text-paper/80">
+                    <Check className="w-4 h-4 mt-0.5 shrink-0 text-[#E1C699]" aria-hidden="true" />
+                    <span>
+                      Reviewed profile: our team approved it before it went live.{" "}
+                      <a href="/faq/" className="underline underline-offset-4 hover:text-paper">What this means</a>
+                    </span>
+                  </p>
+                ) : null}
               </div>
-
-              {p.quote && (
-                <figure className="border-l-2 border-bronze pl-5">
-                  <blockquote className="font-display text-[1.375rem] leading-snug text-ink">“{p.quote}”</blockquote>
-                </figure>
-              )}
             </div>
-          </div>
+          </header>
 
-          {/* Gallery: every photo, the first one larger */}
-          {photos.length > 1 && (
-            <section id="profile-gallery" aria-labelledby="profile-work" className="px-5 md:px-10 pb-10 scroll-mt-16">
-              <div className="flex items-baseline justify-between gap-3 border-t border-line pt-8">
-                <h3 id="profile-work" className="font-display text-[1.75rem] text-ink">Gallery</h3>
-                <span className="text-[0.875rem] text-ink-3 tabular-nums">{photos.length} photos</span>
+          {/* Key facts in one ruled row */}
+          {stats.length > 0 && (
+            <section aria-labelledby="profile-audience" className="max-w-6xl mx-auto px-5 md:px-8">
+              <h3 id="profile-audience" className="sr-only">Key facts</h3>
+              <div className={p.image ? "md:pr-[calc(41.666%+1.5rem)]" : ""}>
+                <dl className="grid grid-cols-2 sm:grid-cols-4 border-b border-line">
+                  {stats.map((st) => (
+                    <div key={st.label} className="py-6 pr-4 border-t sm:border-t-0 border-line first:border-t-0 [&:nth-child(2)]:border-t-0">
+                      <dt className="text-[0.8125rem] text-ink-3">{st.label}</dt>
+                      <dd className={`mt-1 text-ink ${st.big ? "font-display text-[2.25rem] leading-none tabular-nums" : "text-[1.0625rem] font-medium leading-snug pt-2"}`}>{st.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+                {hasAudience && <p className="mt-3 text-[0.8125rem] text-ink-3">Audience figures are supplied by the creator and are not independently audited.</p>}
               </div>
-              <ul className="mt-5 grid grid-cols-2 md:grid-cols-4 auto-rows-[9.5rem] sm:auto-rows-[12rem] gap-2">
-                {photos.map((src, i) => (
-                  <li key={src} className={i === 0 ? "col-span-2 row-span-2" : ""}>
-                    <button
-                      type="button"
-                      onClick={() => setPhotoIndex(i)}
-                      aria-label={`Open photo ${i + 1} of ${photos.length}`}
-                      className="group block w-full h-full overflow-hidden rounded-[3px] cursor-zoom-in bg-sunken"
-                    >
-                      <Photo src={src} name={p.name} ratio="h-full w-full" className="transition-transform duration-300 group-hover:scale-[1.03]" sizes={i === 0 ? "(min-width: 768px) 480px, 100vw" : "(min-width: 768px) 240px, 50vw"} />
-                    </button>
-                  </li>
-                ))}
-              </ul>
             </section>
           )}
 
           {/* About, details and the enquiry */}
-          <div className="grid gap-8 md:gap-12 md:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] px-5 md:px-10 pb-10 border-t border-line pt-8">
-            <div className="space-y-8 min-w-0">
+          <div className="max-w-6xl mx-auto px-5 md:px-8 pt-12 md:pt-16 pb-12 grid gap-10 md:gap-14 md:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+            <div className="space-y-10 min-w-0">
               {p.bio && (
-                <section aria-labelledby="profile-about" className="space-y-2">
-                  <h3 id="profile-about" className="font-display text-[1.5rem] text-ink">About {firstName(p.name)}</h3>
-                  <p className="text-[1.0625rem] leading-relaxed text-ink-2 whitespace-pre-line">{p.bio}</p>
+                <section aria-labelledby="profile-about">
+                  <h3 id="profile-about" className="text-[0.875rem] font-semibold text-bronze">About {firstName(p.name)}</h3>
+                  <p className="mt-3 font-display text-[1.375rem] md:text-[1.5rem] leading-[1.45] text-ink whitespace-pre-line">{p.bio}</p>
                 </section>
               )}
-
               {p.facts.length > 0 && (
-                <section aria-labelledby="profile-facts" className="space-y-2">
-                  <h3 id="profile-facts" className="font-display text-[1.5rem] text-ink">Details</h3>
-                  <dl className="divide-y divide-line border-y border-line">
+                <section aria-labelledby="profile-facts">
+                  <h3 id="profile-facts" className="text-[0.875rem] font-semibold text-bronze">Details</h3>
+                  <dl className="mt-3 divide-y divide-line border-y border-line">
                     {p.facts.map((f) => (
-                      <div key={f.label} className="grid grid-cols-[8rem_1fr] sm:grid-cols-[10rem_1fr] gap-4 py-3">
+                      <div key={f.label} className="grid grid-cols-[8rem_1fr] sm:grid-cols-[11rem_1fr] gap-4 py-3.5">
                         <dt className="text-ink-3">{f.label}</dt>
                         <dd className="text-ink break-words">{f.value}</dd>
                       </div>
@@ -272,42 +221,77 @@ export default function CreatorDetailPanel({ profile, onClose, onOpenCollaborati
               )}
             </div>
 
-            <div className="space-y-4 md:sticky md:top-20 self-start">
-              <section aria-labelledby="profile-enquire" className="panel p-5 md:p-6 space-y-3">
-                <h3 id="profile-enquire" className="font-display text-[1.375rem] leading-snug text-ink">Work with {firstName(p.name)}</h3>
-                <p className="text-[0.9375rem] text-ink-2">
-                  Enquiries go to our team, who contact the creator for you. Creators' email and phone numbers are never published.
-                </p>
-                <div className="flex flex-wrap gap-3 pt-1">
-                  <button type="button" onClick={onOpenCollaboration} className="btn btn-primary" id="initiate-charter-btn">
-                    Send an enquiry
-                  </button>
-                  <button type="button" onClick={copyLink} className="btn btn-secondary" aria-live="polite">
-                    {copied ? <Check className="w-4 h-4" aria-hidden="true" /> : <Link2 className="w-4 h-4" aria-hidden="true" />}
-                    {copied ? "Link copied" : "Copy profile link"}
-                  </button>
-                </div>
+            <aside className="md:sticky md:top-20 self-start space-y-4">
+              <section aria-labelledby="profile-enquire" className="bg-surface border border-line p-6 md:p-7">
+                <h3 id="profile-enquire" className="font-display text-[1.5rem] leading-snug text-ink">Work with {firstName(p.name)}</h3>
+                <ol className="mt-5 space-y-4">
+                  {[
+                    ["Send a short brief", "What you need, when, and your budget range."],
+                    ["We speak to the creator", "Our team checks interest and availability for you."],
+                    ["You hear back", "By email or phone, usually within a few working days."]
+                  ].map(([t, d], i) => (
+                    <li key={t} className="grid grid-cols-[1.75rem_1fr] gap-3">
+                      <span className="font-display text-[1.125rem] text-bronze tabular-nums leading-6">{i + 1}</span>
+                      <span>
+                        <span className="block font-semibold text-ink">{t}</span>
+                        <span className="block text-[0.9375rem] text-ink-3">{d}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+                <button type="button" onClick={onOpenCollaboration} className="btn btn-primary w-full h-12 mt-6" id="initiate-charter-btn">
+                  Send an enquiry
+                </button>
+                <p className="mt-3 text-[0.8125rem] text-ink-3">Creators' email and phone numbers are never published.</p>
               </section>
               <p className="text-[0.875rem] text-ink-3">
                 Is something on this profile wrong?{" "}
                 <button type="button" onClick={onReport} className="link font-normal cursor-pointer">Ask for a correction</button>
               </p>
-            </div>
+            </aside>
           </div>
 
-          {related.length > 0 && onOpenProfile && (
-            <section aria-labelledby="profile-related" className="border-t border-line bg-surface px-5 md:px-10 py-8 md:py-10">
-              <div className="flex flex-wrap items-baseline justify-between gap-3">
-                <h3 id="profile-related" className="font-display text-[1.5rem] text-ink">More in {p.category}</h3>
-                <button type="button" onClick={onClose} className="link cursor-pointer">Back to all profiles</button>
+          {/* Portfolio: every photo at its own shape, in columns */}
+          {photos.length > 1 && (
+            <section id="profile-gallery" aria-labelledby="profile-work" className="border-t border-line scroll-mt-16">
+              <div className="max-w-6xl mx-auto px-5 md:px-8 py-12 md:py-16">
+                <div className="flex items-baseline justify-between gap-3">
+                  <h3 id="profile-work" className="font-display text-[2rem] md:text-[2.5rem] leading-tight text-ink">Portfolio</h3>
+                  <span className="text-[0.875rem] text-ink-3 tabular-nums">{photos.length} photos</span>
+                </div>
+                <ul className={`mt-8 grid grid-cols-2 gap-3 md:gap-4 ${photos.length === 3 ? "md:grid-cols-3" : photos.length === 4 ? "md:grid-cols-4" : photos.length === 2 ? "" : "md:grid-cols-3"}`}>
+                  {photos.map((src, i) => (
+                    <li key={src}>
+                      <button
+                        type="button"
+                        onClick={() => setPhotoIndex(i)}
+                        aria-label={`Open photo ${i + 1} of ${photos.length}`}
+                        className="group block w-full overflow-hidden cursor-zoom-in"
+                      >
+                        <Photo src={src} name={p.name} ratio="aspect-[4/5]" className="[&_img]:transition-transform [&_img]:duration-500 group-hover:[&_img]:scale-[1.03]" sizes="(min-width: 768px) 300px, 50vw" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-8">
-                {related.map((r) => (
-                  <li key={r.slug}>
-                    <ProfileCard profile={r} onOpen={onOpenProfile} headingLevel="h3" sizes="(min-width: 768px) 220px, 45vw" />
-                  </li>
-                ))}
-              </ul>
+            </section>
+          )}
+
+          {related.length > 0 && onOpenProfile && (
+            <section aria-labelledby="profile-related" className="border-t border-line bg-surface">
+              <div className="max-w-6xl mx-auto px-5 md:px-8 py-12 md:py-14">
+                <div className="flex flex-wrap items-baseline justify-between gap-3">
+                  <h3 id="profile-related" className="font-display text-[1.75rem] text-ink">More in {p.category}</h3>
+                  <button type="button" onClick={onClose} className="link cursor-pointer">Back to all profiles</button>
+                </div>
+                <ul className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-8">
+                  {related.map((r) => (
+                    <li key={r.slug}>
+                      <ProfileCard profile={r} onOpen={onOpenProfile} headingLevel="h3" sizes="(min-width: 768px) 260px, 45vw" />
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </section>
           )}
         </motion.div>

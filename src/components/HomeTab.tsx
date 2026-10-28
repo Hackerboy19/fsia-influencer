@@ -45,20 +45,20 @@ interface HomeTabProps {
 }
 
 // Only what the application workflow actually does (see ModelRegistrationTab and server approve step)
-const CREATOR_STEPS = [
+export const CREATOR_STEPS = [
   { title: "Fill in the application", text: "Niche, city, audience figures, a photo and contact details. It takes about two minutes." },
   { title: "Get a reference number", text: "You see it straight away. Your email and mobile are used only to contact you and are never published." },
   { title: "Our team reviews it and calls you", text: "We read the application and look at your public social profiles, then call you to explain the award fee and next steps." },
   { title: "Your profile goes live", text: "If approved, your profile is published in the directory, and you can apply for open brand campaigns." }
 ];
 
-const BRAND_STEPS = [
+export const BRAND_STEPS = [
   { title: "Send an enquiry", text: "Your brief, budget, timeline and, if you have one, the creator you want to work with." },
   { title: "We suggest creators", text: "Our team reads every enquiry and replies by email or phone with creators from the directory who fit." },
   { title: "You agree terms directly", text: "Fees, deliverables and dates are agreed between you and the creator. We do not promise availability or results." }
 ];
 
-const countBy = (values: string[]) => {
+export const countBy = (values: string[]) => {
   const map = new Map<string, number>();
   values.filter(Boolean).forEach((v) => map.set(v, (map.get(v) || 0) + 1));
   return Array.from(map.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
@@ -325,8 +325,8 @@ function FeatureStrip({ profiles, onGo }: { profiles: ProfileView[]; onGo: HomeT
     {
       title: "Awards",
       text: APPLICATIONS_OPEN ? "Registration open" : AWARD_NAME,
-      target: { tab: "home", hash: "the-award" },
-      href: "/#the-award",
+      target: { tab: "awards" },
+      href: "/awards/",
       thumb: (
         <span className="w-full h-full bg-[#2A251E] text-[#E1C699] flex items-center justify-center" aria-hidden="true">
           <Trophy className="w-7 h-7" />
@@ -718,7 +718,7 @@ export default function HomeTab({ profiles, status, onNavigate, onGo, onSelectPr
             <p className="mt-2 text-[0.9375rem] text-[#CFCAC0] max-w-md">Open to Indian creators in every niche. Our team reviews every application and calls you about the fee and next steps.</p>
             <div className="mt-5 flex flex-wrap gap-3 relative">
               <TabLink tab="apply" onNavigate={onNavigate} className="btn btn-primary">{APPLY_LABEL}</TabLink>
-              <a href="/#the-award" onClick={inApp(() => onGo({ tab: "home", hash: "the-award" }))} className="btn btn-ghost-light">How the award works</a>
+              <a href="/awards/" onClick={inApp(() => onGo({ tab: "awards" }))} className="btn btn-ghost-light">How the award works</a>
             </div>
           </div>
         </div>

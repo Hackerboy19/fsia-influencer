@@ -17,6 +17,7 @@ import StarIndiaTab from "./components/StarIndiaTab";
 import GreenLightTab from "./components/GreenLightTab";
 import ContactTab from "./components/ContactTab";
 import PrivacyTab from "./components/PrivacyTab";
+import { AwardsTab, CategoriesTab, ForBrandsTab, ForCreatorsTab } from "./components/InfoPages";
 import type { RosterStatus } from "./components/RosterNotice";
 import { Toaster } from "react-hot-toast";
 import { TabId, routeForPath, routeForTab, applyRouteMeta, setPageOverrides } from "./seo";
@@ -426,6 +427,10 @@ export default function App() {
             {activeTab === "apply" && <ModelRegistrationTab />}
             {activeTab === "faq" && <FaqTab onNavigate={navigateTo} />}
             {activeTab === "privacy" && <PrivacyTab onNavigate={navigateTo} />}
+            {activeTab === "awards" && <AwardsTab onNavigate={navigateTo} onAwardEnquiry={askAboutAward} />}
+            {activeTab === "categories" && <CategoriesTab profiles={profiles} status={rosterStatus} onBrowse={browse} onNavigate={navigateTo} />}
+            {activeTab === "forbrands" && <ForBrandsTab onNavigate={navigateTo} onBrandEnquiry={() => setIsCollaborationOpen(true)} onBrowse={browse} />}
+            {activeTab === "forcreators" && <ForCreatorsTab onNavigate={navigateTo} />}
             {activeTab === "admin" && (
               <Suspense fallback={<p className="py-24 text-center text-sm text-ink-2" role="status">Loading the admin workspace…</p>}>
                 <AdminTab />

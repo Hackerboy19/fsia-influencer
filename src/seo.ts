@@ -22,6 +22,10 @@ export type TabId =
   | "faq"
   | "contact"
   | "privacy"
+  | "awards"
+  | "categories"
+  | "forbrands"
+  | "forcreators"
   | "admin";
 
 export interface RouteMeta {
@@ -250,6 +254,55 @@ export const ROUTES: RouteMeta[] = [
       "What we collect when you apply or write to us, what appears on a public profile, and how to have your information corrected or removed.",
     indexable: true,
     priority: "0.3",
+    changefreq: "monthly"
+  },
+  {
+    tab: "awards",
+    path: "/awards/",
+    title: `${AWARD_NAME}: Who Can Apply, What You Get | ${SITE_NAME}`,
+    description:
+      `How the ${AWARD_NAME} works: who can apply, what approved creators and winners get, how the review and call work, and how to apply. First edition, registration open.`,
+    heading: `The ${AWARD_NAME}`,
+    intro:
+      `A new award for Indian influencers and digital creators, in every niche. This is the first edition and registration is open. Applying is also how creators join the platform for now.`,
+    indexable: true,
+    priority: "0.9",
+    changefreq: "weekly"
+  },
+  {
+    tab: "categories",
+    path: "/categories/",
+    title: `Creator Categories: Fashion, Beauty, Travel and More | ${SITE_NAME}`,
+    description:
+      `Browse reviewed Indian creator profiles by category and city, from fashion and beauty to travel, food, fitness and tech.`,
+    heading: "Browse by category",
+    intro: "Every category with published creator profiles, and the cities they are based in. Pick one to see the profiles.",
+    indexable: true,
+    priority: "0.7",
+    changefreq: "weekly"
+  },
+  {
+    tab: "forbrands",
+    path: "/for-brands/",
+    title: `For Brands: Find and Book Indian Creators | ${SITE_NAME}`,
+    description:
+      `How brands find creators on ${SITE_NAME}: search reviewed profiles, send a brief, and our team suggests creators who fit. No fee to send an enquiry.`,
+    heading: "Find the right creator for your brand",
+    intro: "Search reviewed profiles yourself, or send us a brief and our team suggests creators who fit. There is no fee to send an enquiry.",
+    indexable: true,
+    priority: "0.8",
+    changefreq: "monthly"
+  },
+  {
+    tab: "forcreators",
+    path: "/for-creators/",
+    title: `For Creators: Join by Applying for the ${AWARD_NAME} | ${SITE_NAME}`,
+    description:
+      `How creators join ${SITE_NAME}: apply for the ${AWARD_NAME}, our team reviews it and calls you, and approved creators get a public profile brands can find.`,
+    heading: "Join as a creator",
+    intro: `For now, creators join by applying for the ${AWARD_NAME}. Our team reviews every application, and approved creators get a public profile that brands can search.`,
+    indexable: true,
+    priority: "0.8",
     changefreq: "monthly"
   },
   {

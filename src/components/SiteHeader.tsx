@@ -25,17 +25,17 @@ interface SiteHeaderProps {
   onBrandEnquiry: () => void;
 }
 
-// Every item points at a page or section that exists. "Awards" is the award section on the
-// home page; "Categories" lists the categories that have published profiles.
+// Every item points at a page or section that exists. "Awards", "Categories", "For Brands" and "For Creators" each have their own page
+// (not only a home page section); "Categories" lists the categories that have published profiles.
 const BRANDS: MenuItem[] = [
   { label: "Send a brand enquiry", action: "enquiry", note: "Our team replies by email or phone." },
   { label: "Search creators", action: "search", note: "By name, niche or city" },
-  { label: "How enquiries work", target: { tab: "home", hash: "for-brands" } },
+  { label: "How it works for brands", target: { tab: "forbrands" } },
   { label: "Open campaigns", target: { tab: "campaigns" } }
 ];
 const CREATORS: MenuItem[] = [
   { label: APPLY_LABEL, target: { tab: "apply" }, note: "Our team reviews it. Approved creators get a public profile." },
-  { label: "How applying works", target: { tab: "home", hash: "for-creators" } },
+  { label: "How joining works", target: { tab: "forcreators" } },
   { label: "Membership plans", target: { tab: "membership" } },
   { label: "Star India members", target: { tab: "starindia" } }
 ];
@@ -206,7 +206,7 @@ export default function SiteHeader({ activeTab, categories, onGo, onBrowse, onBr
                   ) : (
                     <p className="px-1 text-[0.875rem] text-ink-2">Categories appear once profiles are published.</p>
                   )}
-                  <a {...linkProps({ tab: "home", hash: "categories" }, close)} className="link inline-flex items-center gap-1 mt-3 px-1 text-[0.875rem]">
+                  <a {...linkProps({ tab: "categories" }, close)} className="link inline-flex items-center gap-1 mt-3 px-1 text-[0.875rem]">
                     All categories <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
                   </a>
                 </div>
@@ -214,10 +214,10 @@ export default function SiteHeader({ activeTab, categories, onGo, onBrowse, onBr
             </Dropdown>
             <NavLink t={{ tab: "catwalk" }} label="3D Gallery" active={activeTab === "catwalk"} />
             <NavLink t={{ tab: "greenlight" }} label="Magazine" active={activeTab === "greenlight"} />
-            <NavLink t={{ tab: "home", hash: "the-award" }} label="Awards" active={false} />
+            <NavLink t={{ tab: "awards" }} label="Awards" active={activeTab === "awards"} />
             <NavLink t={{ tab: "campaigns" }} label="Campaigns" active={activeTab === "campaigns"} />
-            <Dropdown label="For Brands">{(close) => <DropItems items={BRANDS} close={close} />}</Dropdown>
-            <Dropdown label="For Creators" active={["membership", "starindia"].includes(activeTab)}>
+            <Dropdown label="For Brands" active={activeTab === "forbrands"}>{(close) => <DropItems items={BRANDS} close={close} />}</Dropdown>
+            <Dropdown label="For Creators" active={["membership", "starindia", "forcreators"].includes(activeTab)}>
               {(close) => <DropItems items={CREATORS} close={close} />}
             </Dropdown>
             <Dropdown label="Resources" active={["faq", "contact", "privacy"].includes(activeTab)}>
@@ -283,7 +283,7 @@ export default function SiteHeader({ activeTab, categories, onGo, onBrowse, onBr
                       ["Discover Creators", { tab: "directory" }],
                       ["3D Gallery", { tab: "catwalk" }],
                       ["Magazine", { tab: "greenlight" }],
-                      ["Awards", { tab: "home", hash: "the-award" }],
+                      ["Awards", { tab: "awards" }],
                       ["Campaigns", { tab: "campaigns" }]
                     ] as [string, NavTarget][]
                   ).map(([label, t]) => {
