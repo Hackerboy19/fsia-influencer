@@ -267,9 +267,83 @@ function require_admin(Store $store, bool $allowDefaultPassword = false): string
         fail(401, 'Unauthorized access. Authentication token is invalid or expired.');
     }
     if ($session['restricted'] && !$allowDefaultPassword) {
-        fail(403, 'Change the default admin password first (Admin → Security & Data).');
+        fail(403, 'Change the default admin password first (Admin → Password & team).');
+    }
+    $request = $GLOBALS['fsia_request'] ?? ['GET', ''];
+    if (!role_can(admin_role($store, $session['username']), route_area($request[0], $request[1]))) {
+        fail(403, 'Your login does not have access to this part of the admin panel.');
     }
     return $session['username'];
+}
+
+// ----------------------------------------------------
+// TEAM ROLES. Same map as src/lib/adminRoles.ts (keep in sync).
+// owner: everything; editor: the website; inbox: applications and enquiries.
+// ----------------------------------------------------
+function normalise_role($role): string
+{
+    return in_array($role, ['editor', 'inbox'], true) ? $role : 'owner';
+}
+
+function admin_role(Store $store, string $username): string
+{
+    foreach ($store->data()['admin_users'] as $u) {
+        if ($u['username'] === $username) {
+            return normalise_role($u['role'] ?? null);
+        }
+    }
+    return 'owner';
+}
+
+/** The area an admin API call belongs to (route is the path after /api/), or null when every role may use it */
+function route_area(string $method, string $route): ?string
+{
+    $r = trim($route, '/');
+    if (preg_match('#^admin/(users|backup|restore|logs)(/|$)#', $r)) {
+        return 'team';
+    }
+    if (preg_match('#^(registrations|influencer-applications|enquiries)(/|$)#', $r)) {
+        return 'inbox';
+    }
+    if (strtoupper($method) !== 'GET' && preg_match('#^(settings|creators|sections|campaigns|membership-plans|admin/upload|admin/settings-history)(/|$)#', $r)) {
+        return 'website';
+    }
+    return null;
+}
+
+function role_can(string $role, ?string $area): bool
+{
+    if ($area === null || $role === 'owner') {
+        return true;
+    }
+    return ($role === 'editor' && $area === 'website') || ($role === 'inbox' && $area === 'inbox');
+}
+
+/** Email alert for a new application or enquiry, to Admin → Site settings → Email alerts. Never blocks the form. */
+function notify_team(array $db, string $subject, array $lines): void
+{
+    $to = trim((string)($db['system_settings']['notifyEmail'] ?? ''));
+    if ($to === '' || !valid_email($to) || !function_exists('mail')) {
+        return;
+    }
+    $host = preg_replace('/[^a-z0-9.\-]/i', '', (string)($_SERVER['HTTP_HOST'] ?? 'localhost')) ?: 'localhost';
+    $host = preg_replace('/^www\./i', '', $host);
+    $clean = function ($v): string {
+        return trim((string)preg_replace('/[\r\n]+/', ' ', (string)$v));
+    };
+    $body = '';
+    foreach ($lines as $label => $value) {
+        if ($clean($value) !== '') {
+            $body .= $label . ': ' . $clean($value) . "\n";
+        }
+    }
+    $body .= "\nOpen the admin panel: https://$host/admin/\n";
+    $headers = "From: Website <no-reply@$host>\r\nContent-Type: text/plain; charset=UTF-8";
+    try {
+        @mail($to, '=?UTF-8?B?' . base64_encode($clean($subject)) . '?=', $body, $headers);
+    } catch (Throwable $e) {
+        error_log('FSIA email alert: ' . $e->getMessage());
+    }
 }
 
 // ----------------------------------------------------
@@ -352,4 +426,22 @@ function clean_social($input): array
         }
     }
     return $out;
+}
+
+/** Keeps a copy of the settings before a change (newest first, at most 20), without the API key */
+function save_settings_version(array &$db, string $by, array $keys): void
+{
+    $settings = $db['system_settings'];
+    unset($settings['geminiApiKey']);
+    if (!is_array($db['settings_history'] ?? null)) {
+        $db['settings_history'] = [];
+    }
+    array_unshift($db['settings_history'], [
+        'id' => 'ver-' . now_ms() . '-' . random_int(0, 999),
+        'at' => gmdate('c'),
+        'by' => $by,
+        'keys' => array_slice(array_map('strval', $keys), 0, 30),
+        'settings' => $settings,
+    ]);
+    $db['settings_history'] = array_slice($db['settings_history'], 0, 20);
 }

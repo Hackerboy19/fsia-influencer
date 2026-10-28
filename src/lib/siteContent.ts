@@ -51,3 +51,11 @@ export function setNavLabels(input: unknown) {
 
 export const getNavLabels = () => navLabels;
 export const navLabel = (id: NavId) => navLabels[id] || NAV_ITEMS.find((i) => i.id === id)!.label;
+
+// Logo uploaded in Admin → Site settings ("" keeps the built-in mark)
+let brandLogo = { url: "", hidesName: false };
+export function setBrandLogo(url: unknown, hidesName: unknown) {
+  const u = typeof url === "string" && /^(https?:\/\/|\/)\S+$/i.test(url.trim()) ? url.trim() : "";
+  brandLogo = { url: u, hidesName: !!u && hidesName === true };
+}
+export const getBrandLogo = () => brandLogo;

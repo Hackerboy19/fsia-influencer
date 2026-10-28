@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Search, Download, Trash2, Mail, Phone, Briefcase, Sparkles, MessageSquare, BookOpen } from "lucide-react";
+import ContactButtons from "./ContactButtons";
 import { toast } from "react-hot-toast";
 import { downloadCsv } from "../lib/adminSession";
 
@@ -112,7 +113,7 @@ export default function AdminEnquiriesPanel({ token, onChange }: { token: string
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white/70 rounded-2xl border border-black/10 overflow-hidden">
       <div className="px-5 py-4 bg-[#F4F3F0] border-b border-black/10">
-        <h4 className="font-serif-display text-base font-bold text-[#111]">Enquiries</h4>
+        <h4 className="font-serif-display text-base font-bold text-[#111]">Messages</h4>
         <p className="text-sm text-[#47453f]">Campaign applications, membership requests, contact messages and magazine bookings.</p>
       </div>
 
@@ -207,12 +208,14 @@ export default function AdminEnquiriesPanel({ token, onChange }: { token: string
                 </dl>
               )}
 
+              <ContactButtons phone={e.phone} email={e.email} name={e.name} about={e.subject ? `"${e.subject}"` : "your message"} />
+
               <textarea
                 defaultValue={e.notes || ""}
                 onBlur={(ev) => {
                   if (ev.target.value !== (e.notes || "")) update(e.id, { notes: ev.target.value });
                 }}
-                placeholder="Private follow-up notes (saved when you click away)…"
+                placeholder="Private notes for the team (saved when you click away)…"
                 rows={2}
                 className="w-full px-3 py-2 bg-white border border-black/15 rounded-lg text-sm focus:outline-none focus:border-[#111]"
               />

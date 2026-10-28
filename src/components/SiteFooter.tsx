@@ -1,3 +1,4 @@
+import { getBrandLogo } from "../lib/siteContent";
 import React from "react";
 import { routeForTab, TabId, isHiddenTab } from "../seo";
 import { BRAND_NAME } from "../content/brand";
@@ -81,7 +82,7 @@ export default function SiteFooter({ footerText, onNavigate, onBrandEnquiry }: S
     <footer data-site-chrome className="surface-dark bg-[#1B1A17] text-[#E7E3DA]">
       <div className="page py-12 md:py-16 grid gap-x-8 gap-y-10 grid-cols-2 lg:grid-cols-[minmax(0,4fr)_repeat(4,minmax(0,2fr))]">
         <div className="col-span-2 lg:col-span-1 space-y-3 max-w-sm">
-          <p className="flex items-center gap-2.5 font-display text-[1.375rem] text-white"><img src="/favicon.svg" alt="" width={28} height={28} className="w-7 h-7 rounded-[6px]" />{BRAND_NAME}</p>
+          <p className="flex items-center gap-2.5 font-display text-[1.375rem] text-white">{getBrandLogo().url ? <img src={getBrandLogo().url} alt="" className="h-8 w-auto max-w-[180px] object-contain" /> : <img src="/favicon.svg" alt="" width={28} height={28} className="w-7 h-7 rounded-[6px]" />}{!getBrandLogo().hidesName && BRAND_NAME}</p>
           <p className="text-[0.9375rem] leading-relaxed text-[#CFCAC0]">
             A directory of creator profiles from across India. Creators join by applying for the award, and every profile is reviewed by our team before it is published.
           </p>

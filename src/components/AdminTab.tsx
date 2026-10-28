@@ -1,17 +1,22 @@
 import { safeLocal } from "../lib/safeStorage";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Lock, User, LogIn, LayoutDashboard, Sparkles, Users, Briefcase, FileText, 
   Trash2, Plus, Edit2, Check, RefreshCw, X, AlertTriangle, Shield, CheckCircle2,
   TrendingUp, Phone, Mail, MapPin, Eye, FileSpreadsheet, Activity, UserPlus, Layout,
-  KeyRound, Search, Download, Inbox, Globe, PenLine
+  KeyRound, Search, Download, Inbox, Globe, PenLine, Settings, History
 } from "lucide-react";
 import AdminContentManager from "./AdminContentManager";
 import AdminSecurityPanel from "./AdminSecurityPanel";
 import AdminEnquiriesPanel from "./AdminEnquiriesPanel";
 import AdminPagesSeo from "./AdminPagesSeo";
 import AdminContentEditor from "./AdminContentEditor";
+import AdminBrandSettings from "./AdminBrandSettings";
+import AdminHistoryPanel from "./AdminHistoryPanel";
+import AdminDashboard from "./AdminDashboard";
+import ContactButtons from "./ContactButtons";
+import { ADMIN_ROLES, normaliseRole, type AdminRole } from "../lib/adminRoles";
 import AdminPhotoGallery from "./AdminPhotoGallery";
 import { ADMIN_TOKEN_KEY, ADMIN_UNAUTHORIZED_EVENT, downloadCsv } from "../lib/adminSession";
 import { toast } from "react-hot-toast";
@@ -100,6 +105,7 @@ interface InfluencerApplication {
   phone: string;
   status: "pending" | "approved" | "declined";
   timestamp: string;
+  notes?: string;
 }
 
 interface AdminStats {
@@ -111,6 +117,41 @@ interface AdminStats {
   logs: { id: string; timestamp: string; action: string; ip?: string }[];
 }
 
+// The admin menu in three groups. Tab ids are unchanged, so links and tests keep working.
+const ADMIN_MENU: { label: string; tabs: { id: string; label: string; icon: typeof KeyRound }[] }[] = [
+  {
+    label: "Website",
+    tabs: [
+      { id: "dashboard", label: "Overview", icon: LayoutDashboard },
+      { id: "page_content", label: "Page content", icon: PenLine },
+      { id: "pages_seo", label: "Pages & SEO", icon: Globe },
+      { id: "creators", label: "Creators", icon: Users },
+      { id: "content_manager", label: "Categories, campaigns & plans", icon: Layout },
+      { id: "content", label: "Site settings", icon: Settings }
+    ]
+  },
+  {
+    label: "Inbox",
+    tabs: [
+      { id: "influencer_applications", label: "Award applications", icon: UserPlus },
+      { id: "registrations", label: "Brand enquiries", icon: FileText },
+      { id: "enquiries", label: "Messages", icon: Inbox }
+    ]
+  },
+  {
+    label: "Settings",
+    tabs: [
+      { id: "history", label: "Change history", icon: History },
+      { id: "security", label: "Password & team", icon: KeyRound }
+    ]
+  }
+];
+
+const WEBSITE_TABS = ["page_content", "pages_seo", "creators", "content_manager", "content", "history"];
+const INBOX_TABS = ["influencer_applications", "registrations", "enquiries"];
+const tabAllowed = (id: string, role: AdminRole) =>
+  role === "owner" || (WEBSITE_TABS.includes(id) ? role === "editor" : INBOX_TABS.includes(id) ? role === "inbox" : true);
+
 export default function AdminTab() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [token, setToken] = useState("");
@@ -120,6 +161,14 @@ export default function AdminTab() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState("");
   const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [currentRole, setCurrentRole] = useState<AdminRole>("owner");
+  const roleRef = useRef<AdminRole>("owner");
+  const applyRole = (raw: unknown) => {
+    const r = normaliseRole(raw);
+    roleRef.current = r;
+    setCurrentRole(r);
+    return r;
+  };
 
   // Inbox filters
   const [regQuery, setRegQuery] = useState("");
@@ -140,27 +189,6 @@ export default function AdminTab() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [influencerApplications, setInfluencerApplications] = useState<InfluencerApplication[]>([]);
-
-  // Enterprise Dynamic Settings Configuration State
-  const [settings, setSettings] = useState({
-    websiteTitle: "Influencer Awards",
-    heroTitle: "INFLUENCER AWARDS",
-    heroSubtitle: "THE EXQUISITE HALL OF LUXURY INFLUENCING & PRESTIGE COUTURE",
-    ctaText: "SECURE VIP RUNWAY ACCESS",
-    footerText: "© 2026 Influencer Awards. All rights reserved.",
-    logoUrl: "",
-    primaryColor: "#E1C699",
-    secondaryColor: "#111111",
-    geminiApiKey: "",
-    aiSystemPrompt: "",
-    modelSelection: "gemini-3.5-flash",
-    temperature: 0.7,
-    topK: 40
-  });
-  const [promptLogs, setPromptLogs] = useState<any[]>([]);
-  const [isSavingSettings, setIsSavingSettings] = useState(false);
-  const [settingsSuccess, setSettingsSuccess] = useState("");
-  const [settingsError, setSettingsError] = useState("");
 
   // CRUD Forms State
   const [isCreatorModalOpen, setIsCreatorModalOpen] = useState(false);
@@ -287,6 +315,7 @@ export default function AdminTab() {
       .then((data) => {
         setToken(savedToken);
         setCurrentUser(data.username);
+        applyRole(data.role);
         setMustChangePassword(!!data.mustChangePassword);
         setIsLoggedIn(true);
         // The server allows nothing else until the default password is changed
@@ -329,6 +358,7 @@ export default function AdminTab() {
         setToken(data.token);
         safeLocal.setItem(ADMIN_TOKEN_KEY, data.token);
         setCurrentUser(data.username);
+        applyRole(data.role);
         setMustChangePassword(!!data.mustChangePassword);
         setPassword("");
         setIsLoggedIn(true);
@@ -377,6 +407,9 @@ export default function AdminTab() {
         setCampaigns(campaignsData);
       }
 
+      // Applications and enquiries are only for the Owner and Inbox roles
+      if (roleRef.current === "editor") return;
+
       // 4. Fetch registrations
       const registrationsRes = await fetch("/api/registrations", { headers });
       if (registrationsRes.ok) {
@@ -389,20 +422,6 @@ export default function AdminTab() {
       if (infAppsRes.ok) {
         const infAppsData = await infAppsRes.json();
         setInfluencerApplications(infAppsData);
-      }
-
-      // 5. Fetch system settings
-      const settingsRes = await fetch("/api/admin/settings", { headers });
-      if (settingsRes.ok) {
-        const settingsData = await settingsRes.json();
-        setSettings(settingsData);
-      }
-
-      // 6. Fetch prompt logs
-      const logsRes = await fetch("/api/prompt-logs", { headers });
-      if (logsRes.ok) {
-        const logsData = await logsRes.json();
-        setPromptLogs(logsData);
       }
     } catch (err) {
       console.error("Error loading administration data:", err);
@@ -452,35 +471,6 @@ export default function AdminTab() {
     }
   };
 
-  const handleSaveSettings = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSavingSettings(true);
-    setSettingsSuccess("");
-    setSettingsError("");
-    try {
-      const res = await fetch("/api/settings", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(settings)
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setSettingsSuccess("Enterprise dynamic settings saved successfully!");
-        setSettings(data.settings);
-        fetchAdminData(token);
-      } else {
-        setSettingsError(data.error || "Failed to update dynamic configuration.");
-      }
-    } catch (err) {
-      setSettingsError("Connection to dynamic administrative gateway failed.");
-    } finally {
-      setIsSavingSettings(false);
-    }
-  };
-
   // ----------------------------------------------------
   // LEADS & APPLICANTS INBOX METHODS
   // ----------------------------------------------------
@@ -514,6 +504,21 @@ export default function AdminTab() {
       setRegistrations((prev) => prev.filter((r) => r.id !== id));
     } else {
       toast.error("Failed to delete lead.");
+    }
+  };
+
+  const updateApplicationNotes = async (id: string, notes: string) => {
+    setInfluencerApplications((prev) => prev.map((a) => (a.id === id ? { ...a, notes } : a)));
+    try {
+      const res = await fetch(`/api/influencer-applications/${encodeURIComponent(id)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ notes })
+      });
+      if (res.ok) toast.success("Note saved.");
+      else toast.error((await res.json().catch(() => ({})))?.error || "Could not save the note.");
+    } catch {
+      toast.error("Could not save the note.");
     }
   };
 
@@ -921,40 +926,36 @@ export default function AdminTab() {
         <div className="space-y-6 md:space-y-8" id="admin-workspace">
           
           {/* Header row */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/70 backdrop-blur-md p-6 rounded-2xl border border-black/5 shadow-xs">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="bg-emerald-50 text-emerald-700 text-[11px] font-sans font-bold px-2 py-0.5 rounded-md border border-emerald-100 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-600" /> ACTIVE CONTEXT
-                </span>
-                <span className="font-mono text-[11px] text-[#888]">SIGNED IN AS {currentUser.toUpperCase()}</span>
-              </div>
-              <h2 className="font-serif-display text-2xl font-bold text-[#111] tracking-tight">
-                VIP Editorial Workspace
-              </h2>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-5 rounded-[4px] border border-black/10">
+            <div className="space-y-0.5">
+              <h2 className="font-serif-display text-2xl font-bold text-[#111] tracking-tight">Admin</h2>
+              <p className="text-[0.8125rem] text-[#666]">
+                Signed in as <strong className="text-[#111]">{currentUser}</strong> · {ADMIN_ROLES.find((r) => r.id === currentRole)?.label}
+              </p>
             </div>
 
             <div className="flex items-center gap-2.5">
               <a
-                href="https://www.fsia.in"
+                href="/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="border border-stone-200 bg-stone-50 text-stone-900 text-xs px-4 py-2 rounded-md hover:bg-stone-100 transition-colors flex items-center justify-center gap-2"
+                className="border border-black/10 bg-white text-[#111] text-xs font-semibold px-4 py-2 rounded-[4px] hover:bg-black/[0.04] transition-colors flex items-center justify-center gap-2"
               >
-                ← Go to FSIA.in
+                View website
               </a>
               <button 
                 onClick={() => fetchAdminData(token)}
-                className="p-2.5 rounded-lg border border-black/5 bg-white hover:bg-black/5 text-[#444] transition-colors cursor-pointer"
-                title="Sync database tables"
+                className="p-2.5 rounded-[4px] border border-black/10 bg-white hover:bg-black/[0.04] text-[#444] transition-colors cursor-pointer"
+                title="Refresh"
+                aria-label="Refresh"
               >
                 <RefreshCw className="w-4 h-4" />
               </button>
               <button
                 onClick={handleLogout}
-                className="bg-red-50 hover:bg-red-100 text-red-700 font-sans text-[11px] tracking-[0.1em] font-bold px-4 py-2.5 rounded-lg transition-colors cursor-pointer border border-red-100"
+                className="bg-white hover:bg-red-50 text-red-700 text-xs font-semibold px-4 py-2 rounded-[4px] transition-colors cursor-pointer border border-red-200"
               >
-                SECURE SIGN OUT
+                Sign out
               </button>
             </div>
           </div>
@@ -977,153 +978,69 @@ export default function AdminTab() {
             </div>
           )}
 
-          {/* Tab Navigation */}
-          <div className="flex flex-wrap md:flex-nowrap items-center gap-1.5 md:gap-2 border-b border-[#E1C699]/30 pb-1 w-full max-w-full overflow-x-auto scrollbar-thin">
-            {[
-              { id: "dashboard", label: "Overview", icon: LayoutDashboard },
-              { id: "page_content", label: "Page content", icon: PenLine },
-              { id: "pages_seo", label: "Pages & SEO", icon: Globe },
-              { id: "content_manager", label: "Content Studio", icon: Layout },
-              { id: "content", label: "Campaign Copy", icon: FileSpreadsheet },
-              { id: "ai_config", label: "AI Config", icon: Sparkles },
-              { id: "prompt_logs", label: "Prompt Logs", icon: Activity },
-              { id: "creators", label: "Creator Roster", icon: Users },
-              { id: "campaigns", label: "Brand Bookings", icon: Briefcase },
-              { id: "registrations", label: "VIP Applications", icon: FileText, badge: registrations.filter((r) => (r.status || "new") === "new").length },
-              { id: "influencer_applications", label: "Creator Applicants", icon: UserPlus, badge: influencerApplications.filter((a) => a.status === "pending").length },
-              { id: "enquiries", label: "Enquiries", icon: Inbox, badge: stats?.newEnquiriesCount },
-              { id: "security", label: "Security & Data", icon: KeyRound }
-            ].map((tab: { id: string; label: string; icon: typeof KeyRound; badge?: number }) => {
-              const Icon = tab.icon;
-              const active = adminActiveSubTab === tab.id;
+          {/* Menu, grouped; each person sees only what their role allows */}
+          <nav aria-label="Admin sections" className="space-y-3 border-b border-black/10 pb-4" id="admin-menu">
+            {ADMIN_MENU.map((group) => {
+              const tabs = group.tabs.filter((t) => tabAllowed(t.id, currentRole));
+              if (tabs.length === 0) return null;
               return (
-                <button
-                  key={tab.id}
-                  onClick={() => setAdminActiveSubTab(tab.id)}
-                  disabled={mustChangePassword && tab.id !== "security"}
-                  title={mustChangePassword && tab.id !== "security" ? "Change the default password first" : undefined}
-                  className={`px-2.5 md:px-4 py-2 md:py-2.5 rounded-t-xl text-[11px] md:text-xs font-sans font-bold tracking-widest uppercase transition-all flex items-center gap-1.5 md:gap-2 whitespace-nowrap cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                    active 
-                      ? "bg-white border-t-2 border-champagne text-[#111] shadow-xs" 
-                      : "text-[#666] hover:text-black hover:bg-black/[0.02]"
-                  }`}
-                >
-                  <Icon className={`w-3.5 h-3.5 md:w-4 md:h-4 ${active ? "text-champagne" : "text-[#888]"}`} />
-                  {tab.label}
-                  {!!tab.badge && (
-                    <span className="ml-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[11px] leading-[18px] text-center">
-                      {tab.badge}
-                    </span>
-                  )}
-                </button>
+                <div key={group.label} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#888] sm:w-20 shrink-0">{group.label}</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {tabs.map((tab) => {
+                      const Icon = tab.icon;
+                      const active = adminActiveSubTab === tab.id;
+                      const badge = tab.id === "registrations"
+                        ? registrations.filter((r) => (r.status || "new") === "new").length
+                        : tab.id === "influencer_applications"
+                          ? influencerApplications.filter((a) => a.status === "pending").length
+                          : tab.id === "enquiries" ? stats?.newEnquiriesCount : 0;
+                      const locked = mustChangePassword && tab.id !== "security";
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => setAdminActiveSubTab(tab.id)}
+                          disabled={locked}
+                          aria-current={active ? "page" : undefined}
+                          title={locked ? "Change the default password first" : undefined}
+                          data-tab={tab.id}
+                          className={`px-3 py-2 rounded-[4px] text-[0.8125rem] font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer border disabled:opacity-40 disabled:cursor-not-allowed ${
+                            active ? "bg-[#111] text-white border-[#111]" : "bg-white text-[#333] border-black/10 hover:border-black/30"
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" aria-hidden="true" />
+                          {tab.label}
+                          {!!badge && (
+                            <span className="ml-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[11px] leading-[18px] text-center">
+                              {badge}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               );
             })}
-          </div>
+          </nav>
 
           {/* Sub Tab Content Panels */}
           <div className="space-y-6">
             
-            {/* A. DASHBOARD PANEL */}
-            {adminActiveSubTab === "dashboard" && stats && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="grid grid-cols-1 lg:grid-cols-3 gap-6"
-              >
-                {/* Statistics Cards */}
-                <div className="lg:col-span-2 space-y-6">
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div className="bg-white/60 p-5 rounded-2xl border border-black/5 shadow-xs space-y-1">
-                      <Users className="w-5 h-5 text-champagne" />
-                      <div className="text-2xl font-serif-display font-bold text-[#111]">{stats.creatorsCount}</div>
-                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">Runway Models</div>
-                    </div>
-                    <div className="bg-white/60 p-5 rounded-2xl border border-black/5 shadow-xs space-y-1">
-                      <Briefcase className="w-5 h-5 text-champagne" />
-                      <div className="text-2xl font-serif-display font-bold text-[#111]">{stats.campaignsCount}</div>
-                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">Brand Campaigns</div>
-                    </div>
-                    <div className="bg-white/60 p-5 rounded-2xl border border-black/5 shadow-xs space-y-1">
-                      <FileText className="w-5 h-5 text-champagne" />
-                      <div className="text-2xl font-serif-display font-bold text-[#111]">{stats.applicationsCount}</div>
-                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">Escrow Applications</div>
-                    </div>
-                    <div className="bg-white/60 p-5 rounded-2xl border border-black/5 shadow-xs space-y-1">
-                      <TrendingUp className="w-5 h-5 text-emerald-600" />
-                      <div className="text-2xl font-serif-display font-bold text-[#111]">{stats.estimatedRosterReach}</div>
-                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">Total Audited Reach</div>
-                    </div>
-                    {/* Prompt logs count card */}
-                    <div className="bg-white/60 p-5 rounded-2xl border border-black/5 shadow-xs space-y-1">
-                      <Activity className="w-5 h-5 text-blue-500" />
-                      <div className="text-2xl font-serif-display font-bold text-[#111]">{stats.totalPromptsCount !== undefined ? stats.totalPromptsCount : 0}</div>
-                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">Total Prompt Runs</div>
-                    </div>
-                    {/* API Success rate card */}
-                    <div className="bg-white/60 p-5 rounded-2xl border border-black/5 shadow-xs space-y-1">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                      <div className="text-2xl font-serif-display font-bold text-[#111]">{stats.apiSuccessRate !== undefined ? stats.apiSuccessRate : 100}%</div>
-                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">API Success Rate</div>
-                    </div>
-                    <button
-                      onClick={() => setAdminActiveSubTab("registrations")}
-                      className="text-left bg-blue-50/60 p-5 rounded-2xl border border-blue-100 shadow-xs space-y-1 hover:bg-blue-50 cursor-pointer transition-colors"
-                    >
-                      <Mail className="w-5 h-5 text-blue-600" />
-                      <div className="text-2xl font-serif-display font-bold text-[#111]">{registrations.filter((r) => (r.status || "new") === "new").length}</div>
-                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">New Brand Leads</div>
-                    </button>
-                    <button
-                      onClick={() => setAdminActiveSubTab("influencer_applications")}
-                      className="text-left bg-amber-50/60 p-5 rounded-2xl border border-amber-100 shadow-xs space-y-1 hover:bg-amber-50 cursor-pointer transition-colors"
-                    >
-                      <UserPlus className="w-5 h-5 text-amber-600" />
-                      <div className="text-2xl font-serif-display font-bold text-[#111]">{influencerApplications.filter((a) => a.status === "pending").length}</div>
-                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">Applicants Awaiting Review</div>
-                    </button>
-                    <div className="bg-white/60 p-5 rounded-2xl border border-black/5 shadow-xs space-y-1">
-                      <Layout className="w-5 h-5 text-champagne" />
-                      <div className="text-2xl font-serif-display font-bold text-[#111]">{stats.categoriesCount ?? 0}</div>
-                      <div className="text-[11px] font-sans tracking-wider text-[#666] uppercase font-semibold">Runway Categories</div>
-                    </div>
-                  </div>
+            {adminActiveSubTab === "dashboard" && (
+              <AdminDashboard
+                token={token}
+                role={currentRole}
+                currentUser={currentUser}
+                stats={stats}
+                registrations={registrations}
+                applications={influencerApplications}
+                openTab={setAdminActiveSubTab}
+              />
+            )}
 
-                  {/* PHP MVC Architecture Announcement Callout */}
-                  <div className="p-6 bg-champagne/10 border border-champagne/20 rounded-2xl space-y-3">
-                    <div className="flex items-center gap-2 text-champagne font-bold font-sans text-xs uppercase tracking-widest">
-                      <Shield className="w-4 h-4 text-champagne" />
-                      Go-live checklist
-                    </div>
-                    <ul className="text-xs text-[#444] font-serif-text leading-relaxed list-disc pl-5 space-y-1">
-                      <li>Change the default admin password and add named accounts for each team member (Security &amp; Data tab).</li>
-                      <li>Download a backup before every redeploy — uploading a new build never touches your saved data.</li>
-                      <li>Review new brand leads and creator applicants daily from the badges above.</li>
-                    </ul>
-                  </div>
-                </div>
-
-                {/* Real-time System Audit Logs */}
-                <div className="bg-white/70 p-5 rounded-2xl border border-black/5 shadow-xs space-y-4">
-                  <div className="flex items-center gap-2 border-b border-black/5 pb-2.5">
-                    <Activity className="w-4 h-4 text-[#888]" />
-                    <h3 className="font-serif-display text-sm font-bold text-[#111]">
-                      System Audit Trail
-                    </h3>
-                  </div>
-
-                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
-                    {stats.logs.map((log) => (
-                      <div key={log.id} className="text-[11px] border-b border-black/[0.02] pb-2 space-y-1">
-                        <div className="flex justify-between font-mono text-[11px] text-[#888]">
-                          <span>{new Date(log.timestamp).toLocaleTimeString()}</span>
-                          <span>IP: {log.ip || "127.0.0.1"}</span>
-                        </div>
-                        <p className="text-[#333] font-serif-text leading-tight">{log.action}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
+            {adminActiveSubTab === "history" && (
+              <AdminHistoryPanel token={token} role={currentRole} onRestored={() => fetchAdminData(token)} />
             )}
 
             {/* Click any text or image on a page to change it */}
@@ -1150,407 +1067,10 @@ export default function AdminTab() {
               </motion.div>
             )}
 
-            {/* A1. PUBLIC CONTENT & APPEARANCE PANEL */}
+            {/* A1. Logo, brand colour and footer text */}
             {adminActiveSubTab === "content" && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="bg-white/70 backdrop-blur-md p-6 rounded-2xl border border-black/5 space-y-6"
-              >
-                <div className="border-b border-black/5 pb-3">
-                  <h3 className="font-serif-display text-lg font-bold text-[#111]">Public Content & Appearance Settings</h3>
-                  <p className="text-xs text-[#666] font-serif-text">Control every public text element and color palette dynamically in real-time without editing any code.</p>
-                </div>
-
-                {settingsSuccess && <div className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs rounded-lg font-semibold">{settingsSuccess}</div>}
-                {settingsError && <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-xs rounded-lg font-semibold">{settingsError}</div>}
-
-                <form onSubmit={handleSaveSettings} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Website Brand Title</label>
-                      <input 
-                        type="text" 
-                        required
-                        value={settings.websiteTitle} 
-                        onChange={(e) => setSettings(prev => ({ ...prev, websiteTitle: e.target.value }))} 
-                        className="w-full px-4 py-2.5 bg-white border border-black/10 rounded-xl text-xs" 
-                        placeholder="Influencer Awards" 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Logo URL (Optional)</label>
-                      <input 
-                        type="text" 
-                        value={settings.logoUrl} 
-                        onChange={(e) => setSettings(prev => ({ ...prev, logoUrl: e.target.value }))} 
-                        className="w-full px-4 py-2.5 bg-white border border-black/10 rounded-xl text-xs" 
-                        placeholder="e.g. https://domain.com/logo.png" 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Hero Display Title</label>
-                      <input 
-                        type="text" 
-                        required
-                        value={settings.heroTitle} 
-                        onChange={(e) => setSettings(prev => ({ ...prev, heroTitle: e.target.value }))} 
-                        className="w-full px-4 py-2.5 bg-white border border-black/10 rounded-xl text-xs" 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">CTA Call-To-Action Button Text</label>
-                      <input 
-                        type="text" 
-                        required
-                        value={settings.ctaText} 
-                        onChange={(e) => setSettings(prev => ({ ...prev, ctaText: e.target.value }))} 
-                        className="w-full px-4 py-2.5 bg-white border border-black/10 rounded-xl text-xs" 
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Hero Subtitle Text</label>
-                    <textarea 
-                      rows={2} 
-                      required
-                      value={settings.heroSubtitle} 
-                      onChange={(e) => setSettings(prev => ({ ...prev, heroSubtitle: e.target.value }))} 
-                      className="w-full px-4 py-2.5 bg-white border border-black/10 rounded-xl text-xs resize-none" 
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Footer Copyright Notice</label>
-                    <input 
-                      type="text" 
-                      required
-                      value={settings.footerText} 
-                      onChange={(e) => setSettings(prev => ({ ...prev, footerText: e.target.value }))} 
-                      className="w-full px-4 py-2.5 bg-white border border-black/10 rounded-xl text-xs" 
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-3 border-t border-black/5">
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Primary Accent Theme Color</label>
-                      <div className="flex gap-3 items-center">
-                        <input 
-                          type="color" 
-                          value={settings.primaryColor || "#E1C699"} 
-                          onChange={(e) => setSettings(prev => ({ ...prev, primaryColor: e.target.value }))} 
-                          className="w-12 h-10 p-0 border border-black/10 rounded-lg cursor-pointer bg-transparent" 
-                        />
-                        <input 
-                          type="text" 
-                          value={settings.primaryColor} 
-                          onChange={(e) => setSettings(prev => ({ ...prev, primaryColor: e.target.value }))} 
-                          className="w-full px-4 py-2 bg-white border border-black/10 rounded-lg text-xs font-mono" 
-                          placeholder="#E1C699" 
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Secondary Theme Color (Backgrounds/Accents)</label>
-                      <div className="flex gap-3 items-center">
-                        <input 
-                          type="color" 
-                          value={settings.secondaryColor || "#111111"} 
-                          onChange={(e) => setSettings(prev => ({ ...prev, secondaryColor: e.target.value }))} 
-                          className="w-12 h-10 p-0 border border-black/10 rounded-lg cursor-pointer bg-transparent" 
-                        />
-                        <input 
-                          type="text" 
-                          value={settings.secondaryColor} 
-                          onChange={(e) => setSettings(prev => ({ ...prev, secondaryColor: e.target.value }))} 
-                          className="w-full px-4 py-2 bg-white border border-black/10 rounded-lg text-xs font-mono" 
-                          placeholder="#111111" 
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pt-3 border-t border-black/5 flex justify-end">
-                    <button 
-                      type="submit" 
-                      disabled={isSavingSettings} 
-                      className="bg-[#111] hover:bg-[#222] text-white font-sans text-xs tracking-widest font-bold px-6 py-3 rounded-xl uppercase flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                    >
-                      {isSavingSettings ? (
-                        <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin" />
-                      ) : (
-                        <>
-                          SAVE CONTENT CONFIGURATION
-                          <Check className="w-4 h-4" />
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </form>
-
-                {/* DYNAMIC CATWALK CATEGORY MANAGER CARD */}
-                <div className="border-t border-black/5 pt-6 mt-6 space-y-6">
-                  <div className="border-b border-black/5 pb-3">
-                    <h3 className="font-serif-display text-lg font-bold text-[#111]">Manage 3D Catwalk Categories</h3>
-                    <p className="text-xs text-[#666] font-serif-text">Create, customize, and remove high-fashion catwalk categories. These sections will automatically render dynamically in real-time on the 3D Catwalk tab.</p>
-                  </div>
-
-                  {categorySuccess && <div className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs rounded-lg font-semibold">{categorySuccess}</div>}
-                  {categoryError && <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-xs rounded-lg font-semibold">{categoryError}</div>}
-
-                  {/* Add Category Form */}
-                  <form onSubmit={handleAddCategory} className="bg-white/50 p-5 rounded-xl border border-black/5 space-y-4">
-                    <h4 className="text-xs font-sans font-bold text-[#111] uppercase tracking-wider">Create Custom Category</h4>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Category Title</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. Teen India 2026"
-                          value={newCategoryTitle}
-                          onChange={(e) => setNewCategoryTitle(e.target.value)}
-                          className="w-full px-3 py-2 bg-white border border-black/10 rounded-lg text-xs"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Category Subtitle</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Celebrating Youthful Glamour and Poise"
-                          value={newCategorySubtitle}
-                          onChange={(e) => setNewCategorySubtitle(e.target.value)}
-                          className="w-full px-3 py-2 bg-white border border-black/10 rounded-lg text-xs"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row items-end sm:items-center justify-between gap-4 pt-2">
-                      <div className="space-y-1 w-full sm:w-auto">
-                        <label className="text-[11px] font-sans font-bold text-[#666] uppercase block">Primary Accent Theme Color</label>
-                        <div className="flex gap-2 items-center">
-                          <input
-                            type="color"
-                            value={newCategoryColor}
-                            onChange={(e) => setNewCategoryColor(e.target.value)}
-                            className="w-10 h-8 p-0 border border-black/10 rounded-md cursor-pointer bg-transparent"
-                          />
-                          <input
-                            type="text"
-                            value={newCategoryColor}
-                            onChange={(e) => setNewCategoryColor(e.target.value)}
-                            className="w-24 px-2 py-1 bg-white border border-black/10 rounded-md text-xs font-mono"
-                          />
-                        </div>
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={isCreatingCategory || !newCategoryTitle}
-                        className="bg-[#111] hover:bg-[#222] text-white font-sans text-xs tracking-widest font-bold px-5 py-2 rounded-lg uppercase flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                      >
-                        <Plus className="w-4 h-4 text-champagne" />
-                        ESTABLISH CATEGORY
-                      </button>
-                    </div>
-                  </form>
-
-                  {/* Categories List */}
-                  <div className="space-y-3">
-                    <h4 className="text-xs font-sans font-bold text-[#111] uppercase tracking-wider">Active Runway Categories ({sections.length})</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {sections.map((sec) => (
-                        <div key={sec.id} className="bg-white border border-black/5 p-4 rounded-xl flex items-center justify-between gap-4 shadow-2xs hover:border-[#111]/15 transition-all">
-                          <div className="space-y-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-serif-display text-sm font-bold text-[#111] truncate">{sec.title}</span>
-                              <span 
-                                className="w-2.5 h-2.5 rounded-full border border-black/5 shadow-2xs"
-                                style={{ backgroundColor: sec.primaryColor }}
-                                title={`Theme Color: ${sec.primaryColor}`}
-                              />
-                            </div>
-                            <p className="text-[11px] text-[#888] truncate">{sec.subtitle || "No Subtitle"}</p>
-                            <div className="flex items-center gap-2 pt-1 font-mono text-[11px] text-[#666]">
-                              <span className="bg-[#FAF9F6] px-1.5 py-0.5 rounded border border-black/5 uppercase">ID: {sec.id}</span>
-                              <span className="bg-[#FAF9F6] px-1.5 py-0.5 rounded border border-black/5">{sec.creators?.length || 0} Models</span>
-                            </div>
-                          </div>
-
-                          <button
-                            onClick={(e) => handleDeleteCategory(e, sec.id)}
-                            className="p-2 text-red-600 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-red-50 hover:text-red-700 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-red-100 flex-shrink-0"
-                            title="Delete Category"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* A2. AI CONFIGURATION PANEL */}
-            {adminActiveSubTab === "ai_config" && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="bg-white/70 backdrop-blur-md p-6 rounded-2xl border border-black/5 space-y-6"
-              >
-                <div className="border-b border-black/5 pb-3">
-                  <h3 className="font-serif-display text-lg font-bold text-[#111]">Gemini AI Gateway Settings</h3>
-                  <p className="text-xs text-[#666] font-serif-text">Configure server-side secure credentials, master system prompts, temperature sliders, and parameters for the AI pitch optimization engine.</p>
-                </div>
-
-                {settingsSuccess && <div className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs rounded-lg font-semibold">{settingsSuccess}</div>}
-                {settingsError && <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-xs rounded-lg font-semibold">{settingsError}</div>}
-
-                <form onSubmit={handleSaveSettings} className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Secure Gemini API Key</label>
-                    <input 
-                      type="password" 
-                      value={settings.geminiApiKey} 
-                      onChange={(e) => setSettings(prev => ({ ...prev, geminiApiKey: e.target.value }))} 
-                      className="w-full px-4 py-2.5 bg-white border border-black/10 rounded-xl text-xs font-mono" 
-                      placeholder="Paste your Gemini API key (routed securely server-side)" 
-                    />
-                    <p className="text-[11px] text-[#888] italic">Note: Your API key is safely routed via server endpoints and is never exposed to public browser client sessions.</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Model Selection Selection</label>
-                      <select 
-                        value={settings.modelSelection || "gemini-3.5-flash"} 
-                        onChange={(e) => setSettings(prev => ({ ...prev, modelSelection: e.target.value }))} 
-                        className="w-full px-4 py-2.5 bg-white border border-black/10 rounded-xl text-xs"
-                      >
-                        <option value="gemini-2.5-flash">gemini-2.5-flash (Ultra-fast & Efficient)</option>
-                        <option value="gemini-2.5-pro">gemini-2.5-pro (Elite Complex Reasoning)</option>
-                        <option value="gemini-3.5-flash">gemini-3.5-flash (Latest General Public Beta)</option>
-                        <option value="gemini-1.5-pro">gemini-1.5-pro (Legacy Stable Core)</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">Model Temperature ({settings.temperature !== undefined ? settings.temperature : 0.7})</label>
-                      <div className="flex gap-4 items-center pt-2">
-                        <span className="text-[11px] font-sans text-[#888]">Precise (0.0)</span>
-                        <input 
-                          type="range" 
-                          min="0.0" 
-                          max="1.0" 
-                          step="0.1" 
-                          value={settings.temperature !== undefined ? settings.temperature : 0.7} 
-                          onChange={(e) => setSettings(prev => ({ ...prev, temperature: parseFloat(e.target.value) }))} 
-                          className="w-full accent-[#E1C699]" 
-                        />
-                        <span className="text-[11px] font-sans text-[#888]">Creative (1.0)</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase block">System Instructions / Master Prompt Guidelines</label>
-                    <textarea 
-                      rows={6} 
-                      required
-                      value={settings.aiSystemPrompt} 
-                      onChange={(e) => setSettings(prev => ({ ...prev, aiSystemPrompt: e.target.value }))} 
-                      className="w-full px-4 py-2.5 bg-white border border-black/10 rounded-xl text-xs leading-relaxed font-sans" 
-                      placeholder="Describe how the AI should rewrite and optimize user brand pitches..." 
-                    />
-                  </div>
-
-                  <div className="pt-3 border-t border-black/5 flex justify-end">
-                    <button 
-                      type="submit" 
-                      disabled={isSavingSettings} 
-                      className="bg-[#111] hover:bg-[#222] text-white font-sans text-xs tracking-widest font-bold px-6 py-3 rounded-xl uppercase flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                    >
-                      {isSavingSettings ? (
-                        <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin" />
-                      ) : (
-                        <>
-                          SAVE AI CONFIGURATION
-                          <Check className="w-4 h-4" />
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </form>
-              </motion.div>
-            )}
-
-            {/* A3. PROMPT history LOGS PANEL */}
-            {adminActiveSubTab === "prompt_logs" && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="space-y-6"
-              >
-                <div className="bg-white/70 backdrop-blur-md p-6 rounded-2xl border border-black/5">
-                  <div className="border-b border-black/5 pb-3 flex justify-between items-center">
-                    <div>
-                      <h3 className="font-serif-display text-lg font-bold text-[#111]">AI Prompt Gateway History Logs</h3>
-                      <p className="text-xs text-[#666] font-serif-text">Audit every prompt query submitted by designers and optimized results processed server-side by the Gemini engine.</p>
-                    </div>
-                    <span className="bg-blue-50 text-blue-700 text-xs px-3 py-1 rounded-full font-mono border border-blue-100">{promptLogs.length} LOGS RECORDED</span>
-                  </div>
-                  
-                  <div className="mt-6 overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-black/5 text-[11px] font-sans font-bold tracking-wider text-[#666] uppercase">
-                          <th className="py-3 px-4">Timestamp</th>
-                          <th className="py-3 px-4">AI Model</th>
-                          <th className="py-3 px-4">Status</th>
-                          <th className="py-3 px-4">Prompt Context / AI Curation</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-black/[0.03]">
-                        {promptLogs.map((log: any) => (
-                          <tr key={log.id} className="text-xs hover:bg-black/[0.01]">
-                            <td className="py-4 px-4 font-mono text-[11px] text-[#888] whitespace-nowrap">
-                              {new Date(log.timestamp).toLocaleString("en-IN", { hour12: true })}
-                            </td>
-                            <td className="py-4 px-4">
-                              <span className="bg-black/5 border border-black/5 px-2 py-0.5 rounded text-[11px] font-mono text-black">{log.modelUsed}</span>
-                            </td>
-                            <td className="py-4 px-4">
-                              <span className={`px-2 py-0.5 rounded text-[11px] font-sans uppercase font-bold ${log.status === "success" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-red-50 text-red-700 border border-red-100"}`}>
-                                {log.status}
-                              </span>
-                            </td>
-                            <td className="py-4 px-4 max-w-md">
-                              <div className="space-y-2">
-                                <div className="p-2.5 bg-black/[0.02] rounded-lg border border-black/[0.03] text-[11px] font-serif-text text-[#555]">
-                                  <strong className="text-[11px] font-sans text-black uppercase font-bold tracking-wider block mb-1">USER PROMPT CONTENT:</strong>
-                                  {log.userPrompt}
-                                </div>
-                                <div className="p-2.5 bg-champagne/[0.03] rounded-lg border border-champagne/10 text-[11px] font-serif-text text-black">
-                                  <strong className="text-[11px] font-sans text-champagne uppercase font-bold tracking-wider block mb-1">GENERATED HARMONIC CURATION:</strong>
-                                  <div className="whitespace-pre-wrap leading-relaxed line-clamp-4 hover:line-clamp-none transition-all">{log.aiResponse}</div>
-                                </div>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                        {promptLogs.length === 0 && (
-                          <tr>
-                            <td colSpan={4} className="py-12 text-center text-xs text-[#888] italic font-serif-text">
-                              No AI prompts have been processed through the gateway yet. Enter campaigns to log dynamic API activity.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <AdminBrandSettings token={token} />
               </motion.div>
             )}
 
@@ -1563,13 +1083,13 @@ export default function AdminTab() {
               >
                 <div className="flex justify-between items-center bg-white/40 p-4 rounded-xl border border-black/5">
                   <div className="text-xs text-[#666] font-serif-text">
-                    Add, modify, or expunge model rosters walking the 3D couture catwalk.
+                    Add, edit or remove the creators shown on the website.
                   </div>
                   <button
                     onClick={openAddCreator}
                     className="bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[11px] tracking-widest font-bold py-2 px-4 rounded-lg uppercase flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >
-                    <Plus className="w-3.5 h-3.5 text-champagne" /> Catalog Model
+                    <Plus className="w-3.5 h-3.5 text-champagne" /> Add creator
                   </button>
                 </div>
 
@@ -1641,64 +1161,6 @@ export default function AdminTab() {
               </motion.div>
             )}
 
-            {/* C. CAMPAIGNS MANAGER */}
-            {adminActiveSubTab === "campaigns" && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="space-y-6"
-              >
-                <div className="flex justify-between items-center bg-white/40 p-4 rounded-xl border border-black/5">
-                  <div className="text-xs text-[#666] font-serif-text">
-                    Define active brand contract thresholds and digital parameters.
-                  </div>
-                  <button
-                    onClick={openAddCampaign}
-                    className="bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-[11px] tracking-widest font-bold py-2 px-4 rounded-lg uppercase flex items-center gap-1.5 cursor-pointer shadow-xs"
-                  >
-                    <Plus className="w-3.5 h-3.5 text-champagne" /> Draft Campaign
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {campaigns.map((camp) => (
-                    <div key={camp.id} className="bg-white/60 p-5 rounded-2xl border border-black/5 flex flex-col justify-between space-y-4 shadow-xs">
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <span className="text-[11px] font-sans text-champagne font-bold tracking-widest uppercase block">{camp.brand}</span>
-                            <h4 className="font-serif-display text-sm font-bold text-[#111] mt-0.5">{camp.title}</h4>
-                          </div>
-                          <span className="bg-white border border-black/5 text-[#111] text-[11px] font-sans font-bold px-2.5 py-1 rounded">
-                            {camp.budget}
-                          </span>
-                        </div>
-                        <p className="text-xs text-[#555] font-serif-text line-clamp-2 leading-relaxed">{camp.description}</p>
-                      </div>
-
-                      <div className="pt-3 border-t border-black/5 flex justify-between items-center">
-                        <span className="text-[11px] font-mono text-[#888] uppercase">DURATION: {camp.duration}</span>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => openEditCampaign(camp)}
-                            className="p-2 rounded-lg border border-black/5 bg-white hover:bg-black/5 text-[#444] cursor-pointer"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={(e) => deleteCampaign(e, camp.id)}
-                            className="p-2 rounded-lg border border-red-100 bg-red-50 hover:bg-red-100 text-red-600 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
             {/* D. VIP APPLICATIONS / MEMBERSHIP PANEL */}
             {adminActiveSubTab === "registrations" && (
               <motion.div 
@@ -1709,11 +1171,11 @@ export default function AdminTab() {
                 <div className="bg-white/60 rounded-2xl border border-black/5 overflow-hidden">
                   <div className="px-5 py-4 bg-[#F4F3F0] border-b border-black/5 flex items-center justify-between">
                     <div>
-                      <h4 className="font-serif-display text-sm font-bold text-[#111]">VIP Escrow Curation Applications</h4>
-                      <p className="text-[11px] text-[#888] uppercase tracking-wider font-mono">Secured applications arriving via Client Charter gateways</p>
+                      <h4 className="font-serif-display text-sm font-bold text-[#111]">Brand enquiries</h4>
+                      <p className="text-[11px] text-[#888] uppercase tracking-wider font-mono">Brands asking to work with creators</p>
                     </div>
                     <span className="bg-champagne/15 text-champagne border border-champagne text-[11px] font-sans font-bold px-3 py-1 rounded-full">
-                      {registrations.length} APPLICATIONS
+                      {registrations.length} total
                     </span>
                   </div>
 
@@ -1777,7 +1239,7 @@ export default function AdminTab() {
                             <button
                               onClick={() => deleteRegistration(reg.id)}
                               className="p-2 rounded-lg text-red-600 hover:bg-red-50 cursor-pointer"
-                              title="Delete lead"
+                              title="Delete enquiry"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1787,14 +1249,14 @@ export default function AdminTab() {
                         {/* Submission Metadata details */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white/45 p-3.5 rounded-xl border border-black/[0.03] text-xs font-serif-text">
                           <div className="space-y-1">
-                            <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">TARGET CREATOR</span>
+                            <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">Creator asked for</span>
                             <div className="flex items-center gap-1.5 font-sans font-semibold text-black">
                               <Users className="w-3.5 h-3.5 text-champagne" />
                               {reg.creatorName}
                             </div>
                           </div>
                           <div className="space-y-1">
-                            <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">CONTACT CHANNELS</span>
+                            <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">Contact</span>
                             <div className="space-y-0.5">
                               <a href={`mailto:${reg.contactEmail}`} className="flex items-center gap-1.5 text-black hover:underline">
                                 <Mail className="w-3.5 h-3.5 text-[#888]" /> {reg.contactEmail}
@@ -1805,7 +1267,7 @@ export default function AdminTab() {
                             </div>
                           </div>
                           <div className="space-y-1">
-                            <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">CURRENCY & LOCATION</span>
+                            <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">City</span>
                             <div>
                               <div className="flex items-center gap-1.5 text-black">
                                 <MapPin className="w-3.5 h-3.5 text-[#888]" /> {reg.clientCity}
@@ -1818,7 +1280,7 @@ export default function AdminTab() {
                         </div>
 
                         <div className="flex justify-between items-center font-mono text-[11px] text-[#888]">
-                          <span>VERIFICATION HASH: <code className="text-[#444] bg-white px-1.5 py-0.5 rounded border border-black/5">{reg.verificationHash}</code></span>
+                          <ContactButtons phone={reg.contactPhone} email={reg.contactEmail} name={reg.brandName} about="your enquiry" />
                           {reg.scope && (
                             <span className="font-serif-text italic text-[#666]">Scope: {reg.scope} ({reg.duration || "3 Months"})</span>
                           )}
@@ -1829,7 +1291,7 @@ export default function AdminTab() {
                           onBlur={(e) => {
                             if (e.target.value !== (reg.notes || "")) updateRegistration(reg.id, { notes: e.target.value });
                           }}
-                          placeholder="Private follow-up notes (saved when you click away)…"
+                          placeholder="Private notes for the team (saved when you click away)…"
                           rows={2}
                           className="w-full px-3 py-2 bg-white/70 border border-black/5 rounded-lg text-xs font-serif-text focus:outline-none focus:border-champagne"
                         />
@@ -1838,7 +1300,7 @@ export default function AdminTab() {
 
                     {filteredRegistrations.length === 0 && (
                       <div className="p-12 text-center text-xs text-[#888] font-serif-text italic">
-                        {registrations.length === 0 ? "No client escrow collaboration proposals received yet." : "No leads match your filters."}
+                        {registrations.length === 0 ? "No brand enquiries yet." : "No enquiries match your search."}
                       </div>
                     )}
                   </div>
@@ -1856,17 +1318,17 @@ export default function AdminTab() {
                 {/* Metrics bar */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-white/60 p-4 rounded-xl border border-black/5 shadow-xs">
-                    <span className="text-[11px] text-[#888] uppercase tracking-wider font-sans font-bold block">Total Applications</span>
+                    <span className="text-[11px] text-[#888] uppercase tracking-wider font-sans font-bold block">All applications</span>
                     <strong className="text-xl font-bold text-[#111]">{influencerApplications.length}</strong>
                   </div>
                   <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100/50 shadow-xs">
-                    <span className="text-[11px] text-amber-700 uppercase tracking-wider font-sans font-bold block">Pending Audit</span>
+                    <span className="text-[11px] text-amber-700 uppercase tracking-wider font-sans font-bold block">To review</span>
                     <strong className="text-xl font-bold text-amber-700">
                       {influencerApplications.filter(a => a.status === "pending").length}
                     </strong>
                   </div>
                   <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100/50 shadow-xs">
-                    <span className="text-[11px] text-emerald-700 uppercase tracking-wider font-sans font-bold block">Approved & Rostered</span>
+                    <span className="text-[11px] text-emerald-700 uppercase tracking-wider font-sans font-bold block">Approved</span>
                     <strong className="text-xl font-bold text-emerald-700">
                       {influencerApplications.filter(a => a.status === "approved").length}
                     </strong>
@@ -1882,8 +1344,8 @@ export default function AdminTab() {
                 <div className="bg-white/60 rounded-2xl border border-black/5 overflow-hidden">
                   <div className="px-5 py-4 bg-[#F4F3F0] border-b border-black/5 flex items-center justify-between flex-wrap gap-3">
                     <div>
-                      <h4 className="font-serif-display text-sm font-bold text-[#111]">Runway Model Applicants</h4>
-                      <p className="text-[11px] text-[#888] uppercase tracking-wider font-mono">Approve submitted registrations to directly deploy them into the 3D catwalk and directory roster</p>
+                      <h4 className="font-serif-display text-sm font-bold text-[#111]">Award applications</h4>
+                      <p className="text-[11px] text-[#888] uppercase tracking-wider font-mono">Approve an application to show the creator on the website</p>
                     </div>
                   </div>
 
@@ -1934,7 +1396,7 @@ export default function AdminTab() {
                                       ? "bg-red-50 text-red-600 border-red-100"
                                       : "bg-amber-50 text-amber-600 border-amber-100"
                                 }`}>
-                                  {app.status === "approved" ? "APPROVED & ROSTERED" : app.status === "declined" ? "DECLINED" : "PENDING AUDIT"}
+                                  {app.status === "approved" ? "Approved" : app.status === "declined" ? "Declined" : "To review"}
                                 </span>
                               </div>
                               <p className="text-xs text-[#666] font-sans">
@@ -1945,9 +1407,9 @@ export default function AdminTab() {
 
                           <div className="flex items-center gap-4">
                             <div className="text-left md:text-right">
-                              <span className="text-[11px] font-sans font-bold text-[#888] uppercase block">AUDITED METRICS</span>
+                              <span className="text-[11px] font-sans font-bold text-[#888] uppercase block">Followers / engagement</span>
                               <div className="text-xs font-mono font-bold text-black">
-                                {app.reach} Followers / {app.engagement} ER
+                                {app.reach || "—"} / {app.engagement || "—"}
                               </div>
                             </div>
 
@@ -1960,7 +1422,7 @@ export default function AdminTab() {
                                   id={`approve-section-${app.id}`}
                                   value={defaultSectionFor(app)}
                                   onChange={(e) => setApproveSection((prev) => ({ ...prev, [app.id]: e.target.value }))}
-                                  title="Runway section this creator joins when approved"
+                                  title="Category this creator joins when approved"
                                   className="px-2 py-1.5 bg-white border border-black/15 rounded-lg text-xs font-sans text-[#111] max-w-[180px]"
                                 >
                                   {sections.map((sec) => (
@@ -1970,16 +1432,16 @@ export default function AdminTab() {
                                 <button
                                   onClick={() => approveInfluencerApplication(app.id, defaultSectionFor(app))}
                                   className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-sans text-[11px] font-bold uppercase rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
-                                  title="Approve and publish to 3D Runway"
+                                  title="Approve and show on the website"
                                 >
-                                  <Check className="w-3.5 h-3.5" /> APPROVE
+                                  <Check className="w-3.5 h-3.5" /> Approve
                                 </button>
                                 <button
                                   onClick={() => declineInfluencerApplication(app.id)}
                                   className="px-3 py-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 font-sans text-[11px] font-bold uppercase rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
                                   title="Decline request"
                                 >
-                                  <X className="w-3.5 h-3.5" /> DECLINE
+                                  <X className="w-3.5 h-3.5" /> Decline
                                 </button>
                               </div>
                             )}
@@ -1997,7 +1459,7 @@ export default function AdminTab() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#FAF9F6] p-4 rounded-xl border border-black/[0.02]">
                           <div className="space-y-2">
                             <div>
-                              <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">BIOGRAPHY & PITCH</span>
+                              <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">About</span>
                               <p className="text-xs text-[#555] font-serif-text leading-relaxed mt-0.5">{app.bio}</p>
                             </div>
                             {app.quote && (
@@ -2010,13 +1472,13 @@ export default function AdminTab() {
                           <div className="space-y-3 font-serif-text text-xs">
                             <div className="grid grid-cols-2 gap-2">
                               <div>
-                                <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">EMAIL CONTACT</span>
+                                <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">Email</span>
                                 <a href={`mailto:${app.email}`} className="text-black hover:underline flex items-center gap-1 font-sans font-semibold mt-0.5">
                                   <Mail className="w-3.5 h-3.5 text-[#888]" /> {app.email}
                                 </a>
                               </div>
                               <div>
-                                <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">PHONE CONTACT</span>
+                                <span className="text-[11px] font-sans font-bold tracking-wider text-[#888] uppercase block">Phone</span>
                                 <a href={`tel:${app.phone}`} className="text-black hover:underline flex items-center gap-1 font-sans font-semibold mt-0.5">
                                   <Phone className="w-3.5 h-3.5 text-[#888]" /> {app.phone}
                                 </a>
@@ -2054,15 +1516,31 @@ export default function AdminTab() {
                           </div>
                         </div>
 
-                        <div className="text-[11px] font-mono text-[#888] text-right">
-                          RECEIVED VIA PUBLIC PORTAL: {app.timestamp}
+                        <div className="flex flex-col md:flex-row md:items-start gap-3">
+                          <div className="flex-1">
+                            <label htmlFor={`app-notes-${app.id}`} className="sr-only">Notes for {app.name}</label>
+                            <textarea
+                              id={`app-notes-${app.id}`}
+                              defaultValue={app.notes || ""}
+                              onBlur={(e) => {
+                                if (e.target.value !== (app.notes || "")) updateApplicationNotes(app.id, e.target.value);
+                              }}
+                              placeholder="Private notes for the team, e.g. called on Monday, fee shared (saved when you click away)…"
+                              rows={2}
+                              className="w-full px-3 py-2 bg-white/70 border border-black/10 rounded-[4px] text-xs focus:outline-none focus:border-champagne"
+                            />
+                          </div>
+                          <div className="flex flex-col items-start md:items-end gap-1.5">
+                            <ContactButtons phone={app.phone} email={app.email} name={app.name} about="your Influencer Award application" />
+                            <span className="text-[11px] text-[#888]">Received {app.timestamp}</span>
+                          </div>
                         </div>
                       </div>
                     ))}
 
                     {filteredApplications.length === 0 && (
                       <div className="p-12 text-center text-xs text-[#888] font-serif-text italic">
-                        {influencerApplications.length === 0 ? "No public model registration requests submitted yet." : "No applicants match your filters."}
+                        {influencerApplications.length === 0 ? "No award applications yet." : "No applications match your search."}
                       </div>
                     )}
                   </div>
@@ -2078,6 +1556,7 @@ export default function AdminTab() {
               <AdminSecurityPanel
                 token={token}
                 currentUser={currentUser}
+                role={currentRole}
                 onPasswordChanged={() => {
                   setMustChangePassword(false);
                   fetchAdminData(token);
@@ -2268,7 +1747,7 @@ export default function AdminTab() {
                   type="submit"
                   className="w-full bg-[#111] hover:bg-[#222] text-[#FAF9F6] font-sans text-xs tracking-widest font-bold py-3.5 rounded-lg uppercase cursor-pointer"
                 >
-                  {editingCreator ? "Update Catalog Entry" : "Launch Creator to Runway"}
+                  {editingCreator ? "Save creator" : "Add creator"}
                 </button>
               </form>
             </motion.div>

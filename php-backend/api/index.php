@@ -35,6 +35,8 @@ try {
     $store = new Store($config['storage_dir'], __DIR__ . '/seed.json');
     $body = request_body();
     $db = &$store->data();
+    // Read by require_admin() to check the signed-in person's role for this call
+    $GLOBALS['fsia_request'] = [$method, $route];
 
     $is = function (string $verb, string $pattern, &$params = null) use ($method, $route): bool {
         if ($verb !== $method) {
@@ -114,6 +116,7 @@ try {
             'success' => true,
             'token' => $token,
             'username' => $user['username'],
+            'role' => normalise_role($user['role'] ?? null),
             'mustChangePassword' => $mustChange,
             'message' => 'Session authenticated successfully',
         ]);
@@ -127,7 +130,7 @@ try {
                 $mustChange = is_default_password($u['passwordHash']);
             }
         }
-        respond(['success' => true, 'username' => $admin, 'mustChangePassword' => $mustChange]);
+        respond(['success' => true, 'username' => $admin, 'role' => admin_role($store, $admin), 'mustChangePassword' => $mustChange]);
     }
 
     if ($is('POST', 'auth/logout')) {
@@ -183,7 +186,7 @@ try {
     if ($is('GET', 'admin/users')) {
         require_admin($store);
         respond(array_map(function ($u) {
-            return ['username' => $u['username'], 'createdAt' => $u['createdAt'] ?? null, 'lastLogin' => $u['lastLogin'] ?? null];
+            return ['username' => $u['username'], 'role' => normalise_role($u['role'] ?? null), 'createdAt' => $u['createdAt'] ?? null, 'lastLogin' => $u['lastLogin'] ?? null];
         }, $db['admin_users']));
     }
 
@@ -202,10 +205,33 @@ try {
                 fail(400, 'An operator with this username already exists.');
             }
         }
-        $db['admin_users'][] = ['username' => $name, 'passwordHash' => password_hash($password, PASSWORD_DEFAULT), 'createdAt' => gmdate('c')];
-        $store->log("Created operator account: $name (by $admin)");
+        $role = normalise_role($body['role'] ?? null);
+        $db['admin_users'][] = ['username' => $name, 'passwordHash' => password_hash($password, PASSWORD_DEFAULT), 'role' => $role, 'createdAt' => gmdate('c')];
+        $store->log("Created login $name as $role (by $admin)");
         $store->save();
         respond(['success' => true], 201);
+    }
+
+    if ($is('PUT', 'admin/users/{username}', $p)) {
+        $admin = require_admin($store);
+        if ($p[0] === $admin) {
+            fail(400, 'You cannot change the role of the account you are signed in with.');
+        }
+        $role = normalise_role($body['role'] ?? null);
+        $found = false;
+        foreach ($db['admin_users'] as &$u) {
+            if ($u['username'] === $p[0]) {
+                $u['role'] = $role;
+                $found = true;
+            }
+        }
+        unset($u);
+        if (!$found) {
+            fail(404, 'Login not found.');
+        }
+        $store->log("Changed role of {$p[0]} to $role (by $admin)");
+        $store->save();
+        respond(['success' => true]);
     }
 
     if ($is('DELETE', 'admin/users/{username}', $p)) {
@@ -538,6 +564,10 @@ try {
         array_unshift($db['registrations'], $registration);
         $store->log('Received VIP Collaboration Application from: ' . $registration['brandName'] . ' targeting ' . $registration['creatorName']);
         $store->save();
+        notify_team($db, 'New brand enquiry: ' . $registration['brandName'], [
+            'Brand' => $registration['brandName'], 'Creator' => $registration['creatorName'], 'Budget' => $registration['budget'],
+            'City' => $registration['clientCity'], 'Email' => $registration['contactEmail'], 'Phone' => $registration['contactPhone'], 'Details' => $registration['scope'],
+        ]);
         respond(['success' => true, 'registration' => $registration], 201);
     }
 
@@ -624,6 +654,10 @@ try {
         array_unshift($db['influencer_applications'], $application);
         $store->log('Received new Influencer Registration request from: ' . $application['name'] . ' (Runway: ' . $application['category'] . ')');
         $store->save();
+        notify_team($db, 'New award application: ' . $application['name'], [
+            'Name' => $application['name'], 'Category' => $application['category'], 'City' => $application['city'],
+            'Email' => $application['email'], 'Phone' => $application['phone'],
+        ]);
         respond(['success' => true, 'application' => $application], 201);
     }
 
@@ -660,6 +694,19 @@ try {
         }
         $store->save();
         respond(['success' => true, 'application' => $app]);
+    }
+
+    if ($is('PUT', 'influencer-applications/{id}', $p)) {
+        require_admin($store);
+        $i = $findById('influencer_applications', $p[0]);
+        if ($i === null) {
+            fail(404, 'Application not found.');
+        }
+        if (array_key_exists('notes', $body)) {
+            $db['influencer_applications'][$i]['notes'] = str_cut(is_scalar($body['notes']) ? (string)$body['notes'] : '', 2000);
+        }
+        $store->save();
+        respond(['success' => true]);
     }
 
     if ($is('POST', 'influencer-applications/{id}/decline', $p)) {
@@ -731,6 +778,9 @@ try {
         $db['enquiries'] = array_slice($db['enquiries'], 0, 5000);
         $store->log('New ' . $type . ' enquiry from ' . $enquiry['name'] . ': ' . $enquiry['subject']);
         $store->save();
+        notify_team($db, 'New ' . $type . ' enquiry: ' . $enquiry['name'], array_merge([
+            'Type' => $type, 'About' => $enquiry['subject'], 'Name' => $enquiry['name'], 'Email' => $enquiry['email'], 'Phone' => $enquiry['phone'],
+        ], $details));
         respond(['success' => true, 'enquiry' => ['id' => $enquiry['id'], 'timestamp' => $enquiry['timestamp']]], 201);
     }
 
@@ -772,7 +822,7 @@ try {
     }
 
     // ------------------------------------------------
-    // 7. SETTINGS & AI
+    // 7. SETTINGS
     // ------------------------------------------------
     if ($is('GET', 'settings')) {
         $public = $db['system_settings'];
@@ -788,13 +838,14 @@ try {
     }
 
     if ($is('PUT', 'settings')) {
-        require_admin($store);
+        $admin = require_admin($store);
+        save_settings_version($db, $admin, array_keys($body));
         $key = (string)($body['geminiApiKey'] ?? '');
         if (strpos($key, '••••') !== false) {
             $key = (string)($db['system_settings']['geminiApiKey'] ?? '');
         }
         $db['system_settings'] = array_merge($db['system_settings'], $body, ['geminiApiKey' => $key]);
-        $store->log('Modified dynamic system settings and appearance configurations');
+        $store->log('Changed site settings: ' . implode(', ', array_slice(array_keys($body), 0, 8)) . " (by $admin)");
         $store->save();
         respond(['success' => true, 'settings' => array_merge($db['system_settings'], ['geminiApiKey' => mask_key($key)])]);
     }
@@ -838,84 +889,31 @@ try {
         respond(['url' => "/uploads/$sub/$name"], 201);
     }
 
-    if ($is('GET', 'prompt-logs')) {
+    // Change history: a copy of the settings is kept before every change (same as server.ts)
+    if ($is('GET', 'admin/settings-history')) {
         require_admin($store);
-        respond($db['prompt_logs']);
+        respond(array_map(function ($v) {
+            unset($v['settings']);
+            return $v;
+        }, $db['settings_history']));
     }
 
-    if ($is('POST', 'gemini/optimize')) {
-        // Admin only: each call spends the site's Gemini API key
-        require_admin($store);
-        $prompt = trim((string)($body['prompt'] ?? ''));
-        if ($prompt === '') {
-            fail(400, 'Application concept prompt is empty.');
+    if ($is('POST', 'admin/settings-history/{id}/restore', $p)) {
+        $admin = require_admin($store);
+        $version = null;
+        foreach ($db['settings_history'] as $v) {
+            if (($v['id'] ?? '') === $p[0]) {
+                $version = $v;
+            }
         }
-        $settings = $db['system_settings'];
-        $brand = str_cut($body['brandName'] ?? '', 200);
-        $campaign = str_cut($body['campaignTitle'] ?? '', 200);
-        $model = preg_replace('/[^a-zA-Z0-9.\-]/', '', (string)(($settings['modelSelection'] ?? '') ?: 'gemini-2.5-flash'));
-        $apiKey = (string)(($settings['geminiApiKey'] ?? '') ?: $config['gemini_api_key']);
-        $logEntry = function (string $response, string $status) use (&$db, $brand, $campaign, $prompt, $model) {
-            array_unshift($db['prompt_logs'], [
-                'id' => 'p-log-' . now_ms(),
-                'timestamp' => gmdate('c'),
-                'userPrompt' => 'Brand: ' . ($brand ?: 'N/A') . ', Campaign: ' . ($campaign ?: 'N/A') . '. Prompt: ' . str_cut($prompt, 4000),
-                'aiResponse' => $response,
-                'modelUsed' => $model,
-                'status' => $status,
-            ]);
-            $db['prompt_logs'] = array_slice($db['prompt_logs'], 0, 100);
-        };
-
-        if ($apiKey === '') {
-            $msg = 'Gemini API gateway is active but currently unconfigured. Please input an API key in the Admin Configuration Panel.';
-            $logEntry($msg, 'error');
-            $store->save();
-            fail(404, $msg);
+        if ($version === null || !is_array($version['settings'] ?? null)) {
+            fail(404, 'This saved version no longer exists.');
         }
-        if (!function_exists('curl_init')) {
-            fail(500, 'The PHP cURL extension is required for AI features.');
-        }
-
-        $userPrompt = "Brand Campaign context:\n- Brand: " . ($brand ?: 'Luxury Brand Partner') .
-            "\n- Campaign: " . ($campaign ?: 'Autumn Runway Series') .
-            "\n\nCreator's Raw Concept Draft:\n\"" . $prompt . "\"\n\n" .
-            "Generate an upgraded 'Certified Haute Couture Creative Curation Proposal' that includes:\n" .
-            "1. REFINED EDITORIAL NARRATIVE (An elegant title and short aesthetic premise)\n" .
-            "2. VISUAL STYLE MOODBOARD DIRECTION (Color palettes, atmospheric lighting, and couture garment draping suggestions)\n" .
-            "3. INTEGRATED OUTREACH STRATEGY (Specifically designed to showcase high engagement metrics)";
-        $payload = [
-            'contents' => [['parts' => [['text' => $userPrompt]]]],
-            'systemInstruction' => ['parts' => [['text' => ($settings['aiSystemPrompt'] ?? '') ?: 'You are an experienced brand partnerships editor for Influencer Awards. Format the output in clean markdown under 280 words.']]],
-            'generationConfig' => ['temperature' => (float)($settings['temperature'] ?? 0.7)],
-        ];
-
-        $ch = curl_init('https://generativelanguage.googleapis.com/v1beta/models/' . $model . ':generateContent');
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode($payload),
-            CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'x-goog-api-key: ' . $apiKey],
-            CURLOPT_TIMEOUT => 30,
-        ]);
-        $response = curl_exec($ch);
-        $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlError = curl_error($ch);
-        curl_close($ch);
-
-        $result = is_string($response) ? json_decode($response, true) : null;
-        $text = $result['candidates'][0]['content']['parts'][0]['text'] ?? null;
-        if ($status !== 200 || $text === null) {
-            $detail = $curlError ?: ($result['error']['message'] ?? ('HTTP ' . $status));
-            $logEntry('Error: ' . $detail, 'error');
-            $store->save();
-            fail(502, $status === 429
-                ? 'The FSIA AI Gateway is experiencing high traffic. Please wait a moment before re-optimizing.'
-                : 'We encountered a temporary issue connecting to the FSIA AI engine: ' . $detail);
-        }
-        $logEntry($text, 'success');
+        save_settings_version($db, $admin, ['restore']);
+        $db['system_settings'] = array_merge($version['settings'], ['geminiApiKey' => (string)($db['system_settings']['geminiApiKey'] ?? '')]);
+        $store->log('Restored the site settings saved on ' . $version['at'] . " (by $admin)");
         $store->save();
-        respond(['success' => true, 'optimizedPitch' => debrand_text($text)]);
+        respond(['success' => true]);
     }
 
     // ------------------------------------------------
@@ -924,29 +922,15 @@ try {
     if ($is('GET', 'admin/stats')) {
         require_admin($store);
         $creatorsCount = 0;
-        $reach = 0.0;
         foreach ($db['creators'] as $s) {
-            foreach ($s['creators'] as $c) {
-                $creatorsCount++;
-                $r = (string)($c['stats']['reach'] ?? '0');
-                $reach += (float)$r * (stripos($r, 'M') !== false ? 1000000 : 1000);
-            }
+            $creatorsCount += count($s['creators'] ?? []);
         }
-        $prompts = count($db['prompt_logs']);
-        $ok = count(array_filter($db['prompt_logs'], function ($l) { return ($l['status'] ?? '') === 'success'; }));
         respond([
             'creatorsCount' => $creatorsCount,
             'categoriesCount' => count($db['creators']),
             'campaignsCount' => count($db['campaigns']),
-            'applicationsCount' => count($db['registrations']),
-            'influencerApplicationsCount' => count($db['influencer_applications']),
-            'pendingApplicationsCount' => count(array_filter($db['influencer_applications'], function ($a) { return ($a['status'] ?? '') === 'pending'; })),
-            'newLeadsCount' => count(array_filter($db['registrations'], function ($r) { return empty($r['status']) || $r['status'] === 'new'; })),
-            'newEnquiriesCount' => count(array_filter($db['enquiries'], function ($e) { return ($e['status'] ?? '') === 'new'; })),
             'membershipPlansCount' => count($db['membership_plans']),
-            'estimatedRosterReach' => number_format($reach / 1000000, 1, '.', '') . 'M',
-            'totalPromptsCount' => $prompts,
-            'apiSuccessRate' => $prompts > 0 ? (int)round($ok / $prompts * 100) : 100,
+            'newEnquiriesCount' => count(array_filter($db['enquiries'], function ($e) { return ($e['status'] ?? '') === 'new'; })),
             'logs' => array_slice($db['admin_logs'], 0, 15),
         ]);
     }
@@ -959,7 +943,7 @@ try {
     if ($is('GET', 'admin/backup')) {
         require_admin($store);
         $export = $db;
-        unset($export['admin_users'], $export['sessions'], $export['login_attempts'], $export['submission_log']);
+        unset($export['admin_users'], $export['sessions'], $export['login_attempts'], $export['submission_log'], $export['settings_history']);
         unset($export['system_settings']['geminiApiKey']);
         $export['exportedAt'] = gmdate('c');
         $store->log('Downloaded full database backup');

@@ -17,6 +17,13 @@ export async function shrinkImage(file: File, maxSide = 1600, quality = 0.86): P
     canvas.height = Math.round(img.naturalHeight * scale);
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("This browser cannot resize photos.");
+    // PNG and WebP keep their transparency (logos) unless the result would be too large
+    if (/png|webp/i.test(file.type)) {
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const png = canvas.toDataURL("image/png");
+      if (png.length < 2_500_000) return png;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
     ctx.fillStyle = "#ffffff"; // transparent PNGs get a white background in JPEG
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);

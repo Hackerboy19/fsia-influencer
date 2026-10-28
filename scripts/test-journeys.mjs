@@ -393,8 +393,8 @@ await browser.close();
 // 3. API: server-side validation and persistence
 // ---------------------------------------------------------------------------
 
-const ai = await post("/api/gemini/optimize", { prompt: "test" });
-check("AI endpoint requires an admin session (401)", ai.status === 401, `status ${ai.status}`);
+const anon = await fetch(BASE + "/api/registrations");
+check("Inbox requires an admin session (401)", anon.status === 401, `status ${anon.status}`);
 const huge = await post("/api/influencer-applications", {
   name: "QA", category: "x", email: TEST.email, phone: TEST.phone, image: "data:image/jpeg;base64," + "A".repeat(1_600_000)
 });

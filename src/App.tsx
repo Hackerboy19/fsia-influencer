@@ -25,7 +25,7 @@ import { TabId, routeForPath, routeForTab, applyRouteMeta, setPageOverrides, isH
 import { watchHeadingOverrides } from "./lib/headingOverrides";
 import { setContentOverrides, hasContentOverrides, watchContent } from "./lib/contentOverrides";
 import { startContentEditing } from "./lib/contentEditMode";
-import { setHomeHero, setNavLabels } from "./lib/siteContent";
+import { setHomeHero, setNavLabels, setBrandLogo } from "./lib/siteContent";
 import { BRAND_NAME } from "./content/brand";
 import { readableAccent } from "./lib/color";
 import { ProfileView, profilesFromSections } from "./lib/profile";
@@ -131,6 +131,7 @@ export default function App() {
           setPageOverrides(data.pages);
           setHomeHero(data.homeHero); setNavLabels(data.navLabels);
           setContentOverrides(data.content);
+          setBrandLogo(data.logoUrl, data.logoHidesName);
           setSettings((s: any) => ({ ...s, ...data }));
           if (previewData.current) applyPreview(previewData.current);
         }

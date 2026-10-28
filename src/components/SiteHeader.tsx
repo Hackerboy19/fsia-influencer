@@ -1,4 +1,4 @@
-import { navLabel } from "../lib/siteContent";
+import { navLabel, getBrandLogo } from "../lib/siteContent";
 import React, { useEffect, useId, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowRight, ChevronDown, Menu, Search, X } from "lucide-react";
@@ -61,12 +61,18 @@ function Wordmark({ onHome, dark }: { onHome: () => void; dark?: boolean }) {
       aria-label={`${BRAND_NAME}, home`}
       className="flex items-center gap-2.5 shrink-0"
     >
-      <img src="/favicon.svg" alt="" width={32} height={32} className="w-8 h-8 rounded-[6px]" />
-      <span className={`wordmark ${dark ? "text-white" : "text-ink"}`} aria-hidden="true">
-        {BRAND_NAME.split(" ").map((w) => (
-          <span key={w} className="block">{w}</span>
-        ))}
-      </span>
+      {getBrandLogo().url ? (
+        <img src={getBrandLogo().url} alt="" className="h-9 w-auto max-w-[180px] object-contain" />
+      ) : (
+        <img src="/favicon.svg" alt="" width={32} height={32} className="w-8 h-8 rounded-[6px]" />
+      )}
+      {!getBrandLogo().hidesName && (
+        <span className={`wordmark ${dark ? "text-white" : "text-ink"}`} aria-hidden="true">
+          {BRAND_NAME.split(" ").map((w) => (
+            <span key={w} className="block">{w}</span>
+          ))}
+        </span>
+      )}
     </a>
   );
 }

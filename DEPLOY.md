@@ -43,11 +43,11 @@ Settings**, keep the default "nginx as proxy to Apache" so `.htaccess` is honour
 1. Open `https://influencer.fsia.in/api/health` — it should show `{"ok":true,...}`.
 2. Open **`https://influencer.fsia.in/admin/`** (there is no admin button on the public site; bookmark it) and sign in with
    **admin / admin123**. The panel stays locked (the server refuses every admin action)
-   until you set a new password in **Security & Data**: this default is public knowledge.
+   until you set a new password in **Password & team**: this default is public knowledge.
 
 ## Updating to a new version
 
-1. Admin → **Security & Data** → **Download backup** (always do this first).
+1. Admin → **Password & team** → **Download backup** (always do this first).
 2. Upload and extract the new zip over the existing files and allow overwrite.
    Your data lives in `storage/db.json`, which the zip never contains, so it is kept.
 3. Hard-refresh the site (Ctrl + F5).
@@ -74,7 +74,7 @@ Settings**, keep the default "nginx as proxy to Apache" so `.htaccess` is honour
    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
    ```
 
-4. **Real visitor IPs.** Admin → Security & Data → audit log: login entries should show visitors'
+4. **Real visitor IPs.** Admin → Change history → activity log: login entries should show visitors'
    IP addresses. If they all show `127.0.0.1` or the server's own IP, the login lock-out and the
    form spam limit treat every visitor as one; ask the host to enable the real-IP setting
    (`mod_remoteip`) for nginx → Apache.
@@ -126,7 +126,6 @@ Check any time: `https://influencer.fsia.in/robots.txt` and `https://influencer.
 Copy `api/config.sample.php` to `api/config.php` and edit it to:
 
 - move the database outside the web root (`storage_dir`)
-- set a Gemini API key (it can also be entered in Admin → AI Config)
 - choose the first admin username / password instead of admin / admin123
   (only applied when the database is first created)
 

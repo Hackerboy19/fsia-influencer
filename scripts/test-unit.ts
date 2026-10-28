@@ -6,12 +6,37 @@ import { debrandText } from "../server/db";
 import { isValidEmail, isValidPhone } from "../server/validation";
 import { csvCell } from "../src/lib/adminSession";
 import { readableAccent } from "../src/lib/color";
+import { roleCan, routeArea } from "../src/lib/adminRoles";
+import { whatsappNumber } from "../src/components/ContactButtons";
 
 let failures = 0;
 const check = (name: string, ok: boolean, detail = "") => {
   if (!ok) failures++;
   console.log(`${ok ? "PASS" : "FAIL"}  ${name}${ok || !detail ? "" : `\n      ${detail}`}`);
 };
+
+// Team roles: which admin calls each role may make (same map in helpers.php)
+const ROUTE_CASES: [string, string, string | null][] = [
+  ["GET", "admin/users", "team"],
+  ["DELETE", "admin/users/sam", "team"],
+  ["GET", "admin/backup", "team"],
+  ["POST", "admin/restore", "team"],
+  ["GET", "admin/logs", "team"],
+  ["GET", "registrations", "inbox"],
+  ["PUT", "influencer-applications/inf-app-1", "inbox"],
+  ["POST", "influencer-applications/x/approve", "inbox"],
+  ["DELETE", "enquiries/enq-1", "inbox"],
+  ["PUT", "settings", "website"],
+  ["POST", "creators", "website"],
+  ["DELETE", "sections/a", "website"],
+  ["POST", "admin/upload", "website"],
+  ["POST", "admin/settings-history/ver-1/restore", "website"],
+  ["GET", "admin/settings", null],
+  ["GET", "admin/settings-history", null],
+  ["GET", "admin/stats", null],
+  ["POST", "auth/change-password", null],
+  ["GET", "creators", null]
+];
 
 const DEBRAND_CASES: [string, string][] = [
   // Only one award: older award-style section names and titles get neutral niche names
@@ -79,10 +104,21 @@ if (php) {
     check(`PHP debrand_text matches Node for ${JSON.stringify(input)}`, phpDebrand[i] === debrandText(input), `PHP: ${JSON.stringify(phpDebrand[i])}`)
   );
 
+  const phpAreas = JSON.parse(runPhp("echo json_encode(array_map(function ($c) { return route_area($c[0], $c[1]); }, $in));", ROUTE_CASES));
+  ROUTE_CASES.forEach(([m, r], i) => check(`PHP route_area(${m} ${r}) matches Node`, phpAreas[i] === routeArea(m, r), `PHP: ${phpAreas[i]}`));
+
   const phpPhones = JSON.parse(runPhp("echo json_encode(array_map('valid_phone', $in));", PHONE_CASES.map((c) => c[0])));
   PHONE_CASES.forEach(([input, expected], i) =>
     check(`PHP valid_phone(${JSON.stringify(input)}) is ${expected}`, phpPhones[i] === expected, `got ${phpPhones[i]}`)
   );
+}
+
+ROUTE_CASES.forEach(([m, r, area]) => check(`routeArea(${m} ${r}) is ${area}`, routeArea(m, r) === area));
+check("Website editor cannot open team logins or the inbox", !roleCan("editor", "team") && !roleCan("editor", "inbox") && roleCan("editor", "website"));
+check("Inbox role cannot change the website", !roleCan("inbox", "website") && !roleCan("inbox", "team") && roleCan("inbox", "inbox"));
+check("Owner can do everything", roleCan("owner", "team") && roleCan("owner", "website") && roleCan("owner", "inbox"));
+for (const [input, expected] of [["98765 43210", "919876543210"], ["+91 98765-43210", "919876543210"], ["09876543210", "919876543210"], ["0044 20 7946 0958", "442079460958"], ["12345", ""]] as const) {
+  check(`whatsappNumber(${JSON.stringify(input)}) is ${JSON.stringify(expected)}`, whatsappNumber(input) === expected);
 }
 
 PHONE_CASES.forEach(([input, expected]) => check(`isValidPhone(${JSON.stringify(input)}) is ${expected}`, isValidPhone(input) === expected));
