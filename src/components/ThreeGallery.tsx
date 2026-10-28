@@ -48,8 +48,8 @@ export default function ThreeGallery({
 
     // 1. Scene, Camera, and WebGL Renderer Setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#14120F"); // dark gallery hall
-    scene.fog = new THREE.FogExp2("#14120F", 0.06); // depth fade into the dark hall
+    scene.background = new THREE.Color("#F3EDE2"); // light ivory gallery hall
+    scene.fog = new THREE.FogExp2("#F3EDE2", 0.045); // soft fade into the hall
 
     const camera = new THREE.PerspectiveCamera(
       45,
@@ -72,7 +72,7 @@ export default function ThreeGallery({
     // phones, and on some GPUs they showed as striped or blocky patches over the photos
     renderer.shadowMap.enabled = false;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.0;
+    renderer.toneMappingExposure = 0.9;
 
     // 2. Physical Global & Directional Illumination (Daylight Museum shadows)
     const ambientLight = new THREE.AmbientLight("#FFF3E0", 1.4); // soft warm ceiling fill
@@ -122,9 +122,9 @@ export default function ThreeGallery({
     // Satin Reflective Alabaster Floor
     const floorGeo = new THREE.PlaneGeometry(30, hallLength + 20);
     const floorMat = new THREE.MeshStandardMaterial({
-      color: "#1F1C18", // dark polished floor
-      roughness: 0.28,
-      metalness: 0.35,
+      color: "#E6DDCC", // light stone floor
+      roughness: 0.55,
+      metalness: 0.05,
     });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
@@ -137,9 +137,9 @@ export default function ThreeGallery({
     const railLeftGeo = new THREE.BoxGeometry(0.04, 0.015, hallLength);
     const railRightGeo = new THREE.BoxGeometry(0.04, 0.015, hallLength);
     const railMat = new THREE.MeshStandardMaterial({
-      color: "#E1C699", // Champagne Gold
-      roughness: 0.2,
-      metalness: 0.9,
+      color: "#A87C3E", // bronze, reads on the light floor
+      roughness: 0.3,
+      metalness: 0.6,
     });
 
     const railLeft = new THREE.Mesh(railLeftGeo, railMat);
@@ -155,8 +155,8 @@ export default function ThreeGallery({
     // Architectural Sleek Columns (Slabs)
     const columnGeo = new THREE.BoxGeometry(0.15, 5.0, 0.6);
     const columnMat = new THREE.MeshStandardMaterial({
-      color: "#2B2722",
-      roughness: 0.3,
+      color: "#DDD2BF",
+      roughness: 0.6,
     });
     const columns: THREE.Mesh[] = [];
 
@@ -212,13 +212,13 @@ export default function ThreeGallery({
 
         // Name
         ctx.font = "italic 500 32px 'Playfair Display', Georgia, serif";
-        ctx.fillStyle = "#F6F1E7";
+        ctx.fillStyle = "#1B1A17";
         ctx.textAlign = "center";
         ctx.fillText(name.toUpperCase(), labelCanvas.width / 2, 52);
 
         // Role
         ctx.font = "20px 'Cormorant Garamond', Georgia, serif";
-        ctx.fillStyle = "#D9C29A";
+        ctx.fillStyle = "#7A5A2B";
         ctx.fillText(role, labelCanvas.width / 2, 95);
       }
       const labelTexture = new THREE.CanvasTexture(labelCanvas);
@@ -247,9 +247,9 @@ export default function ThreeGallery({
         // Solid dark backing (no transmission): a see-through panel behind the photo
         // showed through it as dark blocks on some GPUs, and cost an extra render pass
         const glassMat = new THREE.MeshStandardMaterial({
-          color: "#26221D",
-          roughness: 0.45,
-          metalness: 0.25,
+          color: "#FFFDF8", // white mount, like a framed print
+          roughness: 0.7,
+          metalness: 0.0,
           side: THREE.DoubleSide,
         });
         const glassPanel = new THREE.Mesh(glassGeo, glassMat);
@@ -269,7 +269,7 @@ export default function ThreeGallery({
         // Temporary elegant satin background while loading
         // Unlit, so photos keep their true colours and never pick up shadow patterns
         const portraitMat = new THREE.MeshBasicMaterial({
-          color: "#3A352E",
+          color: "#E4DACA",
           side: THREE.DoubleSide,
           // Always drawn in front of its own frame, even where depth precision is low (some laptop GPUs)
           polygonOffset: true,
@@ -333,10 +333,10 @@ export default function ThreeGallery({
     // 5. Refracting Crystal Prism (The Majestic Guide)
     const crystalGeo = new THREE.IcosahedronGeometry(0.3, 1);
     const crystalMat = new THREE.MeshPhysicalMaterial({
-      color: "#FFFBF2",
+      color: "#E9D4AA",
       transparent: true,
       opacity: 0.95,
-      transmission: 0.95, // High refraction
+      transmission: 0.55, // some refraction, still visible on the light hall
       roughness: 0.05,
       metalness: 0.05,
       ior: 2.2, // diamond-like refraction
@@ -353,16 +353,17 @@ export default function ThreeGallery({
     // Inner champagne golden wireframe skeleton for luxurious core reflections
     const wireframeGeo = new THREE.IcosahedronGeometry(0.24, 1);
     const wireframeMat = new THREE.MeshBasicMaterial({
-      color: "#E1C699",
+      color: "#8A6330",
       wireframe: true,
       transparent: true,
-      opacity: 0.4,
+      opacity: 0.7,
     });
     const innerCore = new THREE.Mesh(wireframeGeo, wireframeMat);
     crystal.add(innerCore);
 
-    crystal.position.set(0, 1.2, 0);
-    // Not added to the scene: on phones it covered the middle of the hall.
+    crystal.position.set(0, 1.2, 0); // floats down the centre path
+    let crystalBaseY = 1.1; // lower and smaller on phones so it never covers a portrait
+    scene.add(crystal);
 
     // Subtle ambient dust particle field for majestic atmospheric volume
     const particleCount = 100;
@@ -375,11 +376,10 @@ export default function ThreeGallery({
     }
     particleGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     const particleMat = new THREE.PointsMaterial({
-      color: "#E1C699",
-      size: 0.035,
+      color: "#B8955C",
+      size: 0.03,
       transparent: true,
-      opacity: 0.6,
-      blending: THREE.AdditiveBlending,
+      opacity: 0.45,
     });
     const particleField = new THREE.Points(particleGeo, particleMat);
     scene.add(particleField);
@@ -589,7 +589,7 @@ export default function ThreeGallery({
       crystalCore.rotation.x = time * 0.2;
       innerCore.rotation.y = -time * 0.7;
       innerCore.rotation.z = time * 0.35;
-      crystal.position.y = 1.1 + Math.sin(time * 1.2) * 0.08;
+      crystal.position.y = crystalBaseY + Math.sin(time * 1.2) * 0.08;
 
       // Atmospheric particles drifting
       const positionsAttr = particleField.geometry.attributes.position as THREE.BufferAttribute;
@@ -716,6 +716,8 @@ export default function ThreeGallery({
         g.rotation.y = (left ? 1 : -1) * (narrow ? 0.12 : 0.25);
         g.scale.setScalar(narrow ? 0.78 : 1);
       });
+      crystal.scale.setScalar(narrow ? 0.6 : 1);
+      crystalBaseY = narrow ? 0.38 : 1.1;
     };
     fitToScreen(container.clientWidth, container.clientHeight);
 
@@ -763,15 +765,15 @@ export default function ThreeGallery({
   }, [onSelectCreator, onSectionChange, sections]);
 
   return (
-    <div ref={containerRef} className="relative w-full h-full overflow-hidden select-none bg-[#14120F]">
+    <div ref={containerRef} className="relative w-full h-full overflow-hidden select-none bg-[#F3EDE2]">
       <canvas ref={canvasRef} className="block w-full h-full" />
 
       {/* Glassmorphic Interaction Hint Overlay (Follows 3D interactions) */}
       {hoveredCreator && !selectedCreator && (
         <div className="absolute bottom-16 left-1/2 -translate-x-1/2 pointer-events-none transition-all duration-300">
-          <div className="px-5 py-2.5 bg-[#1B1A17]/90 border border-white/15 rounded-[4px] flex items-center gap-3">
-            <span className="w-2 h-2 rounded-full bg-[#E1C699]" aria-hidden="true" />
-            <span className="text-[0.8125rem] font-semibold text-white">
+          <div className="px-5 py-2.5 bg-white/95 border border-line rounded-[4px] shadow-sm flex items-center gap-3">
+            <span className="w-2 h-2 rounded-full bg-bronze-fill" aria-hidden="true" />
+            <span className="text-[0.8125rem] font-semibold text-ink">
               Select to open the profile
             </span>
           </div>

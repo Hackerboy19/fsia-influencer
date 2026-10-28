@@ -316,8 +316,8 @@ export default function App() {
       {activeTab === "catwalk" && sections.length > 0 && (
         <>
           <nav aria-label="Gallery sections" className="absolute left-6 top-1/2 -translate-y-1/2 hidden lg:block z-10 max-h-[70vh] overflow-y-auto scrollbar-none">
-            <div className="surface-dark bg-[#1B1A17]/90 border border-white/15 p-5 w-56 space-y-1">
-              <p className="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-[#D9C29A] pb-2 mb-1 border-b border-white/15">Sections</p>
+            <div className="bg-white/95 border border-line shadow-sm p-5 w-56 space-y-1">
+              <p className="text-[0.875rem] font-semibold text-bronze pb-2 mb-1 border-b border-line">Sections</p>
               {sections.map((sec, idx) => (
                 <button
                   key={`${sec.id}-${idx}`}
@@ -327,7 +327,7 @@ export default function App() {
                     closeProfile();
                   }}
                   aria-current={idx === activeSectionIndex ? "true" : undefined}
-                  className={`block w-full text-left py-1.5 text-[0.9375rem] cursor-pointer ${idx === activeSectionIndex ? "font-semibold text-white" : "text-[#CFCAC0] hover:text-white"}`}
+                  className={`block w-full text-left py-1.5 text-[0.9375rem] cursor-pointer ${idx === activeSectionIndex ? "font-semibold text-ink" : "text-ink-2 hover:text-ink"}`}
                 >
                   {sec.title}
                 </button>
@@ -336,20 +336,20 @@ export default function App() {
           </nav>
 
           <div className="absolute bottom-0 inset-x-0 p-4 md:p-6 flex justify-center z-10 pointer-events-none">
-            <div className="surface-dark pointer-events-auto w-full max-w-xl bg-[#1B1A17]/90 border border-white/15 px-4 py-3 flex items-center justify-between gap-3">
+            <div className="pointer-events-auto w-full max-w-xl bg-white/95 border border-line shadow-sm px-4 py-3 flex items-center justify-between gap-3">
               <button
                 type="button"
                 onClick={() => setActiveSectionIndex(Math.max(0, activeSectionIndex - 1))}
                 disabled={activeSectionIndex === 0}
                 aria-label="Previous section"
                 id="prev-section-btn"
-                className="w-11 h-11 inline-flex items-center justify-center border border-white/40 rounded-[4px] text-white hover:border-white disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                className="w-11 h-11 inline-flex items-center justify-center border border-field rounded-[4px] text-ink hover:border-ink disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
               >
                 <ChevronLeft className="w-5 h-5" aria-hidden="true" />
               </button>
               <div className="text-center min-w-0" aria-live="polite">
-                <span className="block text-[0.75rem] text-[#CFCAC0] tabular-nums">Section {activeSectionIndex + 1} of {sections.length}</span>
-                <span className="block font-semibold text-white truncate">{activeSection.title}</span>
+                <span className="block text-[0.75rem] text-ink-3 tabular-nums">Section {activeSectionIndex + 1} of {sections.length}</span>
+                <span className="block font-semibold text-ink truncate">{activeSection.title}</span>
               </div>
               <button
                 type="button"
@@ -357,7 +357,7 @@ export default function App() {
                 disabled={activeSectionIndex === sections.length - 1}
                 aria-label="Next section"
                 id="next-section-btn"
-                className="w-11 h-11 inline-flex items-center justify-center border border-white/40 rounded-[4px] text-white hover:border-white disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                className="w-11 h-11 inline-flex items-center justify-center border border-field rounded-[4px] text-ink hover:border-ink disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
               >
                 <ChevronRight className="w-5 h-5" aria-hidden="true" />
               </button>
@@ -365,7 +365,7 @@ export default function App() {
           </div>
 
           {!selectedProfile && (
-            <p className="absolute top-20 inset-x-0 mx-auto w-fit max-w-[calc(100%-2rem)] z-10 bg-[#1B1A17]/90 border border-white/15 px-3 py-1.5 text-[0.8125rem] text-[#E7E3DA] flex items-center gap-2 pointer-events-none">
+            <p className="absolute top-20 inset-x-0 mx-auto w-fit max-w-[calc(100%-2rem)] z-10 bg-white/95 border border-line shadow-sm px-3 py-1.5 text-[0.8125rem] text-ink-2 flex items-center gap-2 pointer-events-none">
               <Compass className="w-4 h-4" aria-hidden="true" /> Scroll or drag to move; select a portrait to open the profile
             </p>
           )}
