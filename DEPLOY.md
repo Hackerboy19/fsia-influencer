@@ -31,7 +31,8 @@ Settings**, keep the default "nginx as proxy to Apache" so `.htaccess` is honour
 2. Upload `fsia-influencer-live.zip`, then select it and click **Extract Files**.
    You should see `index.html`, `assets/`, `api/`, `storage/` and `.htaccess`
    directly in that folder, not inside an extra sub-folder.
-3. Make sure the `storage/` folder is writable by PHP (Plesk: right-click → *Change Permissions*, owner write).
+3. Make sure the `storage/` and `uploads/` folders are writable by PHP (Plesk: right-click → *Change Permissions*, owner write).
+   `uploads/` holds photos uploaded from the admin panel. The zip only carries its `.htaccess`, so updates keep your photos.
 4. In **PHP Settings** for the subdomain choose PHP 8.x.
 
 *cPanel instead:* **Domains → Create a New Domain** `influencer.fsia.in`, then
@@ -143,6 +144,8 @@ Copy `api/config.sample.php` to `api/config.php` and edit it to:
 | API calls return 404 / the admin panel cannot load data | `.htaccess` is missing or `mod_rewrite` is disabled (it routes `/api/…` to `api/index.php`). |
 | "Storage directory is not writable" | Set `storage/` permissions to 755 (or 775). |
 | Uploading a creator photo fails | Raise `post_max_size` / `upload_max_filesize` to at least 8M in cPanel → *Select PHP Version* → *Options*. |
+| Admin photo upload says it could not save | Make `uploads/` writable (755 or 775). |
+| Page titles or share cards set in *Admin → Pages & SEO* do not show in link previews | `.htaccess` was not uploaded; it sends page requests through `api/page.php`, which adds those tags. |
 | Want to start over | Delete `storage/db.json`; it is re-created with the starter content on the next visit. |
 
 ## Node.js hosting (alternative)

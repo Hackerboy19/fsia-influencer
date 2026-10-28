@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { routeForTab } from "../seo";
+import { getPageOverride, routeForTab } from "../seo";
 import { resizeImageFile } from "../lib/image";
 import {
   inputClass, labelClass, helpClass, optionalClass, errorBoxClass,
@@ -236,7 +236,8 @@ export default function ModelRegistrationTab() {
         <p className="eyebrow">Award application</p>
         <h1 className="h-page">{routeForTab("apply").heading}</h1>
         <p className="lede">
-          This is how creators join the directory. It takes about two minutes. Our team reads every application and calls you about the fee and next steps.
+          {getPageOverride(routeForTab("apply").path)?.intro ||
+            "This is how creators join the directory. It takes about two minutes. Our team reads every application and calls you about the fee and next steps."}
         </p>
         <p className="text-[0.9375rem] text-ink-2">
           Representing a brand?{" "}

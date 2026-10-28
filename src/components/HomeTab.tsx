@@ -25,6 +25,7 @@ import TabLink from "./TabLink";
 import type { RosterStatus } from "./RosterNotice";
 import RosterNotice from "./RosterNotice";
 import type { NavTarget } from "./SiteHeader";
+import { getHomeHero } from "../lib/siteContent";
 import { ORGANISER, APPLICATIONS_OPEN, ANTI_FRAUD_NOTE } from "../content/organiser";
 
 interface HomeTabProps {
@@ -153,6 +154,7 @@ function Hero({
   const lead = withPhoto[0];
   const side = withPhoto.slice(1, 4);
   const shortcuts = categories.slice(0, 6);
+  const hero = getHomeHero();
 
   const facts: { value: number; label: string }[] =
     status === "loading" || !profiles.length
@@ -195,7 +197,7 @@ function Hero({
           )}
           <h1 id="home-title">
             <span className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-4">
-              <span className="text-[0.875rem] font-semibold text-ink-2">{AWARD_NAME} directory</span>
+              <span className="text-[0.875rem] font-semibold text-ink-2">{hero.kicker || `${AWARD_NAME} directory`}</span>
               {APPLICATIONS_OPEN && (
                 <span className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold text-[#2f6b45]">
                   <span className="w-2 h-2 rounded-full bg-[#2f6b45]" aria-hidden="true" /> Registration open
@@ -203,11 +205,11 @@ function Hero({
               )}
             </span>
             <span className="h-display block">
-              Find the right creator <span className="accent">for your brand.</span>
+              {hero.headline || "Find the right creator"} <span className="accent">{hero.accent ?? "for your brand."}</span>
             </span>
           </h1>
           <p className="text-[1.0625rem] leading-relaxed text-ink-2 max-w-[34rem]">
-            Indian creators who applied for the {AWARD_NAME}. Our team reads every profile before it goes live. Pick someone you like and send us a brief.
+            {hero.intro || `Indian creators who applied for the ${AWARD_NAME}. Our team reads every profile before it goes live. Pick someone you like and send us a brief.`}
           </p>
 
           <HeroSearch onBrowse={onBrowse} />

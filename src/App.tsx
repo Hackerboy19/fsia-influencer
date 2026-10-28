@@ -19,7 +19,8 @@ import ContactTab from "./components/ContactTab";
 import PrivacyTab from "./components/PrivacyTab";
 import type { RosterStatus } from "./components/RosterNotice";
 import { Toaster } from "react-hot-toast";
-import { TabId, routeForPath, routeForTab, applyRouteMeta } from "./seo";
+import { TabId, routeForPath, routeForTab, applyRouteMeta, setPageOverrides } from "./seo";
+import { setHomeHero } from "./lib/siteContent";
 import { BRAND_NAME } from "./content/brand";
 import { readableAccent } from "./lib/color";
 import { ProfileView, profilesFromSections } from "./lib/profile";
@@ -89,7 +90,12 @@ export default function App() {
     fetch("/api/settings")
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then((data) => {
-        if (data && typeof data === "object") setSettings((s: any) => ({ ...s, ...data }));
+        if (data && typeof data === "object") {
+          // Page text, SEO and share-card overrides saved in Admin → Pages & SEO
+          setPageOverrides(data.pages);
+          setHomeHero(data.homeHero);
+          setSettings((s: any) => ({ ...s, ...data }));
+        }
       })
       .catch(() => {});
   }, [refreshSections]);
@@ -171,7 +177,7 @@ export default function App() {
       return;
     }
     document.title = `${selectedProfile.name}${selectedProfile.role ? `, ${selectedProfile.role}` : ""} | ${BRAND_NAME}`;
-  }, [selectedProfile, activeTab]);
+  }, [selectedProfile, activeTab, settings]);
 
   const navigateTo = (tab: TabId) => {
     setActiveTab(tab);

@@ -6,6 +6,8 @@ import { GoogleGenAI } from "@google/genai";
 import fs from "fs";
 import { getDb, saveDb, logAction, hashPassword, verifyPassword, needsRehash, createDefaultDb, debrandValue, DB_PATH, GallerySection, Creator, Campaign, Registration } from "./server/db";
 import { isValidEmail, isValidPhone, PHONE_ERROR } from "./server/validation";
+import { injectMeta, metaFor } from "./server/pageMeta";
+import { SITE_URL } from "./src/seo";
 
 // Initialize express app
 const app = express();
@@ -974,6 +976,54 @@ app.put("/api/settings", authenticateAdmin, (req, res) => {
   }
 });
 
+// ----------------------------------------------------
+// Photo uploads from the admin panel (profile photos, galleries, share images).
+// The browser resizes before sending; files are stored under ./uploads and served at /uploads/.
+// ----------------------------------------------------
+const UPLOAD_DIR = path.join(process.cwd(), "uploads");
+const MAX_UPLOAD_BYTES = 3 * 1024 * 1024;
+
+function imageKind(buf: Buffer): "jpg" | "png" | "webp" | null {
+  if (buf.length > 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return "jpg";
+  if (buf.length > 8 && buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return "png";
+  if (buf.length > 12 && buf.toString("ascii", 0, 4) === "RIFF" && buf.toString("ascii", 8, 12) === "WEBP") return "webp";
+  return null;
+}
+
+app.post("/api/admin/upload", authenticateAdmin, (req, res) => {
+  try {
+    const dataUrl = typeof req.body?.dataUrl === "string" ? req.body.dataUrl : "";
+    const match = /^data:image\/(png|jpe?g|webp);base64,([A-Za-z0-9+/=]+)$/i.exec(dataUrl);
+    if (!match) return res.status(400).json({ error: "Send a JPG, PNG or WebP image." });
+    const buf = Buffer.from(match[2], "base64");
+    if (buf.length > MAX_UPLOAD_BYTES) return res.status(413).json({ error: "Image is larger than 3 MB." });
+    const kind = imageKind(buf);
+    if (!kind) return res.status(400).json({ error: "The file is not a valid image." });
+    const now = new Date();
+    const sub = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const dir = path.join(UPLOAD_DIR, sub);
+    fs.mkdirSync(dir, { recursive: true });
+    const name = `${crypto.randomBytes(9).toString("hex")}.${kind}`;
+    fs.writeFileSync(path.join(dir, name), buf);
+    logAction(`Uploaded image /uploads/${sub}/${name}`, req.ip);
+    res.status(201).json({ url: `/uploads/${sub}/${name}` });
+  } catch (error: any) {
+    res.status(500).json({ error: "Upload failed: " + error.message });
+  }
+});
+
+app.use(
+  "/uploads",
+  express.static(UPLOAD_DIR, {
+    dotfiles: "deny",
+    index: false,
+    setHeaders: (res) => {
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    }
+  })
+);
+
 app.get("/api/prompt-logs", authenticateAdmin, (req, res) => {
   try {
     const db = getDb();
@@ -1266,6 +1316,21 @@ async function startServer() {
     // Every public route is a prerendered folder (dist/talent/index.html …), so static
     // serving covers them and redirects /talent → /talent/. Anything else is a real 404.
     const distPath = path.join(process.cwd(), "dist");
+    // Page HTML gets the admin's SEO and share-card values (and a creator's own card on profile links)
+    app.get(/\/$/, (req, res, next) => {
+      const file = path.join(distPath, req.path, "index.html");
+      if (!file.startsWith(distPath) || !fs.existsSync(file)) return next();
+      try {
+        const db = getDb();
+        const slug = typeof req.query.profile === "string" ? req.query.profile.slice(0, 120) : "";
+        const meta = metaFor(req.path, slug, db.system_settings, db.creators, SITE_URL);
+        const html = fs.readFileSync(file, "utf8");
+        res.setHeader("Cache-Control", "no-cache");
+        res.type("html").send(meta ? injectMeta(html, meta) : html);
+      } catch {
+        next();
+      }
+    });
     app.use(express.static(distPath));
     app.use((req, res) => {
       res.status(404).sendFile(path.join(distPath, "404.html"));

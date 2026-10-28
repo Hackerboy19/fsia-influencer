@@ -16,7 +16,8 @@ if (is_file(rtrim($root . $path, '/') . '/index.html')) {
         header('Location: ' . $path . '/', true, 301);
         return true;
     }
-    readfile($root . $path . 'index.html');
+    $_GET['p'] = $path;
+    require $root . '/api/page.php';
     return true;
 }
 // ErrorDocument 404

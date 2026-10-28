@@ -4,11 +4,13 @@ import {
   Lock, User, LogIn, LayoutDashboard, Sparkles, Users, Briefcase, FileText, 
   Trash2, Plus, Edit2, Check, RefreshCw, X, AlertTriangle, Shield, CheckCircle2,
   TrendingUp, Phone, Mail, MapPin, Eye, FileSpreadsheet, Activity, UserPlus, Layout,
-  KeyRound, Search, Download, Inbox
+  KeyRound, Search, Download, Inbox, Globe
 } from "lucide-react";
 import AdminContentManager from "./AdminContentManager";
 import AdminSecurityPanel from "./AdminSecurityPanel";
 import AdminEnquiriesPanel from "./AdminEnquiriesPanel";
+import AdminPagesSeo from "./AdminPagesSeo";
+import AdminPhotoGallery from "./AdminPhotoGallery";
 import { ADMIN_TOKEN_KEY, ADMIN_UNAUTHORIZED_EVENT, downloadCsv } from "../lib/adminSession";
 import { toast } from "react-hot-toast";
 
@@ -954,6 +956,7 @@ export default function AdminTab() {
           <div className="flex flex-wrap md:flex-nowrap items-center gap-1.5 md:gap-2 border-b border-[#E1C699]/30 pb-1 w-full max-w-full overflow-x-auto scrollbar-thin">
             {[
               { id: "dashboard", label: "Overview", icon: LayoutDashboard },
+              { id: "pages_seo", label: "Pages & SEO", icon: Globe },
               { id: "content_manager", label: "Content Studio", icon: Layout },
               { id: "content", label: "Campaign Copy", icon: FileSpreadsheet },
               { id: "ai_config", label: "AI Config", icon: Sparkles },
@@ -1094,6 +1097,13 @@ export default function AdminTab() {
                     ))}
                   </div>
                 </div>
+              </motion.div>
+            )}
+
+            {/* Page text, Google title/description and share cards for every public page */}
+            {adminActiveSubTab === "pages_seo" && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <AdminPagesSeo token={token} />
               </motion.div>
             )}
 
@@ -2049,7 +2059,7 @@ export default function AdminTab() {
             >
               <div className="flex justify-between items-center border-b border-black/5 pb-3">
                 <h3 className="font-serif-display text-lg font-bold text-black">
-                  {editingCreator ? "Modify Roster Portfolio" : "Register New Model to Catwalk"}
+                  {editingCreator ? "Edit creator profile" : "Add a creator"}
                 </h3>
                 <button onClick={() => setIsCreatorModalOpen(false)} className="p-1.5 rounded-full hover:bg-black/5 cursor-pointer">
                   <X className="w-4 h-4" />
@@ -2071,7 +2081,7 @@ export default function AdminTab() {
               <form onSubmit={saveCreator} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Target Category</label>
+                    <label className="text-[11px] font-sans font-semibold text-[#555]">Category</label>
                     <select
                       value={creatorForm.sectionId}
                       disabled={!!editingCreator}
@@ -2082,7 +2092,7 @@ export default function AdminTab() {
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Full Legal Name</label>
+                    <label className="text-[11px] font-sans font-semibold text-[#555]">Name</label>
                     <input
                       type="text"
                       required
@@ -2096,7 +2106,7 @@ export default function AdminTab() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Official Runway Role</label>
+                    <label className="text-[11px] font-sans font-semibold text-[#555]">Role, e.g. Fashion creator</label>
                     <input
                       type="text"
                       required
@@ -2107,7 +2117,7 @@ export default function AdminTab() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Couture Base City</label>
+                    <label className="text-[11px] font-sans font-semibold text-[#555]">City</label>
                     <input
                       type="text"
                       placeholder="e.g., Mumbai"
@@ -2118,35 +2128,16 @@ export default function AdminTab() {
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[11px] font-sans font-bold text-[#666] uppercase">High Resolution Image URL</label>
-                  <input
-                    type="url"
-                    required
-                    placeholder="https://images.unsplash.com/photo-..."
-                    value={creatorForm.image}
-                    onChange={(e) => setCreatorForm(prev => ({ ...prev, image: e.target.value }))}
-                    className="w-full px-3 py-2 bg-white border border-black/10 rounded-lg text-xs focus:outline-none focus:border-champagne font-mono"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Couture Lookbook Portfolio Image URLs (Comma Separated)</label>
-                  <textarea
-                    rows={2}
-                    placeholder="e.g. https://images.unsplash.com/photo-1, https://images.unsplash.com/photo-2"
-                    value={creatorForm.portfolioUrls}
-                    onChange={(e) => setCreatorForm(prev => ({ ...prev, portfolioUrls: e.target.value }))}
-                    className="w-full px-3 py-2 bg-white border border-black/10 rounded-lg text-xs focus:outline-none focus:border-champagne font-mono"
-                  />
-                  <p className="text-[11px] text-[#8e8d8a] leading-none mt-0.5">
-                    Paste multiple high-res image URLs separated by commas to populate the lookbook sliding reels on the Catwalk 3D tab detail panel.
-                  </p>
-                </div>
+                <AdminPhotoGallery
+                  token={token}
+                  image={creatorForm.image}
+                  photos={creatorForm.portfolioUrls.split(",").map((u) => u.trim()).filter(Boolean)}
+                  onChange={({ image, photos }) => setCreatorForm((prev) => ({ ...prev, image, portfolioUrls: photos.join(", ") }))}
+                />
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Audited Reach</label>
+                    <label className="text-[11px] font-sans font-semibold text-[#555]">Followers</label>
                     <input
                       type="text"
                       placeholder="e.g., 1.5M"
@@ -2156,7 +2147,7 @@ export default function AdminTab() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Engagement Rate</label>
+                    <label className="text-[11px] font-sans font-semibold text-[#555]">Engagement Rate</label>
                     <input
                       type="text"
                       placeholder="e.g., 6.8%"
@@ -2179,7 +2170,7 @@ export default function AdminTab() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Biography Curation Narrative</label>
+                  <label className="text-[11px] font-sans font-semibold text-[#555]">About</label>
                   <textarea
                     rows={3}
                     required
@@ -2191,7 +2182,7 @@ export default function AdminTab() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[11px] font-sans font-bold text-[#666] uppercase">Signature Editorial Quote</label>
+                  <label className="text-[11px] font-sans font-semibold text-[#555]">Quote</label>
                   <input
                     type="text"
                     placeholder="Signature design quote or professional ethos..."

@@ -1,0 +1,168 @@
+<?php
+/**
+ * Serves a prerendered page (talent/index.html …) with the admin's SEO and share-card
+ * values from Admin → Pages & SEO, and a creator's own card on /talent/?profile=slug,
+ * so search engines and link previews see them without JavaScript.
+ * Same rules as server/pageMeta.ts (Node). If anything fails, the page is sent unchanged.
+ */
+
+declare(strict_types=1);
+
+const SITE_URL = 'https://influencer.fsia.in';
+const DEFAULT_OG = SITE_URL . '/og-image.png';
+
+$root = dirname(__DIR__);
+$p = (string)($_GET['p'] ?? '/');
+if (!preg_match('#^/[a-z0-9\-/]*$#i', $p) || strpos($p, '..') !== false) {
+    $p = '/';
+}
+if (substr($p, -1) !== '/') {
+    $p .= '/';
+}
+$file = $root . $p . 'index.html';
+$real = realpath($file);
+if ($real === false || strpos($real, realpath($root)) !== 0) {
+    http_response_code(404);
+    header('Content-Type: text/html; charset=UTF-8');
+    header('X-Robots-Tag: noindex');
+    readfile($root . '/404.html');
+    exit;
+}
+
+header('Content-Type: text/html; charset=UTF-8');
+header('Cache-Control: no-cache');
+header('X-Content-Type-Options: nosniff');
+header_remove('X-Powered-By');
+
+$html = (string)file_get_contents($real);
+
+try {
+    require __DIR__ . '/lib/helpers.php';
+    $dbFile = rtrim(fsia_config()['storage_dir'], '/') . '/db.json';
+    $db = is_file($dbFile) ? json_decode((string)file_get_contents($dbFile), true) : null;
+    if (is_array($db)) {
+        $settings = debrand_value($db['system_settings'] ?? []);
+        $meta = page_meta($p, (string)($_GET['profile'] ?? ''), is_array($settings) ? $settings : [], $db['creators'] ?? []);
+        if ($meta) {
+            $html = inject_meta($html, $meta);
+        }
+    }
+} catch (Throwable $e) {
+    error_log('FSIA page meta: ' . $e->getMessage());
+}
+
+echo $html;
+exit;
+
+function clip_text($v, int $n): string
+{
+    if (!is_string($v)) {
+        return '';
+    }
+    $v = trim((string)preg_replace('/\s+/u', ' ', $v));
+    return function_exists('mb_substr') ? mb_substr($v, 0, $n) : substr($v, 0, $n);
+}
+
+function js_slug(string $name): string
+{
+    $s = function_exists('mb_strtolower') ? mb_strtolower($name) : strtolower($name);
+    if (function_exists('iconv')) {
+        $t = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $s);
+        if ($t !== false) {
+            $s = $t;
+        }
+    }
+    $s = (string)preg_replace('/[^a-z0-9]+/', '-', strtolower($s));
+    return trim($s, '-');
+}
+
+function page_meta(string $path, string $slug, array $settings, $sections): ?array
+{
+    $limits = ['title' => 120, 'description' => 320, 'heading' => 140, 'intro' => 600, 'ogTitle' => 120, 'ogDescription' => 320, 'ogImage' => 2000];
+    $page = [];
+    $raw = $settings['pages'][$path] ?? null;
+    if (is_array($raw)) {
+        foreach ($limits as $k => $n) {
+            $v = clip_text($raw[$k] ?? '', $n);
+            if ($v !== '') {
+                $page[$k] = $v;
+            }
+        }
+        if (isset($page['ogImage']) && !preg_match('#^(https?://|/)#i', $page['ogImage'])) {
+            unset($page['ogImage']);
+        }
+        if (($raw['noindex'] ?? false) === true) {
+            $page['noindex'] = true;
+        }
+    }
+    $slug = substr($slug, 0, 120);
+    if ($path === '/talent/' && $slug !== '' && is_array($sections)) {
+        foreach ($sections as $section) {
+            foreach (($section['creators'] ?? []) as $c) {
+                if (!empty($c['name']) && js_slug((string)$c['name']) === $slug) {
+                    $role = clip_text($c['role'] ?? '', 80);
+                    $city = clip_text($c['city'] ?? '', 60);
+                    $title = clip_text($c['name'], 80) . ($role !== '' ? ", $role" : '') . ($city !== '' ? " ($city)" : '');
+                    $bio = clip_text($c['bio'] ?? '', 200);
+                    $img = is_string($c['image'] ?? null) && preg_match('#^(https?://|/)#i', $c['image']) ? $c['image'] : ($page['ogImage'] ?? '');
+                    return [
+                        'title' => $title,
+                        'description' => $bio !== '' ? $bio : "$title. See the profile and send an enquiry.",
+                        'ogImage' => $img,
+                        'url' => SITE_URL . '/talent/?profile=' . rawurlencode($slug),
+                    ];
+                }
+            }
+        }
+    }
+    return $page ?: null;
+}
+
+function set_attr(string $html, string $pattern, string $value): string
+{
+    $safe = htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    return (string)preg_replace_callback($pattern, function ($m) use ($safe) {
+        return $m[1] . $safe . $m[3];
+    }, $html, 1);
+}
+
+function inject_meta(string $html, array $m): string
+{
+    $esc = function (string $v): string {
+        return htmlspecialchars($v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    };
+    if (!empty($m['title'])) {
+        $t = $esc($m['title']);
+        $html = (string)preg_replace_callback('#<title>[\s\S]*?</title>#', function () use ($t) {
+            return "<title>$t</title>";
+        }, $html, 1);
+    }
+    if (!empty($m['description'])) {
+        $html = set_attr($html, '#(<meta name="description" content=")([^"]*)(")#', $m['description']);
+    }
+    $ogTitle = $m['ogTitle'] ?? ($m['title'] ?? '');
+    $ogDesc = $m['ogDescription'] ?? ($m['description'] ?? '');
+    if ($ogTitle !== '') {
+        $html = set_attr($html, '#(<meta property="og:title" content=")([^"]*)(")#', $ogTitle);
+        $html = set_attr($html, '#(<meta name="twitter:title" content=")([^"]*)(")#', $ogTitle);
+    }
+    if ($ogDesc !== '') {
+        $html = set_attr($html, '#(<meta property="og:description" content=")([^"]*)(")#', $ogDesc);
+        $html = set_attr($html, '#(<meta name="twitter:description" content=")([^"]*)(")#', $ogDesc);
+    }
+    if (!empty($m['ogImage'])) {
+        $img = preg_match('#^https?://#i', $m['ogImage']) ? $m['ogImage'] : SITE_URL . '/' . ltrim($m['ogImage'], '/');
+        $html = set_attr($html, '#(<meta property="og:image" content=")([^"]*)(")#', $img);
+        $html = set_attr($html, '#(<meta name="twitter:image" content=")([^"]*)(")#', $img);
+        if ($img !== DEFAULT_OG) {
+            $html = (string)preg_replace('#\s*<meta property="og:image:(width|height)" content="[^"]*" />#', '', $html);
+        }
+    }
+    if (!empty($m['url'])) {
+        $html = set_attr($html, '#(<meta property="og:url" content=")([^"]*)(")#', $m['url']);
+    }
+    if (!empty($m['noindex'])) {
+        $html = set_attr($html, '#(<meta name="robots" content=")([^"]*)(")#', 'noindex, nofollow');
+    }
+    return $html;
+}

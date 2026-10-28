@@ -29,6 +29,9 @@ fs.cpSync(path.join(php, "api"), path.join(outDir, "api"), {
   recursive: true,
   filter: (src) => path.basename(src) !== "config.php"
 });
+// Uploaded photos live in /uploads on the server; ship only its .htaccess (blocks scripts)
+fs.mkdirSync(path.join(outDir, "uploads"), { recursive: true });
+fs.copyFileSync(path.join(php, "uploads", ".htaccess"), path.join(outDir, "uploads", ".htaccess"));
 fs.cpSync(path.join(php, "storage"), path.join(outDir, "storage"), {
   recursive: true,
   filter: (src) => !/db\.(json|lock)|\.tmp$|corrupt/.test(path.basename(src))

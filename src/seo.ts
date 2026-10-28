@@ -35,7 +35,78 @@ export interface RouteMeta {
   indexable: boolean;
   priority: string;
   changefreq: "daily" | "weekly" | "monthly";
+  // Optional share card text and image, set from the admin panel (fall back to title/description/OG_IMAGE)
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
 }
+
+/** What the admin can change per page. Saved in settings.pages, keyed by the page path ("/", "/talent/"). */
+export interface PageOverride {
+  title?: string;
+  description?: string;
+  heading?: string;
+  intro?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
+  noindex?: boolean;
+}
+
+const LIMITS: Record<keyof Omit<PageOverride, "noindex">, number> = {
+  title: 120,
+  description: 320,
+  heading: 140,
+  intro: 600,
+  ogTitle: 120,
+  ogDescription: 320,
+  ogImage: 2000
+};
+
+/** Keep only known fields, trimmed and capped; images must be http(s) or a site path. */
+export function cleanPageOverrides(input: unknown): Record<string, PageOverride> {
+  const out: Record<string, PageOverride> = {};
+  if (!input || typeof input !== "object") return out;
+  for (const [path, raw] of Object.entries(input as Record<string, unknown>)) {
+    if (!/^\/[a-z0-9\-\/]*$/i.test(path) || !raw || typeof raw !== "object") continue;
+    const o: PageOverride = {};
+    for (const key of Object.keys(LIMITS) as (keyof typeof LIMITS)[]) {
+      const v = (raw as Record<string, unknown>)[key];
+      if (typeof v === "string" && v.trim()) o[key] = v.trim().slice(0, LIMITS[key]);
+    }
+    if (o.ogImage && !/^(https?:\/\/|\/)/i.test(o.ogImage)) delete o.ogImage;
+    if ((raw as Record<string, unknown>).noindex === true) o.noindex = true;
+    if (Object.keys(o).length) out[path] = o;
+  }
+  return out;
+}
+
+let pageOverrides: Record<string, PageOverride> = {};
+/** Called once the site settings load; pages read the merged values on their next render. */
+export function setPageOverrides(input: unknown) {
+  pageOverrides = cleanPageOverrides(input);
+}
+
+export const getPageOverride = (path: string): PageOverride | undefined => pageOverrides[path];
+
+export function withOverrides(route: RouteMeta, overrides: Record<string, PageOverride> = pageOverrides): RouteMeta {
+  const o = overrides[route.path];
+  if (!o) return route;
+  return {
+    ...route,
+    title: o.title || route.title,
+    description: o.description || route.description,
+    heading: o.heading || route.heading,
+    intro: o.intro || route.intro,
+    ogTitle: o.ogTitle || route.ogTitle,
+    ogDescription: o.ogDescription || route.ogDescription,
+    ogImage: o.ogImage || route.ogImage,
+    indexable: o.noindex ? false : route.indexable
+  };
+}
+
+/** Absolute URL for an image path saved in the admin ("/uploads/x.jpg" → https://site/uploads/x.jpg) */
+export const absoluteUrl = (u: string) => (/^https?:\/\//i.test(u) ? u : SITE_URL + (u.startsWith("/") ? u : "/" + u));
 
 export const ROUTES: RouteMeta[] = [
   {
@@ -194,11 +265,11 @@ export const ROUTES: RouteMeta[] = [
   }
 ];
 
-export const routeForTab = (tab: TabId): RouteMeta => ROUTES.find((r) => r.tab === tab) || ROUTES[0];
+export const routeForTab = (tab: TabId): RouteMeta => withOverrides(ROUTES.find((r) => r.tab === tab) || ROUTES[0]);
 
 export function routeForPath(pathname: string): RouteMeta {
   const normalised = ("/" + pathname.replace(/^\/+|\/+$/g, "") + "/").replace(/^\/\/$/, "/");
-  return ROUTES.find((r) => r.path === normalised) || ROUTES[0];
+  return withOverrides(ROUTES.find((r) => r.path === normalised) || ROUTES[0]);
 }
 
 export const canonicalUrl = (route: RouteMeta) => SITE_URL + route.path;
@@ -327,7 +398,8 @@ export function applyRouteMeta(route: RouteMeta) {
   set('meta[name="description"]', "content", route.description);
   set('meta[name="robots"]', "content", route.indexable ? "index, follow, max-image-preview:large" : "noindex, nofollow");
   set('link[rel="canonical"]', "href", url);
-  set('meta[property="og:title"], meta[name="twitter:title"]', "content", route.title);
-  set('meta[property="og:description"], meta[name="twitter:description"]', "content", route.description);
+  set('meta[property="og:title"], meta[name="twitter:title"]', "content", route.ogTitle || route.title);
+  set('meta[property="og:description"], meta[name="twitter:description"]', "content", route.ogDescription || route.description);
   set('meta[property="og:url"]', "content", url);
+  set('meta[property="og:image"], meta[name="twitter:image"]', "content", route.ogImage ? absoluteUrl(route.ogImage) : OG_IMAGE);
 }

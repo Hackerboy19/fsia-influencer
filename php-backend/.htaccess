@@ -25,6 +25,13 @@ ErrorDocument 404 /404.html
     RewriteCond %{HTTP:X-Forwarded-Proto} !https
     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
+    # Page HTML (/, /talent/ …) goes through api/page.php, which adds the title, description
+    # and share image set in Admin → Pages & SEO. The prerendered file is still the source.
+    RewriteCond %{REQUEST_URI} /$
+    RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI}index.html -f
+    RewriteCond %{REQUEST_URI} !^/(api|storage|assets|uploads)/
+    RewriteRule ^(.*)$ api/page.php?p=/$1 [QSA,L]
+
     # API → PHP router
     RewriteCond %{REQUEST_URI} !^/api/index\.php
     RewriteRule ^api(/.*)?$ api/index.php [QSA,L]

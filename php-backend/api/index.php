@@ -793,6 +793,45 @@ try {
         respond(['success' => true, 'settings' => array_merge($db['system_settings'], ['geminiApiKey' => mask_key($key)])]);
     }
 
+    // Photo upload from the admin panel. Stored in /uploads/YYYY/MM/ next to the site.
+    if ($is('POST', 'admin/upload')) {
+        require_admin($store);
+        $dataUrl = (string)($body['dataUrl'] ?? '');
+        if (!preg_match('#^data:image/(png|jpe?g|webp);base64,([A-Za-z0-9+/=]+)$#i', $dataUrl, $m)) {
+            fail(400, 'Send a JPG, PNG or WebP image.');
+        }
+        $bin = base64_decode($m[2], true);
+        if ($bin === false) {
+            fail(400, 'The file is not a valid image.');
+        }
+        if (strlen($bin) > 3 * 1024 * 1024) {
+            fail(413, 'Image is larger than 3 MB.');
+        }
+        $kind = null;
+        if (strncmp($bin, "\xFF\xD8\xFF", 3) === 0) {
+            $kind = 'jpg';
+        } elseif (strncmp($bin, "\x89PNG\r\n\x1A\n", 8) === 0) {
+            $kind = 'png';
+        } elseif (substr($bin, 0, 4) === 'RIFF' && substr($bin, 8, 4) === 'WEBP') {
+            $kind = 'webp';
+        }
+        if ($kind === null || @getimagesizefromstring($bin) === false) {
+            fail(400, 'The file is not a valid image.');
+        }
+        $sub = date('Y') . '/' . date('m');
+        $dir = dirname(__DIR__) . '/uploads/' . $sub;
+        if (!is_dir($dir) && !@mkdir($dir, 0755, true)) {
+            fail(500, 'Could not create the uploads folder. Make it writable on the server.');
+        }
+        $name = bin2hex(random_bytes(9)) . '.' . $kind;
+        if (@file_put_contents($dir . '/' . $name, $bin) === false) {
+            fail(500, 'Could not save the image. Check that /uploads is writable.');
+        }
+        $store->log("Uploaded image /uploads/$sub/$name");
+        $store->save();
+        respond(['url' => "/uploads/$sub/$name"], 201);
+    }
+
     if ($is('GET', 'prompt-logs')) {
         require_admin($store);
         respond($db['prompt_logs']);
