@@ -2,6 +2,7 @@
 // it is sent, so search engines and link previews (WhatsApp, Facebook, X, LinkedIn) see them
 // without running JavaScript. Mirrors php-backend/api/page.php.
 import { cleanPageOverrides, escapeHtml, absoluteUrl, OG_IMAGE } from "../src/seo";
+import { cleanContent, ALL_PAGES } from "../src/lib/contentOverrides";
 import { slugify } from "../src/lib/profile";
 
 export interface MetaValues {
@@ -13,6 +14,9 @@ export interface MetaValues {
   noindex?: boolean;
   url?: string;
   keywords?: string;
+  /** Admin → Page content replacements for this page: [built-in, new] pairs */
+  texts?: [string, string][];
+  images?: [string, string][];
   /** Page heading (H1) set in the admin */
   heading?: string;
   /** Valid compact JSON-LD from Admin → Pages & SEO */
@@ -55,6 +59,22 @@ export function injectMeta(html: string, m: MetaValues): string {
     const block = `<script type="application/ld+json" id="page-schema">${m.schema.replace(/</g, "\\u003c")}</script>\n  `;
     out = out.replace("</head>", () => block + "</head>");
   }
+  if (m.texts?.length || m.images?.length) {
+    // Same escaping React uses for text and attributes in the prerendered HTML
+    const esc = (v: string) => v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#x27;");
+    const reEsc = (v: string) => v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const at = out.indexOf('<div id="root">');
+    if (at >= 0) {
+      let body = out.slice(at);
+      for (const [from, to] of m.texts || []) {
+        body = body.replace(new RegExp(">(\\s*)" + reEsc(esc(from)) + "(\\s*)<", "g"), (_x, a, b) => `>${a}${esc(to)}${b}<`);
+      }
+      for (const [from, to] of m.images || []) {
+        body = body.split(`src="${esc(from)}"`).join(`src="${esc(to)}"`);
+      }
+      out = out.slice(0, at) + body;
+    }
+  }
   if (m.heading) {
     // The first H1 of the page content in the prerendered HTML (the app redraws it in the browser)
     const at = out.search(/id="main-content"|class="seo-fallback"/);
@@ -72,6 +92,13 @@ const clip = (v: unknown, n: number) => (typeof v === "string" ? v.replace(/\s+/
 export function metaFor(pathname: string, profileSlug: string, settings: any, sections: any[], siteUrl: string): MetaValues | null {
   const pages = cleanPageOverrides(settings?.pages);
   const page = pages[pathname] || {};
+  const content = cleanContent(settings?.content);
+  const pairs = (k: "t" | "i") => {
+    const merged = { ...(content[ALL_PAGES]?.[k] || {}), ...(content[pathname]?.[k] || {}) };
+    return Object.entries(merged) as [string, string][];
+  };
+  const texts = pairs("t");
+  const images = pairs("i");
   if (pathname === "/creators/" && profileSlug) {
     for (const section of sections || []) {
       for (const c of section?.creators || []) {
@@ -86,11 +113,14 @@ export function metaFor(pathname: string, profileSlug: string, settings: any, se
             ogImage: typeof c.image === "string" && /^(https?:\/\/|\/)/i.test(c.image) ? c.image : page.ogImage,
             url: `${siteUrl}/creators/?profile=${encodeURIComponent(profileSlug)}`,
             keywords: page.keywords,
-            schema: page.schema
+            schema: page.schema,
+            texts,
+            images
           };
         }
       }
     }
   }
-  return Object.keys(page).length ? { ...page, noindex: !!(page.noindex || page.hidden) } : null;
+  if (!Object.keys(page).length && !texts.length && !images.length) return null;
+  return { ...page, noindex: !!(page.noindex || page.hidden), texts, images };
 }

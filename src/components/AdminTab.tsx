@@ -5,12 +5,13 @@ import {
   Lock, User, LogIn, LayoutDashboard, Sparkles, Users, Briefcase, FileText, 
   Trash2, Plus, Edit2, Check, RefreshCw, X, AlertTriangle, Shield, CheckCircle2,
   TrendingUp, Phone, Mail, MapPin, Eye, FileSpreadsheet, Activity, UserPlus, Layout,
-  KeyRound, Search, Download, Inbox, Globe
+  KeyRound, Search, Download, Inbox, Globe, PenLine
 } from "lucide-react";
 import AdminContentManager from "./AdminContentManager";
 import AdminSecurityPanel from "./AdminSecurityPanel";
 import AdminEnquiriesPanel from "./AdminEnquiriesPanel";
 import AdminPagesSeo from "./AdminPagesSeo";
+import AdminContentEditor from "./AdminContentEditor";
 import AdminPhotoGallery from "./AdminPhotoGallery";
 import { ADMIN_TOKEN_KEY, ADMIN_UNAUTHORIZED_EVENT, downloadCsv } from "../lib/adminSession";
 import { toast } from "react-hot-toast";
@@ -980,6 +981,7 @@ export default function AdminTab() {
           <div className="flex flex-wrap md:flex-nowrap items-center gap-1.5 md:gap-2 border-b border-[#E1C699]/30 pb-1 w-full max-w-full overflow-x-auto scrollbar-thin">
             {[
               { id: "dashboard", label: "Overview", icon: LayoutDashboard },
+              { id: "page_content", label: "Page content", icon: PenLine },
               { id: "pages_seo", label: "Pages & SEO", icon: Globe },
               { id: "content_manager", label: "Content Studio", icon: Layout },
               { id: "content", label: "Campaign Copy", icon: FileSpreadsheet },
@@ -1121,6 +1123,13 @@ export default function AdminTab() {
                     ))}
                   </div>
                 </div>
+              </motion.div>
+            )}
+
+            {/* Click any text or image on a page to change it */}
+            {adminActiveSubTab === "page_content" && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <AdminContentEditor token={token} />
               </motion.div>
             )}
 

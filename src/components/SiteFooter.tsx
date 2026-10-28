@@ -78,7 +78,7 @@ function FooterLink({ item, onNavigate, onBrandEnquiry }: { item: FooterLinkItem
 
 export default function SiteFooter({ footerText, onNavigate, onBrandEnquiry }: SiteFooterProps) {
   return (
-    <footer className="surface-dark bg-[#1B1A17] text-[#E7E3DA]">
+    <footer data-site-chrome className="surface-dark bg-[#1B1A17] text-[#E7E3DA]">
       <div className="page py-12 md:py-16 grid gap-x-8 gap-y-10 grid-cols-2 lg:grid-cols-[minmax(0,4fr)_repeat(4,minmax(0,2fr))]">
         <div className="col-span-2 lg:col-span-1 space-y-3 max-w-sm">
           <p className="flex items-center gap-2.5 font-display text-[1.375rem] text-white"><img src="/favicon.svg" alt="" width={28} height={28} className="w-7 h-7 rounded-[6px]" />{BRAND_NAME}</p>

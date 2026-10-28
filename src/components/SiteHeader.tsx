@@ -175,7 +175,7 @@ export default function SiteHeader({ activeTab, categories, onGo, onBrowse, onBr
 
   return (
     <>
-      <header className="absolute top-0 inset-x-0 z-30 h-16 bg-paper/95 backdrop-blur border-b border-line">
+      <header data-site-chrome className="absolute top-0 inset-x-0 z-30 h-16 bg-paper/95 backdrop-blur border-b border-line">
         <div className="page-wide h-full flex items-center justify-between gap-5">
           <Wordmark onHome={() => go({ tab: "home" })} />
 

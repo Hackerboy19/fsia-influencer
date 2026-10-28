@@ -103,6 +103,14 @@ function page_meta(string $path, string $slug, array $settings, $sections): ?arr
             $page['noindex'] = true;
         }
     }
+    // Admin → Page content: built-in text/image => replacement, for this page and every page
+    foreach (['t' => 'texts', 'i' => 'images'] as $k => $name) {
+        // This page's own changes win over the every-page ones (+ keeps numeric-looking keys)
+        $pairs = content_pairs($settings['content'][$path][$k] ?? null, $k) + content_pairs($settings['content']['*'][$k] ?? null, $k);
+        if ($pairs) {
+            $page[$name] = $pairs;
+        }
+    }
     $slug = substr($slug, 0, 120);
     if ($path === '/creators/' && $slug !== '' && is_array($sections)) {
         foreach ($sections as $section) {
@@ -119,6 +127,8 @@ function page_meta(string $path, string $slug, array $settings, $sections): ?arr
                         'ogImage' => $img,
                         'url' => SITE_URL . '/creators/?profile=' . rawurlencode($slug),
                         'keywords' => $page['keywords'] ?? '',
+                        'texts' => $page['texts'] ?? [],
+                        'images' => $page['images'] ?? [],
                         'schema' => $page['schema'] ?? '',
                     ];
                 }
@@ -126,6 +136,41 @@ function page_meta(string $path, string $slug, array $settings, $sections): ?arr
         }
     }
     return $page ?: null;
+}
+
+/** Valid replacement pairs, keyed by the built-in text (spacing ignored) or image address */
+function content_pairs($raw, string $kind): array
+{
+    $out = [];
+    if (!is_array($raw)) {
+        return $out;
+    }
+    $norm = function ($v): string {
+        return is_string($v) ? trim((string)preg_replace('/\s+/u', ' ', $v)) : '';
+    };
+    foreach (array_slice($raw, 0, 400, true) as $from => $to) {
+        $from = (string)$from;
+        if ($kind === 't') {
+            $from = $norm($from);
+            $to = $norm($to);
+            if ($from === '' || $to === '' || $from === $to || strlen($from) > 8000 || strlen($to) > 8000) {
+                continue;
+            }
+        } else {
+            $to = is_string($to) ? trim($to) : '';
+            $ok = '#^(https?://|/)\S+$#i';
+            if (!preg_match($ok, $from) || !preg_match($ok, $to) || $from === $to) {
+                continue;
+            }
+        }
+        $out[$from] = $to;
+    }
+    return $out;
+}
+
+function react_escape(string $v): string
+{
+    return str_replace(['&', '<', '>', '"', "'"], ['&amp;', '&lt;', '&gt;', '&quot;', '&#x27;'], $v);
 }
 
 /** Admin JSON-LD: an object or a list of objects, re-encoded compactly; anything else is dropped */
@@ -200,6 +245,22 @@ function inject_meta(string $html, array $m): string
         $pos = strpos($html, '</head>');
         if ($pos !== false) {
             $html = substr($html, 0, $pos) . $block . substr($html, $pos);
+        }
+    }
+    if (!empty($m['texts']) || !empty($m['images'])) {
+        $at = strpos($html, '<div id="root">');
+        if ($at !== false) {
+            $body = substr($html, $at);
+            foreach (($m['texts'] ?? []) as $from => $to) {
+                $to = react_escape((string)$to);
+                $body = (string)preg_replace_callback('#>(\s*)' . preg_quote(react_escape((string)$from), '#') . '(\s*)<#u', function ($x) use ($to) {
+                    return '>' . $x[1] . $to . $x[2] . '<';
+                }, $body);
+            }
+            foreach (($m['images'] ?? []) as $from => $to) {
+                $body = str_replace('src="' . react_escape((string)$from) . '"', 'src="' . react_escape((string)$to) . '"', $body);
+            }
+            $html = substr($html, 0, $at) . $body;
         }
     }
     if (!empty($m['heading'])) {

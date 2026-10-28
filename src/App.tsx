@@ -23,6 +23,8 @@ import type { RosterStatus } from "./components/RosterNotice";
 import { Toaster } from "react-hot-toast";
 import { TabId, routeForPath, routeForTab, applyRouteMeta, setPageOverrides, isHiddenTab } from "./seo";
 import { watchHeadingOverrides } from "./lib/headingOverrides";
+import { setContentOverrides, hasContentOverrides, watchContent } from "./lib/contentOverrides";
+import { startContentEditing } from "./lib/contentEditMode";
 import { setHomeHero, setNavLabels } from "./lib/siteContent";
 import { BRAND_NAME } from "./content/brand";
 import { readableAccent } from "./lib/color";
@@ -37,6 +39,8 @@ const AdminTab = lazy(() => import("./components/AdminTab"));
 export default function App() {
   const initialTab = routeForPath(window.location.pathname).tab;
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
   const [selectedSlug, setSelectedSlug] = useState<string>(() => profileSlugFromLocation());
   const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
@@ -69,15 +73,18 @@ export default function App() {
 
   // Admin → Pages & SEO → Preview: the page opens in a frame and receives the unsaved
   // changes from the admin panel. Nothing is saved; a reload shows the live site again.
-  const previewMode = useMemo(
-    () => typeof window !== "undefined" && window.parent !== window && new URLSearchParams(window.location.search).has("fsia-preview"),
-    []
-  );
+  const previewMode = useMemo(() => {
+    if (typeof window === "undefined" || window.parent === window) return false;
+    const q = new URLSearchParams(window.location.search);
+    return q.has("fsia-preview") || q.has("fsia-edit");
+  }, []);
+  const editMode = useMemo(() => previewMode && new URLSearchParams(window.location.search).has("fsia-edit"), [previewMode]);
   const previewData = useRef<any>(null);
   const applyPreview = useCallback((d: any) => {
     setPageOverrides(d.pages);
     setHomeHero(d.homeHero);
     setNavLabels(d.navLabels);
+    if (d.content !== undefined) setContentOverrides(d.content);
     setSettings((s: any) => ({ ...s, pages: d.pages, homeHero: d.homeHero, navLabels: d.navLabels, previewAt: Date.now() }));
   }, []);
   useEffect(() => {
@@ -123,6 +130,7 @@ export default function App() {
           // Page text, SEO and share-card overrides saved in Admin → Pages & SEO
           setPageOverrides(data.pages);
           setHomeHero(data.homeHero); setNavLabels(data.navLabels);
+          setContentOverrides(data.content);
           setSettings((s: any) => ({ ...s, ...data }));
           if (previewData.current) applyPreview(previewData.current);
         }
@@ -177,6 +185,19 @@ export default function App() {
     }
     contentScrollRef.current?.scrollTo({ top: 0 });
   }, [activeTab]);
+
+  // Admin → Page content: replaced texts and images, kept in place while the page redraws
+  useEffect(() => {
+    if (activeTab === "admin" || (!previewMode && !hasContentOverrides())) return;
+    const path = routeForTab(activeTab).path;
+    return watchContent(() => document.body, path);
+  }, [activeTab, settings, previewMode]);
+
+  // Inside Admin → Page content: clicking a text or an image picks it for editing
+  useEffect(() => {
+    if (!editMode) return;
+    return startContentEditing(() => routeForTab(activeTabRef.current).path);
+  }, [editMode]);
 
   // Admin heading replacements (Pages & SEO → H2 / H3) for the open page
   useEffect(() => {
@@ -323,8 +344,8 @@ export default function App() {
     >
       <Toaster position="top-right" reverseOrder={false} toastOptions={{ duration: 4000 }} />
       {previewMode && (
-        <div role="status" className="fixed bottom-3 left-1/2 -translate-x-1/2 z-[80] bg-ink text-paper text-[0.8125rem] font-semibold px-4 py-2 rounded-[4px] shadow-lg pointer-events-none">
-          Preview: these changes are not saved yet
+        <div role="status" data-no-content-edit className="fixed bottom-3 left-1/2 -translate-x-1/2 z-[80] bg-ink text-paper text-[0.8125rem] font-semibold px-4 py-2 rounded-[4px] shadow-lg pointer-events-none">
+          {editMode ? "Click any text or image to change it" : "Preview: these changes are not saved yet"}
         </div>
       )}
 
