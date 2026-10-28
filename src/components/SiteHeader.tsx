@@ -2,7 +2,7 @@ import { navLabel } from "../lib/siteContent";
 import React, { useEffect, useId, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowRight, ChevronDown, Menu, Search, X } from "lucide-react";
-import { routeForTab, TabId } from "../seo";
+import { routeForTab, TabId, isHiddenTab } from "../seo";
 import { BRAND_NAME } from "../content/brand";
 import { APPLY_LABEL } from "../content/awards";
 import { useDialog, Portal } from "../lib/dialog";
@@ -16,6 +16,8 @@ type MenuItem = LinkItem | ActionItem;
 
 const hrefOf = (t: NavTarget) => routeForTab(t.tab).path + (t.hash ? `#${t.hash}` : "");
 const isAction = (i: MenuItem): i is ActionItem => "action" in i;
+/** Menu items whose page the admin hid are left out */
+const shown = (i: MenuItem) => isAction(i) || !isHiddenTab(i.target.tab);
 
 interface SiteHeaderProps {
   activeTab: TabId;
@@ -147,7 +149,7 @@ export default function SiteHeader({ activeTab, categories, onGo, onBrowse, onBr
 
   const DropItems = ({ items, close }: { items: MenuItem[]; close: () => void }) => (
     <ul>
-      {items.map((item) => (
+      {items.filter(shown).map((item) => (
         <li key={item.label}>
           {isAction(item) ? (
             <button type="button" onClick={() => { close(); runAction(item.action); }} className="drop-item w-full text-left cursor-pointer">
@@ -165,7 +167,7 @@ export default function SiteHeader({ activeTab, categories, onGo, onBrowse, onBr
     </ul>
   );
 
-  const NavLink = ({ t, label, active }: { t: NavTarget; label: string; active: boolean }) => (
+  const NavLink = ({ t, label, active }: { t: NavTarget; label: string; active: boolean }) => isHiddenTab(t.tab) ? null : (
     <a {...linkProps(t)} aria-current={active ? "page" : undefined} className={`nav-link ${active ? "is-active" : ""}`}>
       {label}
     </a>
@@ -180,7 +182,7 @@ export default function SiteHeader({ activeTab, categories, onGo, onBrowse, onBr
           <nav aria-label="Main" id="main-nav-tabs" className="hidden min-[1360px]:flex items-center gap-[1.125rem] h-full">
             <NavLink t={{ tab: "home" }} label={navLabel("home")} active={activeTab === "home"} />
             <NavLink t={{ tab: "directory" }} label={navLabel("directory")} active={activeTab === "directory"} />
-            <Dropdown label={navLabel("categories")} wide>
+            {!isHiddenTab("categories") && <Dropdown label={navLabel("categories")} wide>
               {(close) => (
                 <div className="p-2">
                   <p className="label-caps px-1 pb-2">Browse by category</p>
@@ -212,7 +214,7 @@ export default function SiteHeader({ activeTab, categories, onGo, onBrowse, onBr
                   </a>
                 </div>
               )}
-            </Dropdown>
+            </Dropdown>}
             <NavLink t={{ tab: "catwalk" }} label={navLabel("catwalk")} active={activeTab === "catwalk"} />
             <NavLink t={{ tab: "greenlight" }} label={navLabel("greenlight")} active={activeTab === "greenlight"} />
             <NavLink t={{ tab: "awards" }} label={navLabel("awards")} active={activeTab === "awards"} />
@@ -235,9 +237,11 @@ export default function SiteHeader({ activeTab, categories, onGo, onBrowse, onBr
             >
               <Search className="w-5 h-5" aria-hidden="true" />
             </button>
+            {!isHiddenTab("apply") && (
             <a {...linkProps({ tab: "apply" })} aria-current={activeTab === "apply" ? "page" : undefined} className="hidden sm:inline-flex btn btn-sm btn-primary">
               {APPLY_LABEL} <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </a>
+            )}
             <button
               type="button"
               onClick={() => setMenuOpen(true)}
@@ -287,7 +291,7 @@ export default function SiteHeader({ activeTab, categories, onGo, onBrowse, onBr
                       [navLabel("awards"), { tab: "awards" }],
                       [navLabel("campaigns"), { tab: "campaigns" }]
                     ] as [string, NavTarget][]
-                  ).map(([label, t]) => {
+                  ).filter(([, t]) => !isHiddenTab(t.tab)).map(([label, t]) => {
                     const current = !t.hash && activeTab === t.tab;
                     return (
                       <li key={label}>
@@ -300,7 +304,7 @@ export default function SiteHeader({ activeTab, categories, onGo, onBrowse, onBr
                   })}
                 </ul>
 
-                {categories.length > 0 && (
+                {categories.length > 0 && !isHiddenTab("categories") && (
                   <div className="mt-6">
                     <p className="label-caps pb-2">{navLabel("categories")}</p>
                     <div className="flex flex-wrap gap-2">
@@ -334,7 +338,7 @@ export default function SiteHeader({ activeTab, categories, onGo, onBrowse, onBr
                     <div key={title}>
                       <p className="label-caps pb-2 border-b border-line">{title}</p>
                       <ul className="mt-1">
-                        {items.map((item) => (
+                        {items.filter(shown).map((item) => (
                           <li key={item.label}>
                             {isAction(item) ? (
                               <button type="button" onClick={() => runAction(item.action)} className="block py-2 text-[0.9375rem] text-ink-2 hover:text-ink cursor-pointer text-left">

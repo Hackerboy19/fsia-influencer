@@ -55,9 +55,11 @@ export interface PageOverride {
   ogDescription?: string;
   ogImage?: string;
   noindex?: boolean;
+  /** Taken off the menu, footer and Google; visiting the address shows a short notice */
+  hidden?: boolean;
 }
 
-const LIMITS: Record<keyof Omit<PageOverride, "noindex">, number> = {
+const LIMITS: Record<keyof Omit<PageOverride, "noindex" | "hidden">, number> = {
   title: 120,
   description: 320,
   heading: 140,
@@ -80,6 +82,7 @@ export function cleanPageOverrides(input: unknown): Record<string, PageOverride>
     }
     if (o.ogImage && !/^(https?:\/\/|\/)/i.test(o.ogImage)) delete o.ogImage;
     if ((raw as Record<string, unknown>).noindex === true) o.noindex = true;
+    if ((raw as Record<string, unknown>).hidden === true && path !== "/") o.hidden = true;
     if (Object.keys(o).length) out[path] = o;
   }
   return out;
@@ -93,6 +96,12 @@ export function setPageOverrides(input: unknown) {
 
 export const getPageOverride = (path: string): PageOverride | undefined => pageOverrides[path];
 
+/** Pages the admin hid (Admin → Pages & SEO). The home page can never be hidden. */
+export const isHiddenTab = (tab: TabId): boolean => {
+  const route = ROUTES.find((r) => r.tab === tab);
+  return !!route && route.path !== "/" && !!pageOverrides[route.path]?.hidden;
+};
+
 export function withOverrides(route: RouteMeta, overrides: Record<string, PageOverride> = pageOverrides): RouteMeta {
   const o = overrides[route.path];
   if (!o) return route;
@@ -105,7 +114,7 @@ export function withOverrides(route: RouteMeta, overrides: Record<string, PageOv
     ogTitle: o.ogTitle || route.ogTitle,
     ogDescription: o.ogDescription || route.ogDescription,
     ogImage: o.ogImage || route.ogImage,
-    indexable: o.noindex ? false : route.indexable
+    indexable: o.noindex || o.hidden ? false : route.indexable
   };
 }
 

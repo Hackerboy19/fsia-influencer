@@ -70,5 +70,5 @@ export function metaFor(pathname: string, profileSlug: string, settings: any, se
       }
     }
   }
-  return Object.keys(page).length ? page : null;
+  return Object.keys(page).length ? { ...page, noindex: !!(page.noindex || page.hidden) } : null;
 }

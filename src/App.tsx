@@ -20,7 +20,7 @@ import PrivacyTab from "./components/PrivacyTab";
 import { AwardsTab, CategoriesTab, ForBrandsTab, ForCreatorsTab } from "./components/InfoPages";
 import type { RosterStatus } from "./components/RosterNotice";
 import { Toaster } from "react-hot-toast";
-import { TabId, routeForPath, routeForTab, applyRouteMeta, setPageOverrides } from "./seo";
+import { TabId, routeForPath, routeForTab, applyRouteMeta, setPageOverrides, isHiddenTab } from "./seo";
 import { setHomeHero, setNavLabels } from "./lib/siteContent";
 import { BRAND_NAME } from "./content/brand";
 import { readableAccent } from "./lib/color";
@@ -274,6 +274,9 @@ export default function App() {
       activeTab === tab ? "text-ink font-semibold after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:bg-bronze" : "text-ink-2 hover:text-ink"
     }`;
 
+  // Pages the admin hid show a short notice instead (recomputed when settings load)
+  const hiddenPage = activeTab !== "admin" && isHiddenTab(activeTab);
+
   return (
     <div
       className="relative w-screen h-[100dvh] overflow-hidden bg-paper font-sans text-ink"
@@ -320,7 +323,7 @@ export default function App() {
       />
 
       {/* 3D gallery controls */}
-      {activeTab === "catwalk" && sections.length > 0 && (
+      {activeTab === "catwalk" && !hiddenPage && sections.length > 0 && (
         <>
           <nav aria-label="Gallery sections" className="absolute left-6 top-1/2 -translate-y-1/2 hidden lg:block z-10 max-h-[70vh] overflow-y-auto scrollbar-none">
             <div className="bg-white/95 border border-line shadow-sm p-5 w-56 space-y-1">
@@ -381,7 +384,7 @@ export default function App() {
 
       {/* Content pages */}
       <AnimatePresence mode="wait" initial={false}>
-        {activeTab !== "catwalk" && (
+        {(activeTab !== "catwalk" || hiddenPage) && (
           <motion.main
             key={activeTab}
             id="main-content"
@@ -393,7 +396,7 @@ export default function App() {
             transition={{ duration: 0.12 }}
             className="absolute inset-0 top-16 overflow-y-auto z-[15] bg-paper outline-none"
           >
-            {activeTab === "home" && (
+            {!hiddenPage && activeTab === "home" && (
               <HomeTab
                 profiles={profiles}
                 status={rosterStatus}
@@ -407,7 +410,7 @@ export default function App() {
                 moodboardItems={moodboardItems}
               />
             )}
-            {activeTab === "directory" && (
+            {!hiddenPage && activeTab === "directory" && (
               <DirectoryTab
                 key={directoryKey}
                 profiles={profiles}
@@ -417,20 +420,27 @@ export default function App() {
                 onRetry={refreshSections}
               />
             )}
-            {activeTab === "starindia" && (
+            {!hiddenPage && activeTab === "starindia" && (
               <StarIndiaTab profiles={profiles} status={rosterStatus} onNavigate={navigateTo} onSelectProfile={openProfile} onRetry={refreshSections} />
             )}
-            {activeTab === "greenlight" && <GreenLightTab coverCreator={profiles.find((p) => p.image)?.creator} />}
-            {activeTab === "contact" && <ContactTab key={contactTopic} onNavigate={navigateTo} initialTopic={contactTopic} />}
-            {activeTab === "campaigns" && <CampaignsTab />}
-            {activeTab === "membership" && <MembershipTab />}
-            {activeTab === "apply" && <ModelRegistrationTab />}
-            {activeTab === "faq" && <FaqTab onNavigate={navigateTo} />}
-            {activeTab === "privacy" && <PrivacyTab onNavigate={navigateTo} />}
-            {activeTab === "awards" && <AwardsTab onNavigate={navigateTo} onAwardEnquiry={askAboutAward} />}
-            {activeTab === "categories" && <CategoriesTab profiles={profiles} status={rosterStatus} onBrowse={browse} onNavigate={navigateTo} />}
-            {activeTab === "forbrands" && <ForBrandsTab onNavigate={navigateTo} onBrandEnquiry={() => setIsCollaborationOpen(true)} onBrowse={browse} />}
-            {activeTab === "forcreators" && <ForCreatorsTab onNavigate={navigateTo} />}
+            {!hiddenPage && activeTab === "greenlight" && <GreenLightTab coverCreator={profiles.find((p) => p.image)?.creator} />}
+            {!hiddenPage && activeTab === "contact" && <ContactTab key={contactTopic} onNavigate={navigateTo} initialTopic={contactTopic} />}
+            {!hiddenPage && activeTab === "campaigns" && <CampaignsTab />}
+            {!hiddenPage && activeTab === "membership" && <MembershipTab />}
+            {!hiddenPage && activeTab === "apply" && <ModelRegistrationTab />}
+            {!hiddenPage && activeTab === "faq" && <FaqTab onNavigate={navigateTo} />}
+            {!hiddenPage && activeTab === "privacy" && <PrivacyTab onNavigate={navigateTo} />}
+            {!hiddenPage && activeTab === "awards" && <AwardsTab onNavigate={navigateTo} onAwardEnquiry={askAboutAward} />}
+            {!hiddenPage && activeTab === "categories" && <CategoriesTab profiles={profiles} status={rosterStatus} onBrowse={browse} onNavigate={navigateTo} />}
+            {!hiddenPage && activeTab === "forbrands" && <ForBrandsTab onNavigate={navigateTo} onBrandEnquiry={() => setIsCollaborationOpen(true)} onBrowse={browse} />}
+            {!hiddenPage && activeTab === "forcreators" && <ForCreatorsTab onNavigate={navigateTo} />}
+            {hiddenPage && (
+              <div className="page pt-16 md:pt-24 pb-24 max-w-2xl space-y-4">
+                <h1 className="h-page">This page is not available right now</h1>
+                <p className="lede">It may come back soon. Everything else on the site is open.</p>
+                <a href="/" onClick={(e) => { e.preventDefault(); navigateTo("home"); }} className="btn btn-primary">Go to the home page</a>
+              </div>
+            )}
             {activeTab === "admin" && (
               <Suspense fallback={<p className="py-24 text-center text-sm text-ink-2" role="status">Loading the admin workspace…</p>}>
                 <AdminTab />

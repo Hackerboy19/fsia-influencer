@@ -205,7 +205,7 @@ export default function AdminPagesSeo({ token }: { token: string }) {
                 >
                   <span className="min-w-0">
                     <span className="block truncate">{r.path === "/" ? "Home" : r.heading}</span>
-                    <span className="block text-[0.75rem] text-ink-3 font-normal">{r.path}</span>
+                    <span className="block text-[0.75rem] text-ink-3 font-normal">{r.path}{pages[r.path]?.hidden ? " · hidden" : ""}</span>
                   </span>
                   {changed && <span className="w-2 h-2 rounded-full bg-bronze-fill shrink-0" title="Edited" aria-label="Edited" />}
                 </button>
@@ -269,6 +269,21 @@ export default function AdminPagesSeo({ token }: { token: string }) {
             </button>
           </div>
         </div>
+
+        {/* 0. Show or hide the whole page */}
+        {!isHome && (
+          <section className={`border rounded-[4px] p-5 ${o.hidden ? "bg-[#FBEFE2] border-[#E3C9A6]" : "bg-white border-line"}`}>
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input type="checkbox" checked={!!o.hidden} onChange={(e) => setField("hidden", e.target.checked)} className="mt-1 w-5 h-5 accent-[var(--color-bronze-fill)]" id="hide-page-toggle" />
+              <span>
+                <span className="font-semibold text-[1.0625rem]">Hide this page from the website</span>
+                <span className="block text-[0.875rem] text-ink-3 mt-0.5">
+                  It disappears from the menu and footer and from Google. Anyone who opens the address sees "This page is not available right now". Untick and save to bring it back.
+                </span>
+              </span>
+            </label>
+          </section>
+        )}
 
         {/* 1. On the page */}
         <section className="bg-white border border-line rounded-[4px] p-5 space-y-4">

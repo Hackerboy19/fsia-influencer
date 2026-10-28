@@ -1,5 +1,5 @@
 import React from "react";
-import { routeForTab, TabId } from "../seo";
+import { routeForTab, TabId, isHiddenTab } from "../seo";
 import { BRAND_NAME } from "../content/brand";
 import { APPLY_LABEL } from "../content/awards";
 import { ORGANISER, ANTI_FRAUD_NOTE } from "../content/organiser";
@@ -96,7 +96,7 @@ export default function SiteFooter({ footerText, onNavigate, onBrandEnquiry }: S
           <nav key={group.title} aria-label={group.title}>
             <p className="text-[0.8125rem] font-semibold uppercase tracking-[0.06em] text-[#C9C3B6] mb-3.5">{group.title}</p>
             <ul className="space-y-3">
-              {group.links.map((item) => (
+              {group.links.filter((item) => !item.tab || !isHiddenTab(item.tab)).map((item) => (
                 <li key={item.label}>
                   <FooterLink item={item} onNavigate={onNavigate} onBrandEnquiry={onBrandEnquiry} />
                 </li>

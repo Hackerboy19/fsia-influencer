@@ -91,7 +91,7 @@ function page_meta(string $path, string $slug, array $settings, $sections): ?arr
         if (isset($page['ogImage']) && !preg_match('#^(https?://|/)#i', $page['ogImage'])) {
             unset($page['ogImage']);
         }
-        if (($raw['noindex'] ?? false) === true) {
+        if (($raw['noindex'] ?? false) === true || ($raw['hidden'] ?? false) === true) {
             $page['noindex'] = true;
         }
     }
