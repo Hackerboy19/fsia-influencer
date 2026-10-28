@@ -1,0 +1,10 @@
+{
+  "redirects": [
+    { "source": "/talent", "destination": "/creators/", "permanent": true },
+    { "source": "/talent/", "destination": "/creators/", "permanent": true },
+    { "source": "/green-light", "destination": "/magazine/", "permanent": true },
+    { "source": "/green-light/", "destination": "/magazine/", "permanent": true },
+    { "source": "/join", "destination": "/apply/", "permanent": true },
+    { "source": "/join/", "destination": "/apply/", "permanent": true }
+  ]
+}

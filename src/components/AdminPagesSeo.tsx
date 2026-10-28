@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 import { Upload, RotateCcw, Save, ExternalLink, Globe, Share2, Loader2 } from "lucide-react";
 import { ROUTES, SITE_URL, OG_IMAGE, absoluteUrl, cleanPageOverrides, setPageOverrides, type PageOverride } from "../seo";
-import { setHomeHero, type HomeHero } from "../lib/siteContent";
+import { setHomeHero, setNavLabels, NAV_ITEMS, type HomeHero } from "../lib/siteContent";
 import { uploadImage } from "../lib/adminUpload";
 
 // Admin → Pages & SEO. Every public page: the text on the page, its Google title and
@@ -63,6 +63,7 @@ function Field({
 export default function AdminPagesSeo({ token }: { token: string }) {
   const [pages, setPages] = useState<Record<string, PageOverride>>({});
   const [hero, setHero] = useState<HomeHero>({});
+  const [nav, setNav] = useState<Record<string, string>>({});
   const [path, setPath] = useState("/");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -76,6 +77,7 @@ export default function AdminPagesSeo({ token }: { token: string }) {
       .then((data) => {
         setPages(cleanPageOverrides(data?.pages));
         setHero(data?.homeHero && typeof data.homeHero === "object" ? data.homeHero : {});
+        setNav(data?.navLabels && typeof data.navLabels === "object" ? data.navLabels : {});
       })
       .catch(() => toast.error("Could not load the page settings."))
       .finally(() => setLoading(false));
@@ -134,15 +136,22 @@ export default function AdminPagesSeo({ token }: { token: string }) {
         const v = (hero[k] || "").trim();
         if (v) heroClean[k] = v;
       });
+      const navClean: Record<string, string> = {};
+      NAV_ITEMS.forEach(({ id }) => {
+        const v = (nav[id] || "").trim().slice(0, 30);
+        if (v) navClean[id] = v;
+      });
       const res = await fetch("/api/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ pages: cleaned, homeHero: heroClean })
+        body: JSON.stringify({ pages: cleaned, homeHero: heroClean, navLabels: navClean })
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({})))?.error || "Save failed.");
       // Show the change on the site straight away (no reload needed)
       setPageOverrides(cleaned);
       setHomeHero(heroClean);
+      setNavLabels(navClean);
+      setNav(navClean);
       setPages(cleaned);
       setDirty(false);
       toast.success("Saved. Pages, Google text and share cards are updated.");
@@ -173,6 +182,15 @@ export default function AdminPagesSeo({ token }: { token: string }) {
     <div className="grid gap-6 lg:grid-cols-[15rem_minmax(0,1fr)] items-start text-ink">
       {/* Page list */}
       <nav aria-label="Pages" className="bg-white border border-line rounded-[4px] p-2 lg:sticky lg:top-4">
+        <button
+          type="button"
+          onClick={() => setPath("__menu")}
+          aria-current={path === "__menu" ? "page" : undefined}
+          className={`w-full text-left px-2.5 py-2 mb-2 rounded-[3px] text-[0.9375rem] flex items-center justify-between gap-2 cursor-pointer border-b border-line ${path === "__menu" ? "bg-bronze-soft font-semibold" : "hover:bg-sunken"}`}
+        >
+          Menu names
+          {Object.values(nav).some(Boolean) && <span className="w-2 h-2 rounded-full bg-bronze-fill shrink-0" aria-label="Edited" />}
+        </button>
         <p className="px-2 pt-1 pb-2 text-[0.875rem] font-semibold text-bronze">Pages</p>
         <ul className="space-y-0.5">
           {PAGES.map((r) => {
@@ -197,6 +215,42 @@ export default function AdminPagesSeo({ token }: { token: string }) {
         </ul>
       </nav>
 
+      {path === "__menu" ? (
+        <div className="space-y-6 min-w-0">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-display text-[1.75rem] leading-tight">Menu names</h2>
+              <p className="text-[0.875rem] text-ink-3">The names in the top menu. Page addresses stay the same so links keep working.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => { setNav({}); setDirty(true); }} className="btn btn-secondary btn-sm">
+                <RotateCcw className="w-4 h-4" aria-hidden="true" /> Use built-in names
+              </button>
+              <button type="button" onClick={save} disabled={saving || !dirty} className="btn btn-primary btn-sm disabled:opacity-50">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Save className="w-4 h-4" aria-hidden="true" />}
+                {dirty ? "Save changes" : "Saved"}
+              </button>
+            </div>
+          </div>
+          <section className="bg-white border border-line rounded-[4px] p-5 grid gap-4 sm:grid-cols-2">
+            {NAV_ITEMS.map((item) => {
+              const route = ROUTES.find((r) => r.tab === item.id);
+              return (
+                <React.Fragment key={item.id}><Field
+                  id={`nav-${item.id}`}
+                  label={item.label}
+                  hint={route ? `Opens ${route.path}` : "Opens a list of links"}
+                  value={nav[item.id] || ""}
+                  placeholder={item.label}
+                  onChange={(x) => { setNav((n) => ({ ...n, [item.id]: x })); setDirty(true); }}
+                  max={30}
+                /></React.Fragment>
+              );
+            })}
+          </section>
+          <p className="text-[0.875rem] text-ink-3">Keep names short (one or two words) so the menu fits on one line.</p>
+        </div>
+      ) : (
       <div className="space-y-6 min-w-0">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -318,13 +372,14 @@ export default function AdminPagesSeo({ token }: { token: string }) {
               </div>
             </div>
           </div>
-          {path === "/talent/" && (
+          {path === "/creators/" && (
             <p className="text-[0.8125rem] text-ink-3 border-l-2 border-line-strong pl-3">
               A shared link to one creator's profile shows that creator's own name, bio and photo instead.
             </p>
           )}
         </section>
       </div>
+      )}
     </div>
   );
 }

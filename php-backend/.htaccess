@@ -2,7 +2,7 @@
 Options -Indexes
 DirectoryIndex index.html
 # Unknown URLs get a real 404 status (not the home page) so search engines never
-# index soft 404s. /talent → /talent/ is redirected by mod_dir (DirectorySlash).
+# index soft 404s. /creators → /creators/ is redirected by mod_dir (DirectorySlash).
 ErrorDocument 404 /404.html
 
 <IfModule mod_rewrite.c>
@@ -13,19 +13,24 @@ ErrorDocument 404 /404.html
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
-    # Folders without the trailing slash (/talent) go straight to the canonical
-    # https://…/talent/ in one redirect instead of two
+    # Folders without the trailing slash (/creators) go straight to the canonical
+    # https://…/creators/ in one redirect instead of two
     RewriteCond %{REQUEST_FILENAME} -d
     RewriteCond %{REQUEST_URI} !/$
     RewriteCond %{REQUEST_URI} !^/(api|storage|assets)(/|$)
     RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1/ [L,R=301]
+
+    # Old page addresses (renamed 2026-10-28 to match the menu) keep working
+    RewriteRule ^talent/?$ https://%{HTTP_HOST}/creators/ [R=301,L,QSA]
+    RewriteRule ^green-light/?$ https://%{HTTP_HOST}/magazine/ [R=301,L,QSA]
+    RewriteRule ^join/?$ https://%{HTTP_HOST}/apply/ [R=301,L,QSA]
 
     # Force HTTPS
     RewriteCond %{HTTPS} !=on
     RewriteCond %{HTTP:X-Forwarded-Proto} !https
     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-    # Page HTML (/, /talent/ …) goes through api/page.php, which adds the title, description
+    # Page HTML (/, /creators/ …) goes through api/page.php, which adds the title, description
     # and share image set in Admin → Pages & SEO. The prerendered file is still the source.
     RewriteCond %{REQUEST_URI} /$
     RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI}index.html -f

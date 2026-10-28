@@ -28,7 +28,7 @@ const prohibitedPattern = new RegExp(
   "i"
 );
 
-const PUBLIC_ROUTES = ["/", "/gallery/", "/talent/", "/campaigns/", "/join/", "/membership/", "/star-india/", "/green-light/", "/faq/", "/contact/", "/privacy/", "/awards/", "/categories/", "/for-brands/", "/for-creators/"];
+const PUBLIC_ROUTES = ["/", "/gallery/", "/creators/", "/campaigns/", "/apply/", "/membership/", "/star-india/", "/magazine/", "/faq/", "/contact/", "/privacy/", "/awards/", "/categories/", "/for-brands/", "/for-creators/"];
 const PRIVATE_ROUTES = ["/admin/"];
 const PUBLIC_APIS = ["/api/creators", "/api/campaigns", "/api/membership-plans", "/api/settings"];
 const VIEWPORTS = [
@@ -170,7 +170,7 @@ async function auditHttp() {
   }
 
   // Soft-404 protection: unknown URLs must say 404, not serve the home page
-  for (const path of ["/this-page-does-not-exist/", "/talent/unknown-profile", "/favicon-missing.png"]) {
+  for (const path of ["/this-page-does-not-exist/", "/creators/unknown-profile", "/favicon-missing.png"]) {
     const res = await get(path);
     record("http", `${path} returns 404`, res.status === 404, `status ${res.status}`);
     if (res.status === 404 && /text\/html/.test(res.headers.get("content-type") || "")) {
@@ -184,8 +184,8 @@ async function auditHttp() {
     apiHealth.headers.get("x-robots-tag") || "missing");
 
   // Trailing-slash variants should redirect to the canonical URL, not duplicate it
-  const noSlash = await get("/talent");
-  record("http", "/talent redirects to /talent/", [301, 308].includes(noSlash.status) && /\/talent\/$/.test(noSlash.headers.get("location") || ""),
+  const noSlash = await get("/creators");
+  record("http", "/creators redirects to /creators/", [301, 308].includes(noSlash.status) && /\/creators\/$/.test(noSlash.headers.get("location") || ""),
     `status ${noSlash.status} → ${noSlash.headers.get("location") || "-"}`);
 
   const robots = await get("/robots.txt");
@@ -288,7 +288,7 @@ async function auditBrowser() {
     // Every overlay: accessible, free of the prohibited word, closes on Escape and returns focus
     const dialogs = [
       { name: "brand enquiry", path: "/", open: 'main button:has-text("Send a brand enquiry")' },
-      { name: "creator profile", path: "/talent/", open: "#influencer-directory-tab h2 a" },
+      { name: "creator profile", path: "/creators/", open: "#influencer-directory-tab h2 a" },
       { name: "campaign application", path: "/campaigns/", open: 'button[aria-label^="Apply for"]' },
       { name: "membership request", path: "/membership/", open: 'button:has-text("Request ")' }
     ];

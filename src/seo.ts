@@ -45,7 +45,7 @@ export interface RouteMeta {
   ogImage?: string;
 }
 
-/** What the admin can change per page. Saved in settings.pages, keyed by the page path ("/", "/talent/"). */
+/** What the admin can change per page. Saved in settings.pages, keyed by the page path ("/", "/creators/"). */
 export interface PageOverride {
   title?: string;
   description?: string;
@@ -141,7 +141,7 @@ export const ROUTES: RouteMeta[] = [
   },
   {
     tab: "directory",
-    path: "/talent/",
+    path: "/creators/",
     title: `Hire Influencers in India: Creator Profiles | ${SITE_NAME}`,
     description:
       "Search reviewed Indian influencer profiles by name, category and city, open a profile to see their work, and send a brand collaboration enquiry.",
@@ -167,7 +167,7 @@ export const ROUTES: RouteMeta[] = [
   },
   {
     tab: "apply",
-    path: "/join/",
+    path: "/apply/",
     title: `${AWARD_NAME} Application & Registration | ${SITE_NAME}`,
     description:
       `Apply for the ${AWARD_NAME} to join and get a public profile. A three-step form; our team reviews every application.`,
@@ -206,7 +206,7 @@ export const ROUTES: RouteMeta[] = [
   },
   {
     tab: "greenlight",
-    path: "/green-light/",
+    path: "/magazine/",
     title: `Green Light Guides & Explore Magazine | ${SITE_NAME}`,
     description:
       "Practical guides for Indian creators and brands, and bookings for Explore Magazine covers, features and digital spotlights.",
@@ -332,7 +332,7 @@ export const escapeHtml = (value: string) =>
 
 // JSON-LD blocks: Organization + WebSite + WebPage everywhere, BreadcrumbList on section
 // pages, FAQPage on /faq/. Only facts the site itself shows; no ratings or invented details.
-// (Creator profiles open as overlays on /talent/, not as their own URLs, so ProfilePage /
+// (Creator profiles open as overlays on /creators/, not as their own URLs, so ProfilePage /
 // Person markup does not apply.)
 export function structuredData(route: RouteMeta): object[] {
   const organization = {

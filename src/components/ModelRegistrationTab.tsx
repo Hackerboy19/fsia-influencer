@@ -523,7 +523,7 @@ export default function ModelRegistrationTab() {
 
         <p className="mt-6 text-[0.9375rem] text-ink-2">
           Want to see published profiles first?{" "}
-          <a href="/talent/" onClick={(e) => { e.preventDefault(); navigateTo("directory"); }} className="link">
+          <a href="/creators/" onClick={(e) => { e.preventDefault(); navigateTo("directory"); }} className="link">
             Browse the directory
           </a>
         </p>

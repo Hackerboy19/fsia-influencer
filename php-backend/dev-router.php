@@ -7,10 +7,16 @@ if (preg_match('#^/api(/|$)#', $path)) {
     require $root . '/api/index.php';
     return true;
 }
+$moved = ['/talent' => '/creators/', '/green-light' => '/magazine/', '/join' => '/apply/'];
+if (isset($moved[rtrim($path, '/')])) {
+    $qs = parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY);
+    header('Location: ' . $moved[rtrim($path, '/')] . ($qs ? '?' . $qs : ''), true, 301);
+    return true;
+}
 if ($path !== '/' && is_file($root . $path)) {
     return false;
 }
-// DirectoryIndex + DirectorySlash: /talent/ serves talent/index.html, /talent redirects
+// DirectoryIndex + DirectorySlash: /creators/ serves talent/index.html, /creators redirects
 if (is_file(rtrim($root . $path, '/') . '/index.html')) {
     if (substr($path, -1) !== '/') {
         header('Location: ' . $path . '/', true, 301);

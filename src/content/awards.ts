@@ -9,7 +9,7 @@ export { AWARD_NAME };
 
 /** How joining works right now. Used wherever the site explains who can join. */
 export const JOIN_RULE = `Creators join by applying for the ${AWARD_NAME}. After the awards, the platform opens to every creator.`;
-/** Label for every button and link that opens the application form (/join/) */
+/** Label for every button and link that opens the application form (/apply/) */
 export const APPLY_LABEL = "Apply for the award";
 
 export const AWARD = {

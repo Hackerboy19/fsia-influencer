@@ -224,7 +224,7 @@ function Hero({
                 </li>
                 {shortcuts.map(([name]) => (
                   <li key={name}>
-                    <a href={`/talent/?category=${encodeURIComponent(name)}`} onClick={inApp(() => onBrowse({ category: name }))} className="chip bg-surface">
+                    <a href={`/creators/?category=${encodeURIComponent(name)}`} onClick={inApp(() => onBrowse({ category: name }))} className="chip bg-surface">
                       {name}
                     </a>
                   </li>
@@ -294,7 +294,7 @@ function FeatureStrip({ profiles, onGo }: { profiles: ProfileView[]; onGo: HomeT
       title: "Discover Creators",
       text: "Search profiles",
       target: { tab: "directory" },
-      href: "/talent/",
+      href: "/creators/",
       thumb: photos[0] ? <Photo src={photos[0]} name="" eager ratio="h-full w-full" sizes="88px" /> : <Users className="w-6 h-6" />
     },
     {
@@ -314,7 +314,7 @@ function FeatureStrip({ profiles, onGo }: { profiles: ProfileView[]; onGo: HomeT
       title: "Magazine",
       text: "Guides and features",
       target: { tab: "greenlight" },
-      href: "/green-light/",
+      href: "/magazine/",
       thumb: (
         <span className="w-full h-full bg-[#2A251E] text-[#E1C699] flex flex-col items-center justify-center font-display leading-none" aria-hidden="true">
           <span className="text-[0.625rem] tracking-[0.2em] uppercase text-[#CFCAC0]">Green</span>
@@ -512,14 +512,14 @@ function LatestGuides({ onGo }: { onGo: HomeTabProps["onGo"] }) {
         id="home-magazine"
         title="From the Magazine"
         action={
-          <a href="/green-light/#blog" onClick={inApp(() => onGo({ tab: "greenlight", hash: "blog" }))} className="see-all">
+          <a href="/magazine/#blog" onClick={inApp(() => onGo({ tab: "greenlight", hash: "blog" }))} className="see-all">
             View all <ArrowRight className="w-4 h-4" aria-hidden="true" />
           </a>
         }
       />
       <div className="mt-5 grid gap-4 sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)] lg:grid-cols-1 xl:grid-cols-[minmax(0,12rem)_minmax(0,1fr)]">
         <a
-          href={`/green-light/#guide-${lead.id}`}
+          href={`/magazine/#guide-${lead.id}`}
           onClick={inApp(() => onGo(target(lead.id)))}
           className="surface-dark group relative flex flex-col justify-between bg-[#1E1A15] text-white p-4 rounded-[4px] min-h-[15rem] overflow-hidden"
         >
@@ -536,7 +536,7 @@ function LatestGuides({ onGo }: { onGo: HomeTabProps["onGo"] }) {
         <ul className="divide-y divide-line">
           {rest.slice(0, 3).map((post) => (
             <li key={post.id}>
-              <a href={`/green-light/#guide-${post.id}`} onClick={inApp(() => onGo(target(post.id)))} className="group block py-3 first:pt-0">
+              <a href={`/magazine/#guide-${post.id}`} onClick={inApp(() => onGo(target(post.id)))} className="group block py-3 first:pt-0">
                 <span className="min-w-0">
                   <span className="block font-semibold text-ink leading-snug group-hover:underline underline-offset-4 decoration-1">{post.title}</span>
                   <span className="block text-[0.75rem] text-ink-3 mt-1">{post.category} · {post.readMinutes} min read</span>
@@ -568,7 +568,7 @@ function Categories({ profiles, categories, cities, onBrowse }: {
           const cover = profiles.find((p) => p.category === name && p.image);
           return (
             <li key={name} className="w-[9.5rem] shrink-0 snap-start">
-              <a href={`/talent/?category=${encodeURIComponent(name)}`} onClick={inApp(() => onBrowse({ category: name }))} className="card group block overflow-hidden h-full">
+              <a href={`/creators/?category=${encodeURIComponent(name)}`} onClick={inApp(() => onBrowse({ category: name }))} className="card group block overflow-hidden h-full">
                 <Photo src={cover?.image} name={name} ratio="aspect-[5/4]" sizes="152px" className="group-hover:[&_img]:scale-[1.03] [&_img]:transition-transform [&_img]:duration-500" />
                 <span className="block px-3 py-2.5">
                   <span className="block font-semibold text-ink text-[0.9375rem] leading-tight">{name}</span>
@@ -585,7 +585,7 @@ function Categories({ profiles, categories, cities, onBrowse }: {
           <ul className="flex flex-wrap gap-x-4 gap-y-1.5">
             {cities.slice(0, 12).map(([name, n]) => (
               <li key={name}>
-                <a href={`/talent/?city=${encodeURIComponent(name)}`} onClick={inApp(() => onBrowse({ city: name }))} className="text-[0.875rem] text-ink hover:text-bronze underline-offset-4 hover:underline">
+                <a href={`/creators/?city=${encodeURIComponent(name)}`} onClick={inApp(() => onBrowse({ city: name }))} className="text-[0.875rem] text-ink hover:text-bronze underline-offset-4 hover:underline">
                   {name} <span className="text-ink-3 tabular-nums">{n}</span>
                 </a>
               </li>
@@ -709,7 +709,7 @@ export default function HomeTab({ profiles, status, onNavigate, onGo, onSelectPr
             <p className="mt-2 text-[0.9375rem] text-ink-2 max-w-md">
               Book a cover story, an inside feature or a digital spotlight for yourself or your brand. We reply with dates and rates.
             </p>
-            <a href="/green-light/#magazine-booking" onClick={inApp(() => onGo({ tab: "greenlight", hash: "magazine-booking" }))} className="btn btn-primary mt-5">
+            <a href="/magazine/#magazine-booking" onClick={inApp(() => onGo({ tab: "greenlight", hash: "magazine-booking" }))} className="btn btn-primary mt-5">
               Send a booking request <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </a>
           </div>

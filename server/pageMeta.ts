@@ -48,11 +48,11 @@ export function injectMeta(html: string, m: MetaValues): string {
 
 const clip = (v: unknown, n: number) => (typeof v === "string" ? v.replace(/\s+/g, " ").trim().slice(0, n) : "");
 
-/** Values for one request: the page's overrides, or a creator's own card for /talent/?profile=slug */
+/** Values for one request: the page's overrides, or a creator's own card for /creators/?profile=slug */
 export function metaFor(pathname: string, profileSlug: string, settings: any, sections: any[], siteUrl: string): MetaValues | null {
   const pages = cleanPageOverrides(settings?.pages);
   const page = pages[pathname] || {};
-  if (pathname === "/talent/" && profileSlug) {
+  if (pathname === "/creators/" && profileSlug) {
     for (const section of sections || []) {
       for (const c of section?.creators || []) {
         if (c?.name && slugify(c.name) === profileSlug) {
@@ -64,7 +64,7 @@ export function metaFor(pathname: string, profileSlug: string, settings: any, se
             title,
             description: bio || `${title}. See the profile and send an enquiry.`,
             ogImage: typeof c.image === "string" && /^(https?:\/\/|\/)/i.test(c.image) ? c.image : page.ogImage,
-            url: `${siteUrl}/talent/?profile=${encodeURIComponent(profileSlug)}`
+            url: `${siteUrl}/creators/?profile=${encodeURIComponent(profileSlug)}`
           };
         }
       }

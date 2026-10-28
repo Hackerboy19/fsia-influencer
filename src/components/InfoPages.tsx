@@ -151,7 +151,7 @@ export function CategoriesTab({ profiles, status, onBrowse, onNavigate }: { prof
               const inCat = profiles.filter((p) => p.category === name && p.image);
               return (
                 <li key={name}>
-                  <a href={`/talent/?category=${encodeURIComponent(name)}`} onClick={inApp(() => onBrowse({ category: name }))} className="group block">
+                  <a href={`/creators/?category=${encodeURIComponent(name)}`} onClick={inApp(() => onBrowse({ category: name }))} className="group block">
                     <Photo src={inCat[0]?.image} name={name} ratio="aspect-[4/5]" sizes="(min-width: 1024px) 300px, 50vw" className="[&_img]:transition-transform [&_img]:duration-500 group-hover:[&_img]:scale-[1.03]" />
                     <span className="mt-3 flex items-baseline justify-between gap-3">
                       <span className="font-display text-[1.375rem] leading-tight text-ink group-hover:text-bronze">{name}</span>
@@ -170,7 +170,7 @@ export function CategoriesTab({ profiles, status, onBrowse, onNavigate }: { prof
             <ul className="grid grid-cols-2 sm:grid-cols-3 border-t border-line">
               {cities.map(([name, n]) => (
                 <li key={name} className="border-b border-line">
-                  <a href={`/talent/?city=${encodeURIComponent(name)}`} onClick={inApp(() => onBrowse({ city: name }))} className="flex items-baseline justify-between gap-3 py-3.5 pr-4 text-ink hover:text-bronze">
+                  <a href={`/creators/?city=${encodeURIComponent(name)}`} onClick={inApp(() => onBrowse({ city: name }))} className="flex items-baseline justify-between gap-3 py-3.5 pr-4 text-ink hover:text-bronze">
                     {name} <span className="text-[0.875rem] text-ink-3 tabular-nums">{n}</span>
                   </a>
                 </li>

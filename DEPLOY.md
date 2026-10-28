@@ -93,7 +93,7 @@ Settings**, keep the default "nginx as proxy to Apache" so `.htaccess` is honour
 The bundle already contains everything Google needs: a title, description, canonical URL,
 Open Graph/Twitter tags and structured data (WebSite, Organization, FAQPage) on every page,
 plus `/robots.txt` and `/sitemap.xml`. Each section has its own URL:
-`/`, `/gallery/`, `/talent/`, `/campaigns/`, `/join/`, `/membership/`, `/star-india/`, `/green-light/`, `/faq/`, `/contact/`.
+`/`, `/gallery/`, `/creators/`, `/categories/`, `/campaigns/`, `/awards/`, `/apply/`, `/membership/`, `/star-india/`, `/magazine/`, `/for-brands/`, `/for-creators/`, `/faq/`, `/contact/`, `/privacy/`. (Old addresses `/talent/`, `/green-light/` and `/join/` redirect to the new ones.)
 
 1. **Add the property.** In [Search Console](https://search.google.com/search-console):
    - *Domain property* `fsia.in` covers every subdomain, but needs a DNS TXT record at your
@@ -110,7 +110,7 @@ plus `/robots.txt` and `/sitemap.xml`. Each section has its own URL:
 3. **Submit the sitemap:** Search Console → *Sitemaps* → enter `sitemap.xml` → *Submit*.
 4. **Request indexing:** paste `https://influencer.fsia.in/` into the URL Inspection bar →
    *Test live URL* → when it shows as available, click *Request indexing*. Repeat for
-   `/talent/`, `/campaigns/` and `/join/` if you want them crawled sooner.
+   `/creators/`, `/campaigns/` and `/apply/` if you want them crawled sooner.
 
 Check any time: `https://influencer.fsia.in/robots.txt` and `https://influencer.fsia.in/sitemap.xml`.
 
@@ -138,7 +138,7 @@ Copy `api/config.sample.php` to `api/config.php` and edit it to:
 | Plesk "default page" or old site still shows | The files were extracted into the wrong folder or into a sub-folder; `index.html` must sit directly in the subdomain's document root. Clear the browser cache. |
 | Blank white page | Open the browser console: if `assets/…` files return 404, the `assets/` folder was not uploaded next to `index.html`. |
 | Admin login works but every action says "Unauthorized" | Your host strips the `Authorization` header; the app already sends a fallback header, so make sure the bundled `.htaccess` was uploaded. |
-| Section pages (`/talent/`, `/faq/` …) show "Page not found" | Their folders (`gallery/`, `talent/`, `campaigns/`, `join/`, `membership/`, `star-india/`, `green-light/`, `faq/`, `contact/`, `admin/`) were not uploaded next to `index.html`. |
+| Section pages (`/creators/`, `/faq/` …) show "Page not found" | Their folders (`gallery/`, `creators/`, `categories/`, `campaigns/`, `awards/`, `apply/`, `membership/`, `star-india/`, `magazine/`, `for-brands/`, `for-creators/`, `faq/`, `contact/`, `privacy/`, `admin/`) were not uploaded next to `index.html`. |
 | A mistyped address shows "Page not found" | Intended: unknown URLs return a real 404 status (`404.html`) so search engines never index them as duplicates of the home page. |
 | A Plesk-branded "404 Not Found" page appears instead of the site's own | Harmless (the status is still 404). To show the site's page, untick *Custom error documents* in the subdomain's **Hosting Settings**. |
 | API calls return 404 / the admin panel cannot load data | `.htaccess` is missing or `mod_rewrite` is disabled (it routes `/api/…` to `api/index.php`). |

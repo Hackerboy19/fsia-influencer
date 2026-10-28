@@ -1,7 +1,7 @@
 <?php
 /**
  * Serves a prerendered page (talent/index.html …) with the admin's SEO and share-card
- * values from Admin → Pages & SEO, and a creator's own card on /talent/?profile=slug,
+ * values from Admin → Pages & SEO, and a creator's own card on /creators/?profile=slug,
  * so search engines and link previews see them without JavaScript.
  * Same rules as server/pageMeta.ts (Node). If anything fails, the page is sent unchanged.
  */
@@ -96,7 +96,7 @@ function page_meta(string $path, string $slug, array $settings, $sections): ?arr
         }
     }
     $slug = substr($slug, 0, 120);
-    if ($path === '/talent/' && $slug !== '' && is_array($sections)) {
+    if ($path === '/creators/' && $slug !== '' && is_array($sections)) {
         foreach ($sections as $section) {
             foreach (($section['creators'] ?? []) as $c) {
                 if (!empty($c['name']) && js_slug((string)$c['name']) === $slug) {
@@ -109,7 +109,7 @@ function page_meta(string $path, string $slug, array $settings, $sections): ?arr
                         'title' => $title,
                         'description' => $bio !== '' ? $bio : "$title. See the profile and send an enquiry.",
                         'ogImage' => $img,
-                        'url' => SITE_URL . '/talent/?profile=' . rawurlencode($slug),
+                        'url' => SITE_URL . '/creators/?profile=' . rawurlencode($slug),
                     ];
                 }
             }

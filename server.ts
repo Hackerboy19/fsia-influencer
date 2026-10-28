@@ -1313,9 +1313,15 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    // Every public route is a prerendered folder (dist/talent/index.html …), so static
-    // serving covers them and redirects /talent → /talent/. Anything else is a real 404.
+    // Every public route is a prerendered folder (dist/creators/index.html …), so static
+    // serving covers them and redirects /creators → /creators/. Anything else is a real 404.
     const distPath = path.join(process.cwd(), "dist");
+    // Old page addresses (renamed 2026-10-28 to match the menu) keep working
+    const MOVED: Record<string, string> = { "/talent": "/creators/", "/green-light": "/magazine/", "/join": "/apply/" };
+    app.get(["/talent", "/talent/", "/green-light", "/green-light/", "/join", "/join/"], (req, res) => {
+      const q = req.originalUrl.indexOf("?");
+      res.redirect(301, MOVED[req.path.replace(/\/$/, "")] + (q >= 0 ? req.originalUrl.slice(q) : ""));
+    });
     // Page HTML gets the admin's SEO and share-card values (and a creator's own card on profile links)
     app.get(/\/$/, (req, res, next) => {
       const file = path.join(distPath, req.path, "index.html");

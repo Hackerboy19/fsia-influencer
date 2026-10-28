@@ -1,3 +1,4 @@
+import { navLabel } from "../lib/siteContent";
 import React, { useEffect, useId, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowRight, ChevronDown, Menu, Search, X } from "lucide-react";
@@ -177,9 +178,9 @@ export default function SiteHeader({ activeTab, categories, onGo, onBrowse, onBr
           <Wordmark onHome={() => go({ tab: "home" })} />
 
           <nav aria-label="Main" id="main-nav-tabs" className="hidden min-[1360px]:flex items-center gap-[1.125rem] h-full">
-            <NavLink t={{ tab: "home" }} label="Home" active={activeTab === "home"} />
-            <NavLink t={{ tab: "directory" }} label="Discover Creators" active={activeTab === "directory"} />
-            <Dropdown label="Categories" wide>
+            <NavLink t={{ tab: "home" }} label={navLabel("home")} active={activeTab === "home"} />
+            <NavLink t={{ tab: "directory" }} label={navLabel("directory")} active={activeTab === "directory"} />
+            <Dropdown label={navLabel("categories")} wide>
               {(close) => (
                 <div className="p-2">
                   <p className="label-caps px-1 pb-2">Browse by category</p>
@@ -188,7 +189,7 @@ export default function SiteHeader({ activeTab, categories, onGo, onBrowse, onBr
                       {categories.map(([name, n]) => (
                         <li key={name}>
                           <a
-                            href={`/talent/?category=${encodeURIComponent(name)}`}
+                            href={`/creators/?category=${encodeURIComponent(name)}`}
                             onClick={(e) => {
                               if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
                               e.preventDefault();
@@ -212,15 +213,15 @@ export default function SiteHeader({ activeTab, categories, onGo, onBrowse, onBr
                 </div>
               )}
             </Dropdown>
-            <NavLink t={{ tab: "catwalk" }} label="3D Gallery" active={activeTab === "catwalk"} />
-            <NavLink t={{ tab: "greenlight" }} label="Magazine" active={activeTab === "greenlight"} />
-            <NavLink t={{ tab: "awards" }} label="Awards" active={activeTab === "awards"} />
-            <NavLink t={{ tab: "campaigns" }} label="Campaigns" active={activeTab === "campaigns"} />
-            <Dropdown label="For Brands" active={activeTab === "forbrands"}>{(close) => <DropItems items={BRANDS} close={close} />}</Dropdown>
-            <Dropdown label="For Creators" active={["membership", "starindia", "forcreators"].includes(activeTab)}>
+            <NavLink t={{ tab: "catwalk" }} label={navLabel("catwalk")} active={activeTab === "catwalk"} />
+            <NavLink t={{ tab: "greenlight" }} label={navLabel("greenlight")} active={activeTab === "greenlight"} />
+            <NavLink t={{ tab: "awards" }} label={navLabel("awards")} active={activeTab === "awards"} />
+            <NavLink t={{ tab: "campaigns" }} label={navLabel("campaigns")} active={activeTab === "campaigns"} />
+            <Dropdown label={navLabel("forbrands")} active={activeTab === "forbrands"}>{(close) => <DropItems items={BRANDS} close={close} />}</Dropdown>
+            <Dropdown label={navLabel("forcreators")} active={["membership", "starindia", "forcreators"].includes(activeTab)}>
               {(close) => <DropItems items={CREATORS} close={close} />}
             </Dropdown>
-            <Dropdown label="Resources" active={["faq", "contact", "privacy"].includes(activeTab)}>
+            <Dropdown label={navLabel("resources")} active={["faq", "contact", "privacy"].includes(activeTab)}>
               {(close) => <DropItems items={RESOURCES} close={close} />}
             </Dropdown>
           </nav>
@@ -279,12 +280,12 @@ export default function SiteHeader({ activeTab, categories, onGo, onBrowse, onBr
                 <ul className="divide-y divide-line border-y border-line">
                   {(
                     [
-                      ["Home", { tab: "home" }],
-                      ["Discover Creators", { tab: "directory" }],
-                      ["3D Gallery", { tab: "catwalk" }],
-                      ["Magazine", { tab: "greenlight" }],
-                      ["Awards", { tab: "awards" }],
-                      ["Campaigns", { tab: "campaigns" }]
+                      [navLabel("home"), { tab: "home" }],
+                      [navLabel("directory"), { tab: "directory" }],
+                      [navLabel("catwalk"), { tab: "catwalk" }],
+                      [navLabel("greenlight"), { tab: "greenlight" }],
+                      [navLabel("awards"), { tab: "awards" }],
+                      [navLabel("campaigns"), { tab: "campaigns" }]
                     ] as [string, NavTarget][]
                   ).map(([label, t]) => {
                     const current = !t.hash && activeTab === t.tab;
@@ -301,12 +302,12 @@ export default function SiteHeader({ activeTab, categories, onGo, onBrowse, onBr
 
                 {categories.length > 0 && (
                   <div className="mt-6">
-                    <p className="label-caps pb-2">Categories</p>
+                    <p className="label-caps pb-2">{navLabel("categories")}</p>
                     <div className="flex flex-wrap gap-2">
                       {categories.map(([name, n]) => (
                         <a
                           key={name}
-                          href={`/talent/?category=${encodeURIComponent(name)}`}
+                          href={`/creators/?category=${encodeURIComponent(name)}`}
                           onClick={(e) => {
                             if (e.metaKey || e.ctrlKey || e.shiftKey) return;
                             e.preventDefault();
@@ -325,9 +326,9 @@ export default function SiteHeader({ activeTab, categories, onGo, onBrowse, onBr
                 <div className="mt-6 grid gap-6 sm:grid-cols-3">
                   {(
                     [
-                      ["For brands", BRANDS],
-                      ["For creators", CREATORS],
-                      ["Resources", RESOURCES]
+                      [navLabel("forbrands"), BRANDS],
+                      [navLabel("forcreators"), CREATORS],
+                      [navLabel("resources"), RESOURCES]
                     ] as [string, MenuItem[]][]
                   ).map(([title, items]) => (
                     <div key={title}>

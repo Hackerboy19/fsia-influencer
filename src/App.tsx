@@ -21,7 +21,7 @@ import { AwardsTab, CategoriesTab, ForBrandsTab, ForCreatorsTab } from "./compon
 import type { RosterStatus } from "./components/RosterNotice";
 import { Toaster } from "react-hot-toast";
 import { TabId, routeForPath, routeForTab, applyRouteMeta, setPageOverrides } from "./seo";
-import { setHomeHero } from "./lib/siteContent";
+import { setHomeHero, setNavLabels } from "./lib/siteContent";
 import { BRAND_NAME } from "./content/brand";
 import { readableAccent } from "./lib/color";
 import { ProfileView, profilesFromSections } from "./lib/profile";
@@ -94,7 +94,7 @@ export default function App() {
         if (data && typeof data === "object") {
           // Page text, SEO and share-card overrides saved in Admin → Pages & SEO
           setPageOverrides(data.pages);
-          setHomeHero(data.homeHero);
+          setHomeHero(data.homeHero); setNavLabels(data.navLabels);
           setSettings((s: any) => ({ ...s, ...data }));
         }
       })
@@ -234,7 +234,7 @@ export default function App() {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([k, v]) => v && params.set(k, v));
     const qs = params.toString();
-    window.history.pushState({ tab: "directory" }, "", "/talent/" + (qs ? `?${qs}` : ""));
+    window.history.pushState({ tab: "directory" }, "", "/creators/" + (qs ? `?${qs}` : ""));
     // Remount the directory so it reads the new filters from the address bar
     setDirectoryKey((k) => k + 1);
     navigateTo("directory");

@@ -111,7 +111,7 @@ for (const vp of [
     await page.fill("#home-search", firstName);
     await page.press("#home-search", "Enter");
     await page.waitForTimeout(900);
-    check(`${vp.name}: home search opens /talent/ with the query`, new URL(page.url()).pathname === "/talent/" && (await page.inputValue("#directory-search")) === firstName);
+    check(`${vp.name}: home search opens /creators/ with the query`, new URL(page.url()).pathname === "/creators/" && (await page.inputValue("#directory-search")) === firstName);
     check(`${vp.name}: directory shows a matching profile`, (await page.locator("#influencer-directory-tab h2 a", { hasText: firstName }).count()) >= 1);
 
     // Profiles have their own address and the Back button closes them
@@ -123,7 +123,7 @@ for (const vp of [
     await page.waitForTimeout(600);
     check(`${vp.name}: Back closes the profile`, (await page.locator('[role="dialog"][aria-labelledby="profile-name"]').count()) === 0);
     const shared = new URL(page.url());
-    await page.goto(BASE + "/talent/?profile=" + encodeURIComponent((await page.locator("#influencer-directory-tab h2 a").first().getAttribute("href")).split("profile=")[1]), { waitUntil: "networkidle" });
+    await page.goto(BASE + "/creators/?profile=" + encodeURIComponent((await page.locator("#influencer-directory-tab h2 a").first().getAttribute("href")).split("profile=")[1]), { waitUntil: "networkidle" });
     check(`${vp.name}: a shared profile link opens the profile`, await page.locator('[role="dialog"][aria-labelledby="profile-name"]').isVisible());
     await page.keyboard.press("Escape");
     await page.waitForTimeout(400);
@@ -151,8 +151,8 @@ for (const vp of [
   check(`${vp.name}: gallery "previous" arrow returns to section 1`, /Section 1 of \d/.test(await sectionLabel()), await sectionLabel());
 
   const expected = {
-    "Discover Creators": "/talent/", "Star India members": "/star-india/", Campaigns: "/campaigns/", "Membership plans": "/membership/",
-    Magazine: "/green-light/", "Questions and answers": "/faq/"
+    "Discover Creators": "/creators/", "Star India members": "/star-india/", Campaigns: "/campaigns/", "Membership plans": "/membership/",
+    Magazine: "/magazine/", "Questions and answers": "/faq/"
   };
   for (const [label, path] of Object.entries(expected)) {
     await goVia(label);
@@ -167,7 +167,7 @@ for (const vp of [
   }
   await page.goBack();
   await page.waitForTimeout(700);
-  check(`${vp.name}: browser Back returns to the previous section`, new URL(page.url()).pathname === "/green-light/");
+  check(`${vp.name}: browser Back returns to the previous section`, new URL(page.url()).pathname === "/magazine/");
 
   await page.locator('header a[aria-label="Influencer Awards, home"]').click();
   await page.waitForTimeout(900);
@@ -187,7 +187,7 @@ for (const vp of [
   check(`${vp.name}: footer link "Membership plans" → /membership/`, new URL(page.url()).pathname === "/membership/");
 
   // Keyboard: skip link is the first thing Tab reaches
-  await page.goto(BASE + "/talent/", { waitUntil: "networkidle" });
+  await page.goto(BASE + "/creators/", { waitUntil: "networkidle" });
   await page.keyboard.press("Tab");
   check(`${vp.name}: first Tab stop is "Skip to main content"`,
     (await page.evaluate(() => document.activeElement?.textContent?.trim())) === "Skip to main content");
@@ -216,7 +216,7 @@ check("API rejects a creator application with an invalid phone (400)", badApp.st
 // 2. Forms (desktop + mobile)
 // ---------------------------------------------------------------------------
 async function brandEnquiry(page, label) {
-  await page.goto(BASE + "/talent/", { waitUntil: "networkidle" });
+  await page.goto(BASE + "/creators/", { waitUntil: "networkidle" });
   if (await page.locator("#main-nav-tabs").isVisible()) {
     await page.locator("#main-nav-tabs button", { hasText: "For Brands" }).click();
     await page.locator("#main-nav-tabs button", { hasText: "Send a brand enquiry" }).click();
@@ -259,7 +259,7 @@ async function brandEnquiry(page, label) {
 }
 
 async function creatorRegistration(page, label) {
-  await page.goto(BASE + "/join/", { waitUntil: "networkidle" });
+  await page.goto(BASE + "/apply/", { waitUntil: "networkidle" });
   await page.waitForSelector("#reg-name");
   check(`${label} registration: page load does not steal focus into the form`, (await page.evaluate(() => document.activeElement?.id || "")) !== "reg-name");
   await page.locator('button[type="submit"]', { hasText: "Continue" }).click();
@@ -355,7 +355,7 @@ async function contactMessage(page, label) {
 }
 
 async function magazineBooking(page, label) {
-  await page.goto(BASE + "/green-light/", { waitUntil: "networkidle" });
+  await page.goto(BASE + "/magazine/", { waitUntil: "networkidle" });
   await page.locator('button[aria-label="Book Inside Feature"]').click();
   await page.waitForTimeout(400);
   check(`${label} booking: "Book now" picks that package`, (await page.inputValue("#booking-subject")) === "Inside Feature");
