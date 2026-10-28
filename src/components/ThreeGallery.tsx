@@ -203,26 +203,28 @@ export default function ThreeGallery({
     // Canvas Texture generator for premium 3D labels
     const create3DLabelTexture = (name: string, role: string) => {
       const labelCanvas = document.createElement("canvas");
-      labelCanvas.width = 512;
-      labelCanvas.height = 128;
+      // Drawn at 2x so names stay sharp on phone screens
+      labelCanvas.width = 1024;
+      labelCanvas.height = 256;
       const ctx = labelCanvas.getContext("2d");
       if (ctx) {
         ctx.fillStyle = "rgba(255, 255, 255, 0)"; // fully transparent background
         ctx.fillRect(0, 0, labelCanvas.width, labelCanvas.height);
 
         // Name
-        ctx.font = "italic 500 32px 'Playfair Display', Georgia, serif";
+        ctx.font = "italic 600 68px 'Newsreader', Georgia, serif";
         ctx.fillStyle = "#1B1A17";
         ctx.textAlign = "center";
-        ctx.fillText(name.toUpperCase(), labelCanvas.width / 2, 52);
+        ctx.fillText(name, labelCanvas.width / 2, 100);
 
         // Role
-        ctx.font = "20px 'Cormorant Garamond', Georgia, serif";
+        ctx.font = "600 40px 'Instrument Sans', system-ui, sans-serif";
         ctx.fillStyle = "#7A5A2B";
-        ctx.fillText(role, labelCanvas.width / 2, 95);
+        ctx.fillText(role, labelCanvas.width / 2, 180);
       }
       const labelTexture = new THREE.CanvasTexture(labelCanvas);
       labelTexture.colorSpace = THREE.SRGBColorSpace;
+      labelTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
       return labelTexture;
     };
 
@@ -271,6 +273,7 @@ export default function ThreeGallery({
         const portraitMat = new THREE.MeshBasicMaterial({
           color: "#E4DACA",
           side: THREE.DoubleSide,
+          toneMapped: false, // true photo colours, no washed-out look
           // Always drawn in front of its own frame, even where depth precision is low (some laptop GPUs)
           polygonOffset: true,
           polygonOffsetFactor: -2,
@@ -281,8 +284,10 @@ export default function ThreeGallery({
         creatorGroup.add(portraitMesh);
 
         // Load the actual portrait texture asynchronously
+        // Ask for a larger image so the photo stays sharp on high-density phone screens
+        const photoUrl = /images\.unsplash\.com/.test(creator.image) ? creator.image.replace(/([?&])w=\d+/, "$1w=1000") : creator.image;
         textureLoader.load(
-          creator.image,
+          photoUrl,
           (texture) => {
             texture.colorSpace = THREE.SRGBColorSpace;
             // Sharper photos on frames seen at an angle (no moiré stripes)
@@ -304,6 +309,7 @@ export default function ThreeGallery({
         const labelMat = new THREE.MeshBasicMaterial({
           map: labelTexture,
           transparent: true,
+          toneMapped: false,
           side: THREE.DoubleSide,
         });
         const labelMesh = new THREE.Mesh(labelGeo, labelMat);
@@ -708,11 +714,13 @@ export default function ThreeGallery({
       targetRunwayZ += shift;
       camera.position.z += shift;
       camera.aspect = aspect;
-      camera.fov = narrow ? 58 : 45;
+      camera.fov = narrow ? 57 : 45;
+      // Less haze on phones, where the portraits are smaller on screen
+      (scene.fog as THREE.FogExp2).density = narrow ? 0.014 : 0.03;
       camera.updateProjectionMatrix();
       interactiveGroups.forEach((g) => {
         const left = leftSide.get(g) ?? g.position.x < 0;
-        g.position.x = (left ? -1 : 1) * (narrow ? 1.0 : 2.4);
+        g.position.x = (left ? -1 : 1) * (narrow ? 0.96 : 2.4);
         g.rotation.y = (left ? 1 : -1) * (narrow ? 0.12 : 0.25);
         g.scale.setScalar(narrow ? 0.78 : 1);
       });
