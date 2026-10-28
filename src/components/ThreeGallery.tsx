@@ -102,6 +102,7 @@ export default function ThreeGallery({
     // so no two frames ever share a spot (overlapping frames flickered into each other).
     // The stored zOffset is ignored here because sections can hold any number of creators.
     const SPACING = 3; // between pairs of portraits
+    let eyeY = 1.45; // camera height; follows the frame height set in fitToScreen
     let viewBack = 3.8; // how far in front of a section the camera stops (more on phones)
     const sectionZ: number[] = [];
     let hallEnd = -8; // just past the last portrait
@@ -245,7 +246,8 @@ export default function ThreeGallery({
         creatorGroup.rotation.y = isLeft ? 0.25 : -0.25;
 
         // --- PART A: Backing Frosted Glass Panel ---
-        const glassGeo = new THREE.PlaneGeometry(2.1, 3.1);
+        // Taller white mount: the name sits inside it, under the photo, so nothing can hide it
+        const glassGeo = new THREE.PlaneGeometry(2.1, 3.7);
         // Solid dark backing (no transmission): a see-through panel behind the photo
         // showed through it as dark blocks on some GPUs, and cost an extra render pass
         const glassMat = new THREE.MeshStandardMaterial({
@@ -255,7 +257,7 @@ export default function ThreeGallery({
           side: THREE.DoubleSide,
         });
         const glassPanel = new THREE.Mesh(glassGeo, glassMat);
-        glassPanel.position.z = -0.02; // kept well behind the photo
+        glassPanel.position.set(0, -0.3, -0.02); // kept well behind the photo
         glassPanel.receiveShadow = false;
         glassPanel.castShadow = true;
         creatorGroup.add(glassPanel);
@@ -305,7 +307,7 @@ export default function ThreeGallery({
 
         // --- PART D: Dynamic 3D Text Label ---
         const labelTexture = create3DLabelTexture(creator.name, creator.role);
-        const labelGeo = new THREE.PlaneGeometry(1.9, 0.48);
+        const labelGeo = new THREE.PlaneGeometry(1.8, 0.45);
         const labelMat = new THREE.MeshBasicMaterial({
           map: labelTexture,
           transparent: true,
@@ -313,7 +315,7 @@ export default function ThreeGallery({
           side: THREE.DoubleSide,
         });
         const labelMesh = new THREE.Mesh(labelGeo, labelMat);
-        labelMesh.position.set(0, -1.68, 0.06); // suspended elegantly below the frame
+        labelMesh.position.set(0, -1.72, 0.06); // on the mount, under the photo
         creatorGroup.add(labelMesh);
 
         // Store mappings for mouse raycasting
@@ -368,7 +370,8 @@ export default function ThreeGallery({
     crystal.add(innerCore);
 
     crystal.position.set(0, 1.2, 0); // floats down the centre path
-    let crystalBaseY = 1.1; // lower and smaller on phones so it never covers a portrait
+    let crystalBaseY = 1.1; // lower, smaller and nearer on phones so it never covers a portrait or name
+    let crystalZShift = 0;
     scene.add(crystal);
 
     // Subtle ambient dust particle field for majestic atmospheric volume
@@ -654,7 +657,7 @@ export default function ThreeGallery({
 
         // Slightly drift X coordinate based on mouse position for responsive luxurious parallax
         const targetCamX = mouse.x * 0.35;
-        const targetCamY = 1.45 + (mouse.y * 0.12);
+        const targetCamY = eyeY + (mouse.y * 0.12);
 
         camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, 0.05);
         camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetCamY, 0.05);
@@ -662,10 +665,10 @@ export default function ThreeGallery({
 
         // Majestic guide crystal slides dynamically to the active region
         const guideZ = zOf(sections[activeIdx] ? activeIdx : 0);
-        crystal.position.z = THREE.MathUtils.lerp(crystal.position.z, guideZ, 0.06);
+        crystal.position.z = THREE.MathUtils.lerp(crystal.position.z, guideZ + crystalZShift, 0.06);
 
         // Dynamic lookAt slightly down the hallway path
-        targetLookAt.set(0, 1.25, runwayZ - 5);
+        targetLookAt.set(0, eyeY - 0.2, runwayZ - 5);
 
         if (glidingToSection && Math.abs(camera.position.z - targetRunwayZ) < 0.3) {
           glidingToSection = false;
@@ -707,25 +710,41 @@ export default function ThreeGallery({
     const fitToScreen = (width: number, height: number) => {
       const aspect = width / Math.max(1, height);
       const narrow = aspect < 0.85;
-      const nextBack = narrow ? 6.4 : 3.8;
+      const fov = narrow ? 57 : 45;
+      // On large screens the Sections list covers the left ~270px, so centre the hall
+      // in the space beside it and size the view to that space.
+      const panel = width >= 1024 ? 270 : 0;
+      const usableAspect = (width - panel) / Math.max(1, height);
+      const tanH = Math.tan(THREE.MathUtils.degToRad(fov / 2)) * usableAspect;
+      const frameX = narrow ? 0.9 : 2.4;
+      const frameScale = narrow ? 0.74 : 0.86;
+      // Step back until the nearest pair of frames fits side to side, on any screen size
+      const needed = (frameX + 1.05 * frameScale + (narrow ? 0.1 : 0.3)) / Math.max(0.05, tanH);
+      const nextBack = Math.min(9, Math.max(narrow ? 5 : 5.2, needed));
+      // Lift the scene above the section bar at the bottom (about 90px tall)
+      camera.setViewOffset(width, height, -panel / 2, 40, width, height);
       const shift = nextBack - viewBack;
       viewBack = nextBack;
       runwayZ += shift;
       targetRunwayZ += shift;
       camera.position.z += shift;
       camera.aspect = aspect;
-      camera.fov = narrow ? 57 : 45;
+      camera.fov = fov;
       // Less haze on phones, where the portraits are smaller on screen
       (scene.fog as THREE.FogExp2).density = narrow ? 0.014 : 0.03;
       camera.updateProjectionMatrix();
       interactiveGroups.forEach((g) => {
         const left = leftSide.get(g) ?? g.position.x < 0;
-        g.position.x = (left ? -1 : 1) * (narrow ? 0.96 : 2.4);
+        g.position.x = (left ? -1 : 1) * frameX;
         g.rotation.y = (left ? 1 : -1) * (narrow ? 0.12 : 0.25);
-        g.scale.setScalar(narrow ? 0.78 : 1);
+        g.scale.setScalar(frameScale);
+        // Stand each frame on the floor: the white mount reaches 2.15 below its centre
+        g.userData.originalY = 2.15 * frameScale + 0.12;
       });
       crystal.scale.setScalar(narrow ? 0.6 : 1);
-      crystalBaseY = narrow ? 0.38 : 1.1;
+      crystalBaseY = narrow ? 0.14 : 0.45;
+      eyeY = 2.15 * frameScale + 0.12 - 0.3 * frameScale;
+      crystalZShift = narrow ? 1.6 : 0;
     };
     fitToScreen(container.clientWidth, container.clientHeight);
 
