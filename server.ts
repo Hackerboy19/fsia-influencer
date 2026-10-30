@@ -2,10 +2,13 @@ import express from "express";
 import path from "path";
 import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI } from "@google/genai";
 import fs from "fs";
 import { getDb, saveDb, logAction, hashPassword, verifyPassword, needsRehash, createDefaultDb, debrandValue, DB_PATH, GallerySection, Creator, Campaign, Registration } from "./server/db";
 import { isValidEmail, isValidPhone, PHONE_ERROR } from "./server/validation";
+import { injectMeta, metaFor } from "./server/pageMeta";
+import { SITE_URL } from "./src/seo";
+import { cleanSocial } from "./src/lib/social";
+import { normaliseRole, roleCan, routeArea } from "./src/lib/adminRoles";
 
 // Initialize express app
 const app = express();
@@ -63,11 +66,24 @@ const authenticateAdmin = (req: express.Request, res: express.Response, next: ex
     return res.status(401).json({ error: "Unauthorized access. Authentication token is invalid or expired." });
   }
   if (session.restricted && !DEFAULT_PASSWORD_ROUTES.includes(req.path)) {
-    return res.status(403).json({ error: "Change the default admin password first (Admin → Security & Data)." });
+    return res.status(403).json({ error: "Change the default admin password first (Admin → Password & team)." });
   }
   res.locals.adminUser = session.username;
+  const user = getDb().admin_users.find((u) => u.username === session.username);
+  const role = normaliseRole(user?.role);
+  res.locals.adminRole = role;
+  if (!roleCan(role, routeArea(req.method, req.path.replace(/^\/api\//, "")))) {
+    return res.status(403).json({ error: "Your login does not have access to this part of the admin panel." });
+  }
   next();
 };
+
+// New applications and enquiries: the Node server only writes a line to the log
+// (the PHP version used on the live hosting sends the email to Admin → Site settings → Email alerts)
+function notifyTeam(subject: string) {
+  const to = String(getDb().system_settings.notifyEmail || "");
+  if (to) console.log(`[email alert to ${to}] ${subject}`);
+}
 
 // Simple per-IP brute-force throttle for the login endpoint
 const loginAttempts = new Map<string, { count: number; first: number }>();
@@ -101,9 +117,9 @@ const limitSubmissions = (req: express.Request, res: express.Response, next: exp
   if (Number(req.headers["content-length"] || 0) > MAX_PUBLIC_BODY_BYTES || JSON.stringify(req.body || {}).length > MAX_PUBLIC_BODY_BYTES) {
     return res.status(413).json({ error: "This submission is too large. Please use a smaller photo." });
   }
-  // Form fields are plain values; only the portfolio list and enquiry details are nested
+  // Form fields are plain values; only the portfolio list, social links and enquiry details are nested
   for (const [key, value] of Object.entries(req.body || {})) {
-    const nestedOk = (key === "portfolio" && Array.isArray(value)) || (key === "details" && value && typeof value === "object" && !Array.isArray(value));
+    const nestedOk = (key === "portfolio" && Array.isArray(value)) || ((key === "details" || key === "social") && value && typeof value === "object" && !Array.isArray(value));
     if (value !== null && typeof value === "object" && !nestedOk) {
       return res.status(400).json({ error: `Invalid value for ${key}.` });
     }
@@ -182,6 +198,7 @@ app.post("/api/auth/login", (req, res) => {
       success: true,
       token,
       username: user.username,
+      role: normaliseRole(user.role),
       mustChangePassword,
       message: "Session authenticated successfully"
     });
@@ -196,6 +213,7 @@ app.get("/api/auth/me", authenticateAdmin, (req, res) => {
   res.json({
     success: true,
     username: res.locals.adminUser,
+    role: normaliseRole(user?.role),
     mustChangePassword: user ? isDefaultPassword(user.passwordHash) : false
   });
 });
@@ -240,11 +258,11 @@ app.post("/api/auth/change-password", authenticateAdmin, (req, res) => {
 // ----------------------------------------------------
 app.get("/api/admin/users", authenticateAdmin, (req, res) => {
   const db = getDb();
-  res.json(db.admin_users.map((u) => ({ username: u.username, createdAt: u.createdAt || null, lastLogin: u.lastLogin || null })));
+  res.json(db.admin_users.map((u) => ({ username: u.username, role: normaliseRole(u.role), createdAt: u.createdAt || null, lastLogin: u.lastLogin || null })));
 });
 
 app.post("/api/admin/users", authenticateAdmin, (req, res) => {
-  const { username, password } = req.body || {};
+  const { username, password, role } = req.body || {};
   const name = String(username || "").trim();
   if (!name || !password) {
     return res.status(400).json({ error: "Username and password are required." });
@@ -256,10 +274,25 @@ app.post("/api/admin/users", authenticateAdmin, (req, res) => {
   if (db.admin_users.some((u) => u.username.toLowerCase() === name.toLowerCase())) {
     return res.status(400).json({ error: "An operator with this username already exists." });
   }
-  db.admin_users.push({ username: name, passwordHash: hashPassword(String(password)), createdAt: new Date().toISOString() });
+  db.admin_users.push({ username: name, passwordHash: hashPassword(String(password)), role: normaliseRole(role), createdAt: new Date().toISOString() });
   saveDb(db);
-  logAction(`Created operator account: ${name} (by ${res.locals.adminUser})`, req.ip);
+  logAction(`Created login ${name} as ${normaliseRole(role)} (by ${res.locals.adminUser})`, req.ip);
   res.status(201).json({ success: true });
+});
+
+app.put("/api/admin/users/:username", authenticateAdmin, (req, res) => {
+  const { username } = req.params;
+  const role = normaliseRole(req.body?.role);
+  if (username === res.locals.adminUser) {
+    return res.status(400).json({ error: "You cannot change the role of the account you are signed in with." });
+  }
+  const db = getDb();
+  const user = db.admin_users.find((u) => u.username === username);
+  if (!user) return res.status(404).json({ error: "Login not found." });
+  user.role = role;
+  saveDb(db);
+  logAction(`Changed role of ${username} to ${role} (by ${res.locals.adminUser})`, req.ip);
+  res.json({ success: true });
 });
 
 app.delete("/api/admin/users/:username", authenticateAdmin, (req, res) => {
@@ -327,7 +360,8 @@ app.post("/api/creators", authenticateAdmin, (req, res) => {
         verified: creator.stats?.verified !== false
       },
       quote: creator.quote || "",
-      portfolio: creator.portfolio || (creator.image ? [creator.image] : [])
+      portfolio: creator.portfolio || (creator.image ? [creator.image] : []),
+      social: cleanSocial(creator.social)
     };
 
     section.creators.push(newCreator);
@@ -366,6 +400,7 @@ app.put("/api/creators", authenticateAdmin, (req, res) => {
         ...updatedCreator.stats
       }
     };
+    if ("social" in updatedCreator) section.creators[idx].social = cleanSocial(updatedCreator.social);
 
     saveDb(db);
     logAction(`Updated creator profile: ${originalName}`);
@@ -707,6 +742,7 @@ app.post("/api/registrations", limitSubmissions, (req, res) => {
     db.registrations.unshift(newRegistration);
     saveDb(db);
     logAction(`Received VIP Collaboration Application from: ${brandName} targeting ${newRegistration.creatorName}`);
+    notifyTeam(`New brand enquiry: ${brandName}`);
 
     res.status(201).json({ success: true, registration: newRegistration });
   } catch (error: any) {
@@ -772,7 +808,7 @@ app.get("/api/influencer-applications", authenticateAdmin, (req, res) => {
 
 app.post("/api/influencer-applications", limitSubmissions, (req, res) => {
   try {
-    const { name, category, role, city, image, bio, reach, engagement, portfolio, quote, email, phone } = req.body;
+    const { name, category, role, city, image, bio, reach, engagement, portfolio, quote, email, phone, social } = req.body;
     if (!name || !email || !phone || !category) {
       return res.status(400).json({ error: "Full Name, Email, Phone Contact, and Runway Category are required." });
     }
@@ -807,6 +843,7 @@ app.post("/api/influencer-applications", limitSubmissions, (req, res) => {
       engagement: engagement || "",
       portfolio: portfolioArray,
       quote: quote || "",
+      social: cleanSocial(social),
       email,
       phone,
       status: "pending" as const,
@@ -823,6 +860,7 @@ app.post("/api/influencer-applications", limitSubmissions, (req, res) => {
     db.influencer_applications.unshift(newApplication);
     saveDb(db);
     logAction(`Received new Influencer Registration request from: ${name} (Runway: ${category})`, req.ip);
+    notifyTeam(`New award application: ${name}`);
 
     res.status(201).json({ success: true, application: newApplication });
   } catch (error: any) {
@@ -871,7 +909,8 @@ app.post("/api/influencer-applications/:id/approve", authenticateAdmin, (req, re
             verified: true
           },
           quote: application.quote || "",
-          portfolio: application.portfolio && application.portfolio.length > 0 ? application.portfolio : application.image ? [application.image] : []
+          portfolio: application.portfolio && application.portfolio.length > 0 ? application.portfolio : application.image ? [application.image] : [],
+          social: cleanSocial(application.social)
         };
         section.creators.push(newCreator);
         logAction(`Approved & added model registration: ${application.name} to Runway: ${section.title}`);
@@ -887,6 +926,15 @@ app.post("/api/influencer-applications/:id/approve", authenticateAdmin, (req, re
   } catch (error: any) {
     res.status(500).json({ error: "Failed to approve influencer application: " + error.message });
   }
+});
+
+app.put("/api/influencer-applications/:id", authenticateAdmin, (req, res) => {
+  const db = getDb();
+  const app_ = (db.influencer_applications || []).find((a) => a.id === req.params.id);
+  if (!app_) return res.status(404).json({ error: "Application not found." });
+  if (req.body?.notes !== undefined) app_.notes = String(req.body.notes).slice(0, 2000);
+  saveDb(db);
+  res.json({ success: true });
 });
 
 app.post("/api/influencer-applications/:id/decline", authenticateAdmin, (req, res) => {
@@ -957,175 +1005,113 @@ app.put("/api/settings", authenticateAdmin, (req, res) => {
   try {
     const db = getDb();
     const updated = req.body;
+    if (!updated || typeof updated !== "object" || Array.isArray(updated)) {
+      return res.status(400).json({ error: "Invalid settings." });
+    }
     let finalApiKey = updated.geminiApiKey;
     if (finalApiKey && finalApiKey.includes("••••")) {
       finalApiKey = db.system_settings.geminiApiKey;
     }
+    saveSettingsVersion(db, res.locals.adminUser, Object.keys(updated));
     db.system_settings = {
       ...db.system_settings,
       ...updated,
       geminiApiKey: finalApiKey || ""
     };
     saveDb(db);
-    logAction("Modified dynamic system settings and appearance configurations", req.ip);
+    logAction(`Changed site settings: ${Object.keys(req.body).slice(0, 8).join(", ")} (by ${res.locals.adminUser})`, req.ip);
     res.json({ success: true, settings: { ...db.system_settings, geminiApiKey: maskKey(db.system_settings.geminiApiKey) } });
   } catch (error: any) {
     res.status(500).json({ error: "Failed to save settings: " + error.message });
   }
 });
 
-app.get("/api/prompt-logs", authenticateAdmin, (req, res) => {
-  try {
-    const db = getDb();
-    res.json(db.prompt_logs || []);
-  } catch (error: any) {
-    res.status(500).json({ error: "Failed to load audit prompt logs: " + error.message });
-  }
+// Change history: a copy of the settings is kept before every change, so a mistake can be undone
+const SETTINGS_HISTORY_MAX = 20;
+function saveSettingsVersion(db: ReturnType<typeof getDb>, by: string, keys: string[]) {
+  const { geminiApiKey, ...settings } = db.system_settings;
+  db.settings_history = [
+    { id: "ver-" + Date.now() + "-" + Math.floor(Math.random() * 1000), at: new Date().toISOString(), by, keys: keys.slice(0, 30), settings },
+    ...(db.settings_history || [])
+  ].slice(0, SETTINGS_HISTORY_MAX);
+}
+
+app.get("/api/admin/settings-history", authenticateAdmin, (req, res) => {
+  res.json((getDb().settings_history || []).map(({ settings, ...v }) => v));
 });
 
-// Admin only: each call spends the site's Gemini API key
-app.post("/api/gemini/optimize", authenticateAdmin, async (req, res) => {
+app.post("/api/admin/settings-history/:id/restore", authenticateAdmin, (req, res) => {
   const db = getDb();
-  const settings = db.system_settings;
-  const { prompt, campaignTitle, brandName } = req.body;
-  
-  if (!prompt) {
-    return res.status(400).json({ error: "Application concept prompt is empty." });
-  }
+  const version = (db.settings_history || []).find((v) => v.id === req.params.id);
+  if (!version) return res.status(404).json({ error: "This saved version no longer exists." });
+  saveSettingsVersion(db, res.locals.adminUser, ["restore"]);
+  db.system_settings = { ...(version.settings as any), geminiApiKey: db.system_settings.geminiApiKey };
+  saveDb(db);
+  logAction(`Restored the site settings saved on ${version.at} (by ${res.locals.adminUser})`, req.ip);
+  res.json({ success: true });
+});
 
-  const apiKey = settings.geminiApiKey || process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    const errMsg = "Gemini API gateway is active but currently unconfigured. Please input an API key in the Admin Configuration Panel.";
-    // Log error to audit logs
-    db.prompt_logs.unshift({
-      id: "p-log-" + Date.now(),
-      timestamp: new Date().toISOString(),
-      userPrompt: `Brand: ${brandName || "N/A"}, Campaign: ${campaignTitle || "N/A"}. Prompt: ${prompt}`,
-      aiResponse: errMsg,
-      modelUsed: settings.modelSelection || "gemini-3.5-flash",
-      status: "error"
-    });
-    saveDb(db);
-    return res.status(404).json({ error: errMsg });
-  }
+// ----------------------------------------------------
+// Photo uploads from the admin panel (profile photos, galleries, share images).
+// The browser resizes before sending; files are stored under ./uploads and served at /uploads/.
+// ----------------------------------------------------
+const UPLOAD_DIR = path.join(process.cwd(), "uploads");
+const MAX_UPLOAD_BYTES = 3 * 1024 * 1024;
 
-  const modelName = settings.modelSelection || "gemini-3.5-flash";
-  const systemInstruction = settings.aiSystemPrompt || `
-    You are an experienced brand partnerships editor for FSIA Influencer.
-    Your job is to optimize a creator's rough pitch/concept for a luxury brand sponsorship campaign into a majestic, highly professional premium proposal.
-    Format the output beautifully in clean markdown. Keep it under 280 words.
-  `;
+function imageKind(buf: Buffer): "jpg" | "png" | "webp" | null {
+  if (buf.length > 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return "jpg";
+  if (buf.length > 8 && buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return "png";
+  if (buf.length > 12 && buf.toString("ascii", 0, 4) === "RIFF" && buf.toString("ascii", 8, 12) === "WEBP") return "webp";
+  return null;
+}
 
-  const userPrompt = `
-    Brand Campaign context:
-    - Brand: ${brandName || "Luxury Brand Partner"}
-    - Campaign: ${campaignTitle || "Autumn Runway Series"}
-    
-    Creator's Raw Concept Draft:
-    "${prompt}"
-    
-    Generate an upgraded 'Certified Haute Couture Creative Curation Proposal' that includes:
-    1. REFINED EDITORIAL NARRATIVE (An elegant title and short aesthetic premise)
-    2. VISUAL STYLE MOODBOARD DIRECTION (Color palettes, atmospheric lighting, and couture garment draping suggestions)
-    3. INTEGRATED OUTREACH STRATEGY (Specifically designed to showcase high engagement metrics)
-  `;
-
+app.post("/api/admin/upload", authenticateAdmin, (req, res) => {
   try {
-    // Initialize modern @google/genai SDK dynamically with current Admin settings key
-    const ai = new GoogleGenAI({
-      apiKey,
-      httpOptions: {
-        headers: {
-          "User-Agent": "aistudio-build",
-        }
-      }
-    });
-
-    // Query dynamic model configured from Admin panel
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: userPrompt,
-      config: {
-        systemInstruction,
-        temperature: settings.temperature !== undefined ? Number(settings.temperature) : 0.7,
-      }
-    });
-
-    const optimizedResult = response.text || "No response text generated from the AI model.";
-
-    // Log successful dynamic AI prompt execution
-    db.prompt_logs.unshift({
-      id: "p-log-" + Date.now(),
-      timestamp: new Date().toISOString(),
-      userPrompt: `Brand: ${brandName || "N/A"}, Campaign: ${campaignTitle || "N/A"}. Prompt: ${prompt}`,
-      aiResponse: optimizedResult,
-      modelUsed: modelName,
-      status: "success"
-    });
-    
-    if (db.prompt_logs.length > 100) {
-      db.prompt_logs = db.prompt_logs.slice(0, 100);
-    }
-    saveDb(db);
-
-    res.json({ success: true, optimizedPitch: debrandValue(optimizedResult) });
-
+    const dataUrl = typeof req.body?.dataUrl === "string" ? req.body.dataUrl : "";
+    const match = /^data:image\/(png|jpe?g|webp);base64,([A-Za-z0-9+/=]+)$/i.exec(dataUrl);
+    if (!match) return res.status(400).json({ error: "Send a JPG, PNG or WebP image." });
+    const buf = Buffer.from(match[2], "base64");
+    if (buf.length > MAX_UPLOAD_BYTES) return res.status(413).json({ error: "Image is larger than 3 MB." });
+    const kind = imageKind(buf);
+    if (!kind) return res.status(400).json({ error: "The file is not a valid image." });
+    const now = new Date();
+    const sub = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const dir = path.join(UPLOAD_DIR, sub);
+    fs.mkdirSync(dir, { recursive: true });
+    const name = `${crypto.randomBytes(9).toString("hex")}.${kind}`;
+    fs.writeFileSync(path.join(dir, name), buf);
+    logAction(`Uploaded image /uploads/${sub}/${name}`, req.ip);
+    res.status(201).json({ url: `/uploads/${sub}/${name}` });
   } catch (error: any) {
-    console.error("Gemini optimization error:", error);
-    let clientErrorMessage = "We encountered a temporary issue connecting to the FSIA AI engine: " + error.message;
-    if (error.status === 429) {
-      clientErrorMessage = "The FSIA AI Gateway is experiencing high traffic. Please wait a moment before re-optimizing.";
-    }
-
-    // Log failed dynamic AI prompt execution
-    db.prompt_logs.unshift({
-      id: "p-log-" + Date.now(),
-      timestamp: new Date().toISOString(),
-      userPrompt: `Brand: ${brandName || "N/A"}, Campaign: ${campaignTitle || "N/A"}. Prompt: ${prompt}`,
-      aiResponse: `Error: ${error.message}`,
-      modelUsed: modelName,
-      status: "error"
-    });
-    
-    if (db.prompt_logs.length > 100) {
-      db.prompt_logs = db.prompt_logs.slice(0, 100);
-    }
-    saveDb(db);
-
-    res.status(502).json({ error: clientErrorMessage, details: error.message });
+    res.status(500).json({ error: "Upload failed: " + error.message });
   }
 });
+
+app.use(
+  "/uploads",
+  express.static(UPLOAD_DIR, {
+    dotfiles: "deny",
+    index: false,
+    setHeaders: (res) => {
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    }
+  })
+);
 
 // Admin dashboard statistics metrics endpoint
 app.get("/api/admin/stats", authenticateAdmin, (req, res) => {
   try {
     const db = getDb();
     const flatCreators = db.creators.flatMap((s) => s.creators);
-    const totalReach = flatCreators.reduce((acc, c) => {
-      const parsed = parseFloat(c.stats.reach || "0");
-      return acc + (c.stats.reach.includes("M") ? parsed * 1000000 : parsed * 1000);
-    }, 0);
-
-    const totalPrompts = db.prompt_logs?.length || 0;
-    const successfulPrompts = db.prompt_logs?.filter(l => l.status === "success").length || 0;
-    const apiSuccessRate = totalPrompts > 0 ? Math.round((successfulPrompts / totalPrompts) * 100) : 100;
-
-    const stats = {
+    res.json({
       creatorsCount: flatCreators.length,
       categoriesCount: db.creators.length,
       campaignsCount: db.campaigns.length,
-      applicationsCount: db.registrations.length,
-      influencerApplicationsCount: db.influencer_applications?.length || 0,
-      pendingApplicationsCount: (db.influencer_applications || []).filter((a) => a.status === "pending").length,
-      newLeadsCount: db.registrations.filter((r) => !r.status || r.status === "new").length,
-      newEnquiriesCount: (db.enquiries || []).filter((e) => e.status === "new").length,
       membershipPlansCount: db.membership_plans?.length || 0,
-      estimatedRosterReach: (totalReach / 1000000).toFixed(1) + "M",
-      totalPromptsCount: totalPrompts,
-      apiSuccessRate: apiSuccessRate,
-      logs: db.admin_logs.slice(0, 15) // send last 15 audit trail logs
-    };
-    res.json(stats);
+      newEnquiriesCount: (db.enquiries || []).filter((e) => e.status === "new").length,
+      logs: db.admin_logs.slice(0, 15)
+    });
   } catch (error: any) {
     res.status(500).json({ error: "Failed to compile metrics: " + error.message });
   }
@@ -1177,6 +1163,7 @@ app.post("/api/enquiries", limitSubmissions, (req, res) => {
   db.enquiries = [enquiry, ...(db.enquiries || [])].slice(0, 5000);
   saveDb(db);
   logAction(`New ${enquiry.type} enquiry from ${enquiry.name}: ${enquiry.subject}`, req.ip);
+  notifyTeam(`New ${enquiry.type} enquiry: ${enquiry.name}`);
   res.status(201).json({ success: true, enquiry: { id: enquiry.id, timestamp: enquiry.timestamp } });
 });
 
@@ -1216,7 +1203,7 @@ app.get("/api/admin/logs", authenticateAdmin, (req, res) => {
 
 // Backup: complete database export without operator credentials
 app.get("/api/admin/backup", authenticateAdmin, (req, res) => {
-  const { admin_users, ...data } = getDb();
+  const { admin_users, settings_history, ...data } = getDb();
   const { geminiApiKey, ...settings } = data.system_settings;
   logAction("Downloaded full database backup", req.ip);
   res.setHeader("Content-Disposition", `attachment; filename="fsia-backup-${new Date().toISOString().slice(0, 10)}.json"`);
@@ -1263,9 +1250,30 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    // Every public route is a prerendered folder (dist/talent/index.html …), so static
-    // serving covers them and redirects /talent → /talent/. Anything else is a real 404.
+    // Every public route is a prerendered folder (dist/creators/index.html …), so static
+    // serving covers them and redirects /creators → /creators/. Anything else is a real 404.
     const distPath = path.join(process.cwd(), "dist");
+    // Old page addresses (renamed 2026-10-28 to match the menu) keep working
+    const MOVED: Record<string, string> = { "/talent": "/creators/", "/green-light": "/magazine/", "/join": "/apply/" };
+    app.get(["/talent", "/talent/", "/green-light", "/green-light/", "/join", "/join/"], (req, res) => {
+      const q = req.originalUrl.indexOf("?");
+      res.redirect(301, MOVED[req.path.replace(/\/$/, "")] + (q >= 0 ? req.originalUrl.slice(q) : ""));
+    });
+    // Page HTML gets the admin's SEO and share-card values (and a creator's own card on profile links)
+    app.get(/\/$/, (req, res, next) => {
+      const file = path.join(distPath, req.path, "index.html");
+      if (!file.startsWith(distPath) || !fs.existsSync(file)) return next();
+      try {
+        const db = getDb();
+        const slug = typeof req.query.profile === "string" ? req.query.profile.slice(0, 120) : "";
+        const meta = metaFor(req.path, slug, db.system_settings, db.creators, SITE_URL);
+        const html = fs.readFileSync(file, "utf8");
+        res.setHeader("Cache-Control", "no-cache");
+        res.type("html").send(meta ? injectMeta(html, meta) : html);
+      } catch {
+        next();
+      }
+    });
     app.use(express.static(distPath));
     app.use((req, res) => {
       res.status(404).sendFile(path.join(distPath, "404.html"));

@@ -57,7 +57,7 @@ class Store
             return $data;
         }
         $seed = null;
-        foreach (['creators', 'campaigns', 'registrations', 'admin_logs', 'prompt_logs', 'influencer_applications', 'sessions', 'enquiries'] as $key) {
+        foreach (['creators', 'campaigns', 'registrations', 'admin_logs', 'prompt_logs', 'influencer_applications', 'sessions', 'enquiries', 'settings_history'] as $key) {
             if (!isset($data[$key]) || !is_array($data[$key])) {
                 $data[$key] = [];
             }

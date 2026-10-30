@@ -30,6 +30,9 @@
   --color-field: #8A8376;      /* form control and secondary button borders (3.5:1, WCAG non-text contrast) */
   --color-bronze: #7A5A22;     /* the one accent: links, active states, small labels */
   --color-bronze-soft: #F1E8D6;
+  --color-bronze-fill: #94652A; /* filled buttons (5:1 with white text) */
+  --color-bronze-deep: #7A5A22; /* filled button hover */
+  --color-ivory: #FBF8F2;       /* warm hero and card wells */
   --color-champagne: #E1C699;  /* brand mark colour; decorative or on dark only */
   --color-alabaster: #F7F5F0;
   --color-cashmere: #EFECE5;
@@ -53,7 +56,7 @@ p, li, dd { text-wrap: pretty; }
   .page { width: 100%; max-width: 75rem; margin-inline: auto; padding-inline: 1.25rem; }
   @media (min-width: 768px) { .page { padding-inline: 2rem; } }
 
-  .eyebrow { font-size: 0.8125rem; line-height: 1.25rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-bronze); }
+  .eyebrow { font-size: 0.875rem; line-height: 1.25rem; font-weight: 600; color: var(--color-bronze); }
   .display { font-family: var(--font-display); font-weight: 500; letter-spacing: -0.015em; color: var(--color-ink); }
   .h-page { font-family: var(--font-display); font-weight: 500; letter-spacing: -0.015em; color: var(--color-ink); font-size: 2.25rem; line-height: 1.1; }
   @media (min-width: 768px) { .h-page { font-size: 3rem; } }
@@ -65,8 +68,11 @@ p, li, dd { text-wrap: pretty; }
   .label-caps { font-size: 0.8125rem; line-height: 1.25rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-ink-3); }
 
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; min-height: 2.75rem; padding: 0.625rem 1.125rem; border-radius: 4px; font-size: 0.9375rem; font-weight: 600; line-height: 1.2; cursor: pointer; transition: background-color .15s, border-color .15s, color .15s; white-space: nowrap; }
-  .btn-primary { background: var(--color-ink); color: #FFFFFF; border: 1px solid var(--color-ink); }
-  .btn-primary:hover { background: #33312C; border-color: #33312C; }
+  /* Primary action: bronze, as in the reference design. Dark variant for quieter contexts. */
+  .btn-primary { background: var(--color-bronze-fill); color: #FFFFFF; border: 1px solid var(--color-bronze-fill); }
+  .btn-primary:hover { background: var(--color-bronze-deep); border-color: var(--color-bronze-deep); }
+  .btn-dark { background: var(--color-ink); color: #FFFFFF; border: 1px solid var(--color-ink); }
+  .btn-dark:hover { background: #33312C; border-color: #33312C; }
   .btn-secondary { background: transparent; color: var(--color-ink); border: 1px solid var(--color-field); }
   .btn-secondary:hover { border-color: var(--color-ink); background: var(--color-surface); }
   .btn-sm { min-height: 2.25rem; padding: 0.375rem 0.875rem; font-size: 0.875rem; }
@@ -74,6 +80,30 @@ p, li, dd { text-wrap: pretty; }
   .link:hover { text-decoration-color: var(--color-ink); }
 
   .rule { border-top: 1px solid var(--color-line); }
+
+  /* ---- Additions, 27 Oct (reference mockup): wider home layout, header, compact section titles ---- */
+  .page-wide { width: 100%; max-width: 88rem; margin-inline: auto; padding-inline: 1rem; }
+  @media (min-width: 768px) { .page-wide { padding-inline: 2rem; } }
+  .wordmark { font-family: var(--font-sans); font-weight: 700; font-size: 0.8125rem; line-height: 1.05; letter-spacing: 0.12em; text-transform: uppercase; }
+  .nav-link { position: relative; display: inline-flex; align-items: center; height: 100%; font-size: 0.875rem; font-weight: 500; color: var(--color-ink-2); white-space: nowrap; transition: color .15s; }
+  .nav-link:hover { color: var(--color-ink); }
+  .nav-link.is-active, .nav-link[aria-current="page"] { color: var(--color-ink); font-weight: 600; }
+  .nav-link.is-active::after, .nav-link[aria-current="page"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--color-bronze-fill); }
+  .drop-item { display: block; padding: 0.625rem 0.75rem; border-radius: 4px; font-size: 0.9375rem; }
+  .drop-item:hover, .drop-item[aria-current="page"] { background: var(--color-sunken); }
+  /* Compact sans section title used on the home page ("Featured creators") */
+  .h-block { font-family: var(--font-sans); font-weight: 700; letter-spacing: -0.01em; color: var(--color-ink); font-size: 1.375rem; line-height: 1.2; }
+  @media (min-width: 768px) { .h-block { font-size: 1.5rem; } }
+  .see-all { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.875rem; font-weight: 600; color: var(--color-bronze); white-space: nowrap; }
+  .see-all:hover { text-decoration: underline; text-underline-offset: 4px; }
+  /* Hero display type: bold serif, second phrase in bronze */
+  .h-display { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.02em; color: var(--color-ink); font-size: clamp(2.25rem, 1.5rem + 2.4vw, 3.5rem); line-height: 1.04; }
+  .h-display .accent { color: var(--color-bronze); }
+  /* White card with hairline border (strip items, creator cards) */
+  .card { background: var(--color-surface); border: 1px solid var(--color-line); border-radius: 4px; transition: border-color .15s, box-shadow .15s; }
+  a.card:hover, .card.is-link:hover { border-color: var(--color-line-strong); box-shadow: 0 10px 28px -18px rgba(27,26,23,.35); }
+  /* Icon in a soft bronze circle (hero facts) */
+  .icon-dot { display: inline-flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; border-radius: 999px; background: var(--color-bronze-soft); color: var(--color-bronze); flex-shrink: 0; }
 
   /* ---- Additions, 27 Oct: one scale for big type, surfaces, chips, fields ---- */
   /* Hero headline: large but never shouting (36px phone, 54px desktop) */
@@ -223,3 +253,23 @@ body {
 [role="dialog"][tabindex="-1"]:focus-visible,
 main[tabindex="-1"]:focus-visible,
 [role="main"][tabindex="-1"]:focus-visible { outline: none; }
+
+/* ------------------------------------------------------------------
+   HOME (reference mockup, 27 Oct)
+------------------------------------------------------------------- */
+/* Lead hero portrait fades into the ivory on its left edge */
+.hero-fade { -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 32%); mask-image: linear-gradient(to right, transparent 0%, #000 32%); }
+/* Small portrait printed on white card stock */
+.print-frame { display: block; background: #fff; padding: 0.375rem 0.375rem 0.25rem; box-shadow: 0 14px 30px -16px rgba(27,26,23,.55); transition: transform .2s; }
+.print-frame:hover { transform: rotate(0deg) translateY(-2px); }
+/* Feature-strip thumbnail for the 3D gallery: three portraits in perspective */
+.mini-3d { position: relative; display: block; width: 100%; height: 100%; background: #16130F; perspective: 220px; }
+.mini-3d > span { position: absolute; top: 18%; width: 30%; height: 64%; background: #3A352E center / cover no-repeat; border: 1px solid rgba(225,198,153,.6); }
+.mini-3d > span:nth-child(1) { left: 6%; transform: rotateY(35deg); }
+.mini-3d > span:nth-child(2) { left: 35%; z-index: 1; transform: scale(1.12); }
+.mini-3d > span:nth-child(3) { right: 6%; transform: rotateY(-35deg); }
+/* Home 3D gallery preview */
+.coverflow { position: absolute; inset: 0 0 2.25rem; perspective: 1100px; transform-style: preserve-3d; }
+.coverflow-item { position: absolute; left: 50%; top: 50%; width: 8.5rem; aspect-ratio: 4 / 5; padding: 0; border: 1px solid rgba(225,198,153,.55); background: #2A251E; cursor: pointer; transition: transform .45s cubic-bezier(.2,.7,.2,1), opacity .45s; box-shadow: 0 18px 40px -18px rgba(0,0,0,.8); }
+@media (min-width: 640px) { .coverflow-item { width: 10rem; } }
+.coverflow-item:focus-visible { outline: 2px solid #E1C699; outline-offset: 3px; }

@@ -9,6 +9,8 @@
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
     RewriteRule ^index\.php$ - [L]
+    # Page HTML with the admin's SEO values (sent here by the root .htaccess)
+    RewriteRule ^page\.php$ - [L]
     RewriteRule ^ index.php [L,QSA]
 </IfModule>
 

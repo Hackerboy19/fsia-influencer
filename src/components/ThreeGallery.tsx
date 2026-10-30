@@ -48,8 +48,8 @@ export default function ThreeGallery({
 
     // 1. Scene, Camera, and WebGL Renderer Setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#F7F5F0"); // page background
-    scene.fog = new THREE.FogExp2("#FAF9F6", 0.04); // Ethereal daytime fog for depth
+    scene.background = new THREE.Color("#F3EDE2"); // light ivory gallery hall
+    scene.fog = new THREE.FogExp2("#F3EDE2", 0.045); // soft fade into the hall
 
     const camera = new THREE.PerspectiveCamera(
       45,
@@ -68,18 +68,19 @@ export default function ThreeGallery({
     });
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // No real-time shadows: in the dark hall they were barely visible, they cost a lot on
+    // phones, and on some GPUs they showed as striped or blocky patches over the photos
+    renderer.shadowMap.enabled = false;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.0;
+    renderer.toneMappingExposure = 0.9;
 
     // 2. Physical Global & Directional Illumination (Daylight Museum shadows)
-    const ambientLight = new THREE.AmbientLight("#FFFDF9", 1.8); // soft warm ceiling fill
+    const ambientLight = new THREE.AmbientLight("#FFF3E0", 1.4); // soft warm ceiling fill
     scene.add(ambientLight);
 
-    const sunLight = new THREE.DirectionalLight("#FFF7EA", 2.5); // sunlit high window
+    const sunLight = new THREE.DirectionalLight("#FFF1DC", 2.2); // sunlit high window
     sunLight.position.set(6, 12, 4);
-    sunLight.castShadow = true;
+    sunLight.castShadow = false;
     sunLight.shadow.mapSize.width = 2048;
     sunLight.shadow.mapSize.height = 2048;
     sunLight.shadow.camera.near = 0.5;
@@ -93,53 +94,75 @@ export default function ThreeGallery({
     scene.add(sunLight);
 
     // Subtle golden bounce light from the floor
-    const bounceLight = new THREE.DirectionalLight("#E1C699", 0.4);
+    const bounceLight = new THREE.DirectionalLight("#E1C699", 0.7);
     bounceLight.position.set(-6, -2, -4);
     scene.add(bounceLight);
 
+    // Layout: each section gets enough hall for all its portraits, left and right in turn,
+    // so no two frames ever share a spot (overlapping frames flickered into each other).
+    // The stored zOffset is ignored here because sections can hold any number of creators.
+    const SPACING = 3; // between pairs of portraits
+    let eyeY = 1.45; // camera height; follows the frame height set in fitToScreen
+    let viewBack = 3.8; // how far in front of a section the camera stops (more on phones)
+    const sectionZ: number[] = [];
+    let hallEnd = -8; // just past the last portrait
+    {
+      let z = 0;
+      sections.forEach((sec) => {
+        sectionZ.push(z);
+        const pairs = Math.max(1, Math.ceil((sec.creators?.length || 0) / 2));
+        z -= Math.max(8, pairs * SPACING + 5);
+      });
+      hallEnd = z - 4;
+    }
+    const hallLength = 10 - hallEnd; // from behind the start to past the end
+    const hallMid = (10 + hallEnd) / 2;
+    const zOf = (idx: number) => sectionZ[idx] ?? 0;
+
     // 3. Pavilion Architecture (Floor and Columns)
     // Satin Reflective Alabaster Floor
-    const floorGeo = new THREE.PlaneGeometry(30, 80);
+    const floorGeo = new THREE.PlaneGeometry(30, hallLength + 20);
     const floorMat = new THREE.MeshStandardMaterial({
-      color: "#F4F3F0", // cashmere white tint
-      roughness: 0.18,
+      color: "#E6DDCC", // light stone floor
+      roughness: 0.55,
       metalness: 0.05,
     });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
     floor.position.y = 0;
+    floor.position.z = hallMid;
     floor.receiveShadow = true;
     scene.add(floor);
 
     // Double Runway Rails (Champagne Gold)
-    const railLeftGeo = new THREE.BoxGeometry(0.04, 0.015, 60);
-    const railRightGeo = new THREE.BoxGeometry(0.04, 0.015, 60);
+    const railLeftGeo = new THREE.BoxGeometry(0.04, 0.015, hallLength);
+    const railRightGeo = new THREE.BoxGeometry(0.04, 0.015, hallLength);
     const railMat = new THREE.MeshStandardMaterial({
-      color: "#E1C699", // Champagne Gold
-      roughness: 0.2,
-      metalness: 0.9,
+      color: "#A87C3E", // bronze, reads on the light floor
+      roughness: 0.3,
+      metalness: 0.6,
     });
 
     const railLeft = new THREE.Mesh(railLeftGeo, railMat);
-    railLeft.position.set(-1.4, 0.008, -15);
+    railLeft.position.set(-1.4, 0.008, hallMid);
     railLeft.receiveShadow = true;
     scene.add(railLeft);
 
     const railRight = new THREE.Mesh(railRightGeo, railMat);
-    railRight.position.set(1.4, 0.008, -15);
+    railRight.position.set(1.4, 0.008, hallMid);
     railRight.receiveShadow = true;
     scene.add(railRight);
 
     // Architectural Sleek Columns (Slabs)
     const columnGeo = new THREE.BoxGeometry(0.15, 5.0, 0.6);
     const columnMat = new THREE.MeshStandardMaterial({
-      color: "#FAFAFA",
-      roughness: 0.3,
+      color: "#DDD2BF",
+      roughness: 0.6,
     });
     const columns: THREE.Mesh[] = [];
 
     // Place columns along the corridor
-    for (let z = 5; z >= -25; z -= 4) {
+    for (let z = 5; z >= hallEnd; z -= 4) {
       // Left Column
       const colL = new THREE.Mesh(columnGeo, columnMat);
       colL.position.set(-4.5, 2.5, z);
@@ -174,32 +197,35 @@ export default function ThreeGallery({
     textureLoader.setCrossOrigin("anonymous");
 
     const interactiveGroups: THREE.Group[] = [];
+    const leftSide = new Map<THREE.Group, boolean>();
     const creatorMap = new Map<string, Creator>();
     const meshToCreatorMap = new Map<THREE.Object3D, Creator>();
 
     // Canvas Texture generator for premium 3D labels
     const create3DLabelTexture = (name: string, role: string) => {
       const labelCanvas = document.createElement("canvas");
-      labelCanvas.width = 512;
-      labelCanvas.height = 128;
+      // Drawn at 2x so names stay sharp on phone screens
+      labelCanvas.width = 1024;
+      labelCanvas.height = 256;
       const ctx = labelCanvas.getContext("2d");
       if (ctx) {
         ctx.fillStyle = "rgba(255, 255, 255, 0)"; // fully transparent background
         ctx.fillRect(0, 0, labelCanvas.width, labelCanvas.height);
 
         // Name
-        ctx.font = "italic 500 32px 'Playfair Display', Georgia, serif";
-        ctx.fillStyle = "#111111";
+        ctx.font = "italic 600 68px 'Newsreader', Georgia, serif";
+        ctx.fillStyle = "#1B1A17";
         ctx.textAlign = "center";
-        ctx.fillText(name.toUpperCase(), labelCanvas.width / 2, 52);
+        ctx.fillText(name, labelCanvas.width / 2, 100);
 
         // Role
-        ctx.font = "20px 'Cormorant Garamond', Georgia, serif";
-        ctx.fillStyle = "#8E8D8A";
-        ctx.fillText(role, labelCanvas.width / 2, 95);
+        ctx.font = "600 40px 'Instrument Sans', system-ui, sans-serif";
+        ctx.fillStyle = "#7A5A2B";
+        ctx.fillText(role, labelCanvas.width / 2, 180);
       }
       const labelTexture = new THREE.CanvasTexture(labelCanvas);
       labelTexture.colorSpace = THREE.SRGBColorSpace;
+      labelTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
       return labelTexture;
     };
 
@@ -207,58 +233,67 @@ export default function ThreeGallery({
       section.creators.forEach((creator, cIdx) => {
         const creatorGroup = new THREE.Group();
 
-        // Stagger positions: Left (cIdx=0) and Right (cIdx=1)
-        const isLeft = cIdx === 0;
+        // Alternate left and right; each pair sits further down the hall
+        const isLeft = cIdx % 2 === 0;
         const xPos = isLeft ? -2.4 : 2.4;
         const yPos = 1.45; // suspended at eyes level
-        const zPos = section.zOffset + (isLeft ? 0 : -1.5); // staggered along runway
+        const zPos = zOf(sIdx) - Math.floor(cIdx / 2) * SPACING + (isLeft ? 0 : -1.5); // staggered along runway
 
         creatorGroup.position.set(xPos, yPos, zPos);
+        leftSide.set(creatorGroup, isLeft);
 
         // Slight rotation angled towards center path
         creatorGroup.rotation.y = isLeft ? 0.25 : -0.25;
 
         // --- PART A: Backing Frosted Glass Panel ---
-        const glassGeo = new THREE.PlaneGeometry(2.1, 3.1);
-        const glassMat = new THREE.MeshPhysicalMaterial({
-          color: "#FAFAFA",
-          transparent: true,
-          opacity: 0.75,
-          transmission: 0.8, // luxury glassmorphism transparency
-          roughness: 0.22,
-          metalness: 0.05,
-          clearcoat: 0.6,
-          clearcoatRoughness: 0.1,
+        // Taller white mount: the name sits inside it, under the photo, so nothing can hide it
+        const glassGeo = new THREE.PlaneGeometry(2.1, 3.7);
+        // Solid dark backing (no transmission): a see-through panel behind the photo
+        // showed through it as dark blocks on some GPUs, and cost an extra render pass
+        const glassMat = new THREE.MeshStandardMaterial({
+          color: "#FFFDF8", // white mount, like a framed print
+          roughness: 0.7,
+          metalness: 0.0,
           side: THREE.DoubleSide,
         });
         const glassPanel = new THREE.Mesh(glassGeo, glassMat);
-        glassPanel.receiveShadow = true;
+        glassPanel.position.set(0, -0.3, -0.02); // kept well behind the photo
+        glassPanel.receiveShadow = false;
         glassPanel.castShadow = true;
         creatorGroup.add(glassPanel);
 
         // --- PART B: Champagne Gold Back-Border ---
         const goldBackGeo = new THREE.PlaneGeometry(1.86, 2.56);
         const goldBack = new THREE.Mesh(goldBackGeo, railMat);
-        goldBack.position.z = 0.01; // offset forward
+        goldBack.position.z = 0.03; // offset forward (clear gap avoids depth flicker)
         creatorGroup.add(goldBack);
 
         // --- PART C: Portrait Photo Image ---
         const portraitGeo = new THREE.PlaneGeometry(1.8, 2.5);
         // Temporary elegant satin background while loading
-        const portraitMat = new THREE.MeshStandardMaterial({
-          color: "#EAE9E5",
-          roughness: 0.4,
+        // Unlit, so photos keep their true colours and never pick up shadow patterns
+        const portraitMat = new THREE.MeshBasicMaterial({
+          color: "#E4DACA",
           side: THREE.DoubleSide,
+          toneMapped: false, // true photo colours, no washed-out look
+          // Always drawn in front of its own frame, even where depth precision is low (some laptop GPUs)
+          polygonOffset: true,
+          polygonOffsetFactor: -2,
+          polygonOffsetUnits: -4,
         });
         const portraitMesh = new THREE.Mesh(portraitGeo, portraitMat);
-        portraitMesh.position.z = 0.02; // further forward
+        portraitMesh.position.z = 0.06; // further forward
         creatorGroup.add(portraitMesh);
 
         // Load the actual portrait texture asynchronously
+        // Ask for a larger image so the photo stays sharp on high-density phone screens
+        const photoUrl = /images\.unsplash\.com/.test(creator.image) ? creator.image.replace(/([?&])w=\d+/, "$1w=1000") : creator.image;
         textureLoader.load(
-          creator.image,
+          photoUrl,
           (texture) => {
             texture.colorSpace = THREE.SRGBColorSpace;
+            // Sharper photos on frames seen at an angle (no moiré stripes)
+            texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
             // Crop fit adjustments if needed, though Unsplash handles nicely
             portraitMat.map = texture;
             portraitMat.color = new THREE.Color("#ffffff");
@@ -272,14 +307,15 @@ export default function ThreeGallery({
 
         // --- PART D: Dynamic 3D Text Label ---
         const labelTexture = create3DLabelTexture(creator.name, creator.role);
-        const labelGeo = new THREE.PlaneGeometry(1.9, 0.48);
+        const labelGeo = new THREE.PlaneGeometry(1.8, 0.45);
         const labelMat = new THREE.MeshBasicMaterial({
           map: labelTexture,
           transparent: true,
+          toneMapped: false,
           side: THREE.DoubleSide,
         });
         const labelMesh = new THREE.Mesh(labelGeo, labelMat);
-        labelMesh.position.set(0, -1.68, 0.03); // suspended elegantly below the frame
+        labelMesh.position.set(0, -1.72, 0.06); // on the mount, under the photo
         creatorGroup.add(labelMesh);
 
         // Store mappings for mouse raycasting
@@ -305,10 +341,10 @@ export default function ThreeGallery({
     // 5. Refracting Crystal Prism (The Majestic Guide)
     const crystalGeo = new THREE.IcosahedronGeometry(0.3, 1);
     const crystalMat = new THREE.MeshPhysicalMaterial({
-      color: "#FFFBF2",
+      color: "#E9D4AA",
       transparent: true,
       opacity: 0.95,
-      transmission: 0.95, // High refraction
+      transmission: 0.55, // some refraction, still visible on the light hall
       roughness: 0.05,
       metalness: 0.05,
       ior: 2.2, // diamond-like refraction
@@ -325,15 +361,17 @@ export default function ThreeGallery({
     // Inner champagne golden wireframe skeleton for luxurious core reflections
     const wireframeGeo = new THREE.IcosahedronGeometry(0.24, 1);
     const wireframeMat = new THREE.MeshBasicMaterial({
-      color: "#E1C699",
+      color: "#8A6330",
       wireframe: true,
       transparent: true,
-      opacity: 0.4,
+      opacity: 0.7,
     });
     const innerCore = new THREE.Mesh(wireframeGeo, wireframeMat);
     crystal.add(innerCore);
 
-    crystal.position.set(0, 1.2, 0); // floats down center path
+    crystal.position.set(0, 1.2, 0); // floats down the centre path
+    let crystalBaseY = 1.1; // lower, smaller and nearer on phones so it never covers a portrait or name
+    let crystalZShift = 0;
     scene.add(crystal);
 
     // Subtle ambient dust particle field for majestic atmospheric volume
@@ -347,11 +385,10 @@ export default function ThreeGallery({
     }
     particleGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     const particleMat = new THREE.PointsMaterial({
-      color: "#E1C699",
-      size: 0.035,
+      color: "#B8955C",
+      size: 0.03,
       transparent: true,
-      opacity: 0.6,
-      blending: THREE.AdditiveBlending,
+      opacity: 0.45,
     });
     const particleField = new THREE.Points(particleGeo, particleMat);
     scene.add(particleField);
@@ -406,7 +443,7 @@ export default function ThreeGallery({
         glidingToSection = false;
         targetRunwayZ += deltaY * 0.02;
         // Boundary constraints
-        targetRunwayZ = Math.min(3.8, Math.max(-20, targetRunwayZ));
+        targetRunwayZ = Math.min(viewBack, Math.max(hallEnd + 6, targetRunwayZ));
       }
     };
 
@@ -497,7 +534,7 @@ export default function ThreeGallery({
       if (selectedCreatorRef.current) return; // scroll disabled in focused modal
       glidingToSection = false;
       targetRunwayZ -= e.deltaY * 0.005;
-      targetRunwayZ = Math.min(3.8, Math.max(-20, targetRunwayZ));
+      targetRunwayZ = Math.min(viewBack, Math.max(hallEnd + 6, targetRunwayZ));
     };
 
     // Clicking / Tap to focus on a creator
@@ -533,6 +570,7 @@ export default function ThreeGallery({
 
     // 7. Core Animation Engine
     const clock = new THREE.Clock();
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
     let animFrameId = 0;
 
     // We will smoothly interpolate values for cinematics
@@ -543,7 +581,8 @@ export default function ThreeGallery({
       animFrameId = requestAnimationFrame(animate);
       if (pausedRef.current) return;
 
-      const time = clock.getElapsedTime();
+      // Visitors who prefer reduced motion get a still scene (camera moves only when they navigate)
+      const time = reduceMotion ? 0 : clock.getElapsedTime();
 
       // Slow floating animation for all glassmorphic creator panels
       interactiveGroups.forEach((group) => {
@@ -559,14 +598,14 @@ export default function ThreeGallery({
       crystalCore.rotation.x = time * 0.2;
       innerCore.rotation.y = -time * 0.7;
       innerCore.rotation.z = time * 0.35;
-      crystal.position.y = 1.1 + Math.sin(time * 1.2) * 0.08;
+      crystal.position.y = crystalBaseY + Math.sin(time * 1.2) * 0.08;
 
       // Atmospheric particles drifting
       const positionsAttr = particleField.geometry.attributes.position as THREE.BufferAttribute;
       for (let i = 0; i < particleCount; i++) {
         // Slowly drift particles down the runway
         let z = positionsAttr.getZ(i);
-        z += 0.008;
+        z += reduceMotion ? 0 : 0.008;
         if (z > 5) z = -35; // wrap around
         positionsAttr.setZ(i, z);
 
@@ -589,9 +628,11 @@ export default function ThreeGallery({
         if (targetGroup) {
           const isLeft = targetGroup.position.x < 0;
           // Position camera at a gorgeous, offset angle close up
-          const targetCamX = targetGroup.position.x + (isLeft ? 1.5 : -1.5);
+          // Phones: look at the portrait almost straight on so it fills the screen
+          const narrowView = camera.aspect < 0.85;
+          const targetCamX = targetGroup.position.x + (isLeft ? 1 : -1) * (narrowView ? 0.35 : 1.5);
           const targetCamY = targetGroup.position.y + 0.1;
-          const targetCamZ = targetGroup.position.z + 1.2;
+          const targetCamZ = targetGroup.position.z + (narrowView ? 2.6 : 1.2);
 
           camera.position.lerp(new THREE.Vector3(targetCamX, targetCamY, targetCamZ), 0.05);
           targetLookAt.copy(targetGroup.position);
@@ -600,7 +641,7 @@ export default function ThreeGallery({
         // RUNWAY NAVIGATION MODE
         // Keep Runway positions sync'd with external section clicks
         const activeIdx = activeSectionIndexRef.current;
-        const targetSectionZ = (sections[activeIdx] || sections[0] || { zOffset: 0 }).zOffset + 3.8;
+        const targetSectionZ = zOf(sections[activeIdx] ? activeIdx : 0) + viewBack;
 
         if (activeIdx !== lastSeenSectionIdx) {
           // Changed outside the scene (arrows, station list, swipe): glide to that section
@@ -616,18 +657,18 @@ export default function ThreeGallery({
 
         // Slightly drift X coordinate based on mouse position for responsive luxurious parallax
         const targetCamX = mouse.x * 0.35;
-        const targetCamY = 1.45 + (mouse.y * 0.12);
+        const targetCamY = eyeY + (mouse.y * 0.12);
 
         camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, 0.05);
         camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetCamY, 0.05);
         camera.position.z = THREE.MathUtils.lerp(camera.position.z, runwayZ, 0.07);
 
         // Majestic guide crystal slides dynamically to the active region
-        const guideZ = (sections[activeIdx] || sections[0] || { zOffset: 0 }).zOffset;
-        crystal.position.z = THREE.MathUtils.lerp(crystal.position.z, guideZ, 0.06);
+        const guideZ = zOf(sections[activeIdx] ? activeIdx : 0);
+        crystal.position.z = THREE.MathUtils.lerp(crystal.position.z, guideZ + crystalZShift, 0.06);
 
         // Dynamic lookAt slightly down the hallway path
-        targetLookAt.set(0, 1.25, runwayZ - 5);
+        targetLookAt.set(0, eyeY - 0.2, runwayZ - 5);
 
         if (glidingToSection && Math.abs(camera.position.z - targetRunwayZ) < 0.3) {
           glidingToSection = false;
@@ -639,7 +680,7 @@ export default function ThreeGallery({
         let closestIdx = 0;
         let minDiff = Infinity;
         sections.forEach((sec, idx) => {
-          const diff = Math.abs(currentZ - (sec.zOffset + 3.8));
+          const diff = Math.abs(currentZ - (zOf(idx) + viewBack));
           if (diff < minDiff) {
             minDiff = diff;
             closestIdx = idx;
@@ -664,12 +705,54 @@ export default function ThreeGallery({
 
     animate();
 
+    // Phones in portrait see a narrow slice of the hall, so bring the portraits
+    // towards the middle, turn them to face the camera and widen the view a little.
+    const fitToScreen = (width: number, height: number) => {
+      const aspect = width / Math.max(1, height);
+      const narrow = aspect < 0.85;
+      const fov = narrow ? 57 : 45;
+      // On large screens the Sections list covers the left ~270px, so centre the hall
+      // in the space beside it and size the view to that space.
+      const panel = width >= 1024 ? 270 : 0;
+      const usableAspect = (width - panel) / Math.max(1, height);
+      const tanH = Math.tan(THREE.MathUtils.degToRad(fov / 2)) * usableAspect;
+      const frameX = narrow ? 0.9 : 2.4;
+      const frameScale = narrow ? 0.74 : 0.86;
+      // Step back until the nearest pair of frames fits side to side, on any screen size
+      const needed = (frameX + 1.05 * frameScale + (narrow ? 0.1 : 0.3)) / Math.max(0.05, tanH);
+      const nextBack = Math.min(9, Math.max(narrow ? 5 : 5.2, needed));
+      // Lift the scene above the section bar at the bottom (about 90px tall)
+      camera.setViewOffset(width, height, -panel / 2, 40, width, height);
+      const shift = nextBack - viewBack;
+      viewBack = nextBack;
+      runwayZ += shift;
+      targetRunwayZ += shift;
+      camera.position.z += shift;
+      camera.aspect = aspect;
+      camera.fov = fov;
+      // Less haze on phones, where the portraits are smaller on screen
+      (scene.fog as THREE.FogExp2).density = narrow ? 0.014 : 0.03;
+      camera.updateProjectionMatrix();
+      interactiveGroups.forEach((g) => {
+        const left = leftSide.get(g) ?? g.position.x < 0;
+        g.position.x = (left ? -1 : 1) * frameX;
+        g.rotation.y = (left ? 1 : -1) * (narrow ? 0.12 : 0.25);
+        g.scale.setScalar(frameScale);
+        // Stand each frame on the floor: the white mount reaches 2.15 below its centre
+        g.userData.originalY = 2.15 * frameScale + 0.12;
+      });
+      crystal.scale.setScalar(narrow ? 0.6 : 1);
+      crystalBaseY = narrow ? 0.14 : 0.45;
+      eyeY = 2.15 * frameScale + 0.12 - 0.3 * frameScale;
+      crystalZShift = narrow ? 1.6 : 0;
+    };
+    fitToScreen(container.clientWidth, container.clientHeight);
+
     // 8. Fluid Responsiveness resizing
     const resizeObserver = new ResizeObserver((entries) => {
       if (!entries || entries.length === 0) return;
       const { width, height } = entries[0].contentRect;
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
+      fitToScreen(width, height);
       renderer.setSize(width, height);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     });
@@ -709,16 +792,16 @@ export default function ThreeGallery({
   }, [onSelectCreator, onSectionChange, sections]);
 
   return (
-    <div ref={containerRef} className="relative w-full h-full overflow-hidden select-none bg-alabaster">
+    <div ref={containerRef} className="relative w-full h-full overflow-hidden select-none bg-[#F3EDE2]">
       <canvas ref={canvasRef} className="block w-full h-full" />
 
       {/* Glassmorphic Interaction Hint Overlay (Follows 3D interactions) */}
       {hoveredCreator && !selectedCreator && (
         <div className="absolute bottom-16 left-1/2 -translate-x-1/2 pointer-events-none transition-all duration-300">
-          <div className="px-5 py-2.5 bg-white/70 backdrop-blur-md border border-black/5 rounded-full shadow-lg flex items-center gap-3 animate-pulse">
-            <span className="w-2 h-2 rounded-full bg-champagne animate-ping" />
-            <span className="font-serif-text text-sm tracking-widest text-[#222] font-medium uppercase">
-              Click to Explore Portrait
+          <div className="px-5 py-2.5 bg-white/95 border border-line rounded-[4px] shadow-sm flex items-center gap-3">
+            <span className="w-2 h-2 rounded-full bg-bronze-fill" aria-hidden="true" />
+            <span className="text-[0.8125rem] font-semibold text-ink">
+              Select to open the profile
             </span>
           </div>
         </div>

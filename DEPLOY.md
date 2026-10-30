@@ -31,7 +31,8 @@ Settings**, keep the default "nginx as proxy to Apache" so `.htaccess` is honour
 2. Upload `fsia-influencer-live.zip`, then select it and click **Extract Files**.
    You should see `index.html`, `assets/`, `api/`, `storage/` and `.htaccess`
    directly in that folder, not inside an extra sub-folder.
-3. Make sure the `storage/` folder is writable by PHP (Plesk: right-click → *Change Permissions*, owner write).
+3. Make sure the `storage/` and `uploads/` folders are writable by PHP (Plesk: right-click → *Change Permissions*, owner write).
+   `uploads/` holds photos uploaded from the admin panel. The zip only carries its `.htaccess`, so updates keep your photos.
 4. In **PHP Settings** for the subdomain choose PHP 8.x.
 
 *cPanel instead:* **Domains → Create a New Domain** `influencer.fsia.in`, then
@@ -42,11 +43,11 @@ Settings**, keep the default "nginx as proxy to Apache" so `.htaccess` is honour
 1. Open `https://influencer.fsia.in/api/health` — it should show `{"ok":true,...}`.
 2. Open **`https://influencer.fsia.in/admin/`** (there is no admin button on the public site; bookmark it) and sign in with
    **admin / admin123**. The panel stays locked (the server refuses every admin action)
-   until you set a new password in **Security & Data**: this default is public knowledge.
+   until you set a new password in **Password & team**: this default is public knowledge.
 
 ## Updating to a new version
 
-1. Admin → **Security & Data** → **Download backup** (always do this first).
+1. Admin → **Password & team** → **Download backup** (always do this first).
 2. Upload and extract the new zip over the existing files and allow overwrite.
    Your data lives in `storage/db.json`, which the zip never contains, so it is kept.
 3. Hard-refresh the site (Ctrl + F5).
@@ -73,7 +74,7 @@ Settings**, keep the default "nginx as proxy to Apache" so `.htaccess` is honour
    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
    ```
 
-4. **Real visitor IPs.** Admin → Security & Data → audit log: login entries should show visitors'
+4. **Real visitor IPs.** Admin → Change history → activity log: login entries should show visitors'
    IP addresses. If they all show `127.0.0.1` or the server's own IP, the login lock-out and the
    form spam limit treat every visitor as one; ask the host to enable the real-IP setting
    (`mod_remoteip`) for nginx → Apache.
@@ -92,7 +93,7 @@ Settings**, keep the default "nginx as proxy to Apache" so `.htaccess` is honour
 The bundle already contains everything Google needs: a title, description, canonical URL,
 Open Graph/Twitter tags and structured data (WebSite, Organization, FAQPage) on every page,
 plus `/robots.txt` and `/sitemap.xml`. Each section has its own URL:
-`/`, `/gallery/`, `/talent/`, `/campaigns/`, `/join/`, `/membership/`, `/star-india/`, `/green-light/`, `/faq/`, `/contact/`.
+`/`, `/gallery/`, `/creators/`, `/categories/`, `/campaigns/`, `/awards/`, `/apply/`, `/membership/`, `/star-india/`, `/magazine/`, `/for-brands/`, `/for-creators/`, `/faq/`, `/contact/`, `/privacy/`. (Old addresses `/talent/`, `/green-light/` and `/join/` redirect to the new ones.)
 
 1. **Add the property.** In [Search Console](https://search.google.com/search-console):
    - *Domain property* `fsia.in` covers every subdomain, but needs a DNS TXT record at your
@@ -109,7 +110,7 @@ plus `/robots.txt` and `/sitemap.xml`. Each section has its own URL:
 3. **Submit the sitemap:** Search Console → *Sitemaps* → enter `sitemap.xml` → *Submit*.
 4. **Request indexing:** paste `https://influencer.fsia.in/` into the URL Inspection bar →
    *Test live URL* → when it shows as available, click *Request indexing*. Repeat for
-   `/talent/`, `/campaigns/` and `/join/` if you want them crawled sooner.
+   `/creators/`, `/campaigns/` and `/apply/` if you want them crawled sooner.
 
 Check any time: `https://influencer.fsia.in/robots.txt` and `https://influencer.fsia.in/sitemap.xml`.
 
@@ -125,7 +126,6 @@ Check any time: `https://influencer.fsia.in/robots.txt` and `https://influencer.
 Copy `api/config.sample.php` to `api/config.php` and edit it to:
 
 - move the database outside the web root (`storage_dir`)
-- set a Gemini API key (it can also be entered in Admin → AI Config)
 - choose the first admin username / password instead of admin / admin123
   (only applied when the database is first created)
 
@@ -137,12 +137,14 @@ Copy `api/config.sample.php` to `api/config.php` and edit it to:
 | Plesk "default page" or old site still shows | The files were extracted into the wrong folder or into a sub-folder; `index.html` must sit directly in the subdomain's document root. Clear the browser cache. |
 | Blank white page | Open the browser console: if `assets/…` files return 404, the `assets/` folder was not uploaded next to `index.html`. |
 | Admin login works but every action says "Unauthorized" | Your host strips the `Authorization` header; the app already sends a fallback header, so make sure the bundled `.htaccess` was uploaded. |
-| Section pages (`/talent/`, `/faq/` …) show "Page not found" | Their folders (`gallery/`, `talent/`, `campaigns/`, `join/`, `membership/`, `star-india/`, `green-light/`, `faq/`, `contact/`, `admin/`) were not uploaded next to `index.html`. |
+| Section pages (`/creators/`, `/faq/` …) show "Page not found" | Their folders (`gallery/`, `creators/`, `categories/`, `campaigns/`, `awards/`, `apply/`, `membership/`, `star-india/`, `magazine/`, `for-brands/`, `for-creators/`, `faq/`, `contact/`, `privacy/`, `admin/`) were not uploaded next to `index.html`. |
 | A mistyped address shows "Page not found" | Intended: unknown URLs return a real 404 status (`404.html`) so search engines never index them as duplicates of the home page. |
 | A Plesk-branded "404 Not Found" page appears instead of the site's own | Harmless (the status is still 404). To show the site's page, untick *Custom error documents* in the subdomain's **Hosting Settings**. |
 | API calls return 404 / the admin panel cannot load data | `.htaccess` is missing or `mod_rewrite` is disabled (it routes `/api/…` to `api/index.php`). |
 | "Storage directory is not writable" | Set `storage/` permissions to 755 (or 775). |
 | Uploading a creator photo fails | Raise `post_max_size` / `upload_max_filesize` to at least 8M in cPanel → *Select PHP Version* → *Options*. |
+| Admin photo upload says it could not save | Make `uploads/` writable (755 or 775). |
+| Page titles or share cards set in *Admin → Pages & SEO* do not show in link previews | `.htaccess` was not uploaded; it sends page requests through `api/page.php`, which adds those tags. |
 | Want to start over | Delete `storage/db.json`; it is re-created with the starter content on the next visit. |
 
 ## Node.js hosting (alternative)

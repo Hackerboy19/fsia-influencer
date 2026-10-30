@@ -12,6 +12,8 @@ export interface Creator {
   };
   quote: string;
   portfolio: string[];
+  /** Instagram, YouTube and other links, as typed by the admin or the creator */
+  social?: Partial<Record<string, string>>;
 }
 
 export interface GallerySection {

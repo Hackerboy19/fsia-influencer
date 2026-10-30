@@ -64,10 +64,10 @@ as visitors move between sections.
 Open `/admin/` directly (visitors see no admin button). New creator applications carry a content
 category (a fixed list plus "Other"); the admin picks the runway section when approving.
 
-- **Overview:** live counters, new-lead / pending-applicant badges, audit trail
-- **Content Studio / Creator Roster / Brand Bookings:** manage categories, creators, campaigns and membership plans
-- **Campaign Copy / AI Config / Prompt Logs:** site text and colours, Gemini settings and history
-- **VIP Applications:** brand leads with search, status pipeline (new → contacted → confirmed → closed), notes, CSV export
-- **Creator Applicants:** approve straight onto the runway, decline, delete, search, CSV export
-- **Enquiries:** campaign applications and membership plan requests from the public site
-- **Security & Data:** change password, admin team accounts, backup / restore, searchable audit log
+The menu has three groups. What each person sees depends on their role (Owner, Website editor,
+Inbox only), and the server checks the same roles on every call (`src/lib/adminRoles.ts`).
+
+- **Website:** Overview (what needs a reply, last 7 days), Page content (click any text or photo to
+  change it), Pages & SEO, Creators, Categories/campaigns/plans, Site settings (logo, colour, footer, email alerts)
+- **Inbox:** Award applications (approve, decline, notes, WhatsApp/Call/Email), Brand enquiries, Messages
+- **Settings:** Change history (undo any settings change, activity log), Password & team (logins with roles, backup / restore)

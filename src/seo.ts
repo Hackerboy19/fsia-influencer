@@ -22,6 +22,10 @@ export type TabId =
   | "faq"
   | "contact"
   | "privacy"
+  | "awards"
+  | "categories"
+  | "forbrands"
+  | "forcreators"
   | "admin";
 
 export interface RouteMeta {
@@ -35,18 +39,140 @@ export interface RouteMeta {
   indexable: boolean;
   priority: string;
   changefreq: "daily" | "weekly" | "monthly";
+  // Optional share card text and image, set from the admin panel (fall back to title/description/OG_IMAGE)
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
+  // Set from the admin panel only
+  keywords?: string;
+  /** Extra JSON-LD added to the page (already checked to be valid JSON) */
+  schema?: string;
+  /** Replacement text for the page's first two H2 and first three H3 headings ("" keeps the page's own) */
+  h2?: string[];
+  h3?: string[];
 }
+
+/** What the admin can change per page. Saved in settings.pages, keyed by the page path ("/", "/creators/"). */
+export interface PageOverride {
+  title?: string;
+  description?: string;
+  heading?: string;
+  intro?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
+  keywords?: string;
+  h2a?: string;
+  h2b?: string;
+  h3a?: string;
+  h3b?: string;
+  h3c?: string;
+  /** JSON-LD schema markup (one object or a list), stored as compact JSON */
+  schema?: string;
+  noindex?: boolean;
+  /** Taken off the menu, footer and Google; visiting the address shows a short notice */
+  hidden?: boolean;
+}
+
+const LIMITS: Record<keyof Omit<PageOverride, "noindex" | "hidden">, number> = {
+  title: 120,
+  description: 320,
+  heading: 140,
+  intro: 600,
+  ogTitle: 120,
+  ogDescription: 320,
+  ogImage: 2000,
+  keywords: 300,
+  h2a: 140,
+  h2b: 140,
+  h3a: 140,
+  h3b: 140,
+  h3c: 140,
+  schema: 10000
+};
+
+/** Valid JSON-LD (an object or a list of objects) as compact JSON, or "" */
+export function cleanSchema(raw: string): string {
+  try {
+    const parsed = JSON.parse(raw);
+    const ok = Array.isArray(parsed) ? parsed.length > 0 && parsed.every((x) => x && typeof x === "object" && !Array.isArray(x)) : !!parsed && typeof parsed === "object";
+    return ok ? JSON.stringify(parsed) : "";
+  } catch {
+    return "";
+  }
+}
+
+/** Keep only known fields, trimmed and capped; images must be http(s) or a site path. */
+export function cleanPageOverrides(input: unknown): Record<string, PageOverride> {
+  const out: Record<string, PageOverride> = {};
+  if (!input || typeof input !== "object") return out;
+  for (const [path, raw] of Object.entries(input as Record<string, unknown>)) {
+    if (!/^\/[a-z0-9\-\/]*$/i.test(path) || !raw || typeof raw !== "object") continue;
+    const o: PageOverride = {};
+    for (const key of Object.keys(LIMITS) as (keyof typeof LIMITS)[]) {
+      const v = (raw as Record<string, unknown>)[key];
+      if (typeof v === "string" && v.trim()) o[key] = key === "schema" ? v.trim() : v.trim().slice(0, LIMITS[key]);
+    }
+    if (o.schema) {
+      const compact = o.schema.length <= LIMITS.schema * 2 ? cleanSchema(o.schema) : "";
+      if (compact && compact.length <= LIMITS.schema) o.schema = compact;
+      else delete o.schema;
+    }
+    if (o.ogImage && !/^(https?:\/\/|\/)/i.test(o.ogImage)) delete o.ogImage;
+    if ((raw as Record<string, unknown>).noindex === true) o.noindex = true;
+    if ((raw as Record<string, unknown>).hidden === true && path !== "/") o.hidden = true;
+    if (Object.keys(o).length) out[path] = o;
+  }
+  return out;
+}
+
+let pageOverrides: Record<string, PageOverride> = {};
+/** Called once the site settings load; pages read the merged values on their next render. */
+export function setPageOverrides(input: unknown) {
+  pageOverrides = cleanPageOverrides(input);
+}
+
+export const getPageOverride = (path: string): PageOverride | undefined => pageOverrides[path];
+
+/** Pages the admin hid (Admin → Pages & SEO). The home page can never be hidden. */
+export const isHiddenTab = (tab: TabId): boolean => {
+  const route = ROUTES.find((r) => r.tab === tab);
+  return !!route && route.path !== "/" && !!pageOverrides[route.path]?.hidden;
+};
+
+export function withOverrides(route: RouteMeta, overrides: Record<string, PageOverride> = pageOverrides): RouteMeta {
+  const o = overrides[route.path];
+  if (!o) return route;
+  return {
+    ...route,
+    title: o.title || route.title,
+    description: o.description || route.description,
+    heading: o.heading || route.heading,
+    intro: o.intro || route.intro,
+    ogTitle: o.ogTitle || route.ogTitle,
+    ogDescription: o.ogDescription || route.ogDescription,
+    ogImage: o.ogImage || route.ogImage,
+    keywords: o.keywords || route.keywords,
+    schema: o.schema || route.schema,
+    h2: [o.h2a || "", o.h2b || ""],
+    h3: [o.h3a || "", o.h3b || "", o.h3c || ""],
+    indexable: o.noindex || o.hidden ? false : route.indexable
+  };
+}
+
+/** Absolute URL for an image path saved in the admin ("/uploads/x.jpg" → https://site/uploads/x.jpg) */
+export const absoluteUrl = (u: string) => (/^https?:\/\//i.test(u) ? u : SITE_URL + (u.startsWith("/") ? u : "/" + u));
 
 export const ROUTES: RouteMeta[] = [
   {
     tab: "home",
     path: "/",
-    title: `Influencer Award India: Apply Free, Registration Open | ${SITE_NAME}`,
+    title: `Influencer Award India: Registration Open, Apply Now | ${SITE_NAME}`,
     description:
-      `Apply free for the ${AWARD_NAME}, open to Indian creators in every niche. Registration is open. Approved creators get a reviewed profile that brands can search.`,
+      `Apply for the ${AWARD_NAME}, open to Indian creators in every niche. Registration is open. Approved creators get a reviewed profile that brands can search.`,
     heading: `${AWARD_NAME} for Indian creators`,
     intro:
-      `The ${AWARD_NAME} is open to creators in every niche across India, and registration is open now. Applying is free. Our team reviews every application; approved creators get a public profile in the ${SITE_NAME} directory, where brands search by niche and city and send collaboration enquiries. After the awards, the platform opens to every creator.`,
+      `The ${AWARD_NAME} is open to creators in every niche across India, and registration is open now. Our team reviews every application; approved creators get a public profile in the ${SITE_NAME} directory, where brands search by niche and city and send collaboration enquiries. After the awards, the platform opens to every creator.`,
     indexable: true,
     priority: "1.0",
     changefreq: "weekly"
@@ -66,7 +192,7 @@ export const ROUTES: RouteMeta[] = [
   },
   {
     tab: "directory",
-    path: "/talent/",
+    path: "/creators/",
     title: `Hire Influencers in India: Creator Profiles | ${SITE_NAME}`,
     description:
       "Search reviewed Indian influencer profiles by name, category and city, open a profile to see their work, and send a brand collaboration enquiry.",
@@ -92,13 +218,13 @@ export const ROUTES: RouteMeta[] = [
   },
   {
     tab: "apply",
-    path: "/join/",
+    path: "/apply/",
     title: `${AWARD_NAME} Application & Registration | ${SITE_NAME}`,
     description:
-      `Apply for the ${AWARD_NAME} to join and get a public profile. A free, three-step form; our team reviews every application.`,
+      `Apply for the ${AWARD_NAME} to join and get a public profile. A three-step form; our team reviews every application.`,
     heading: `Apply for the ${AWARD_NAME}`,
     intro:
-      `Creators join by applying for the ${AWARD_NAME}; after the awards, the platform opens to every creator. Applying is free and takes about two minutes. Tell us your category, city and audience on Instagram or YouTube. Our team reviews each application; approved creators get a public profile that brands can browse, and can apply for paid brand collaborations. Creators in fashion, beauty, food, travel, tech, gaming and other niches are welcome from anywhere in India.`,
+      `Creators join by applying for the ${AWARD_NAME}; after the awards, the platform opens to every creator. The form takes about two minutes. Tell us your category, city and audience on Instagram or YouTube. Our team reviews each application; approved creators get a public profile that brands can browse, and can apply for paid brand collaborations. Creators in fashion, beauty, food, travel, tech, gaming and other niches are welcome from anywhere in India.`,
     indexable: true,
     priority: "0.9",
     changefreq: "monthly"
@@ -131,7 +257,7 @@ export const ROUTES: RouteMeta[] = [
   },
   {
     tab: "greenlight",
-    path: "/green-light/",
+    path: "/magazine/",
     title: `Green Light Guides & Explore Magazine | ${SITE_NAME}`,
     description:
       "Practical guides for Indian creators and brands, and bookings for Explore Magazine covers, features and digital spotlights.",
@@ -182,6 +308,55 @@ export const ROUTES: RouteMeta[] = [
     changefreq: "monthly"
   },
   {
+    tab: "awards",
+    path: "/awards/",
+    title: `${AWARD_NAME}: Who Can Apply, What You Get | ${SITE_NAME}`,
+    description:
+      `How the ${AWARD_NAME} works: who can apply, what approved creators and winners get, how the review and call work, and how to apply. First edition, registration open.`,
+    heading: `The ${AWARD_NAME}`,
+    intro:
+      `A new award for Indian influencers and digital creators, in every niche. This is the first edition and registration is open. Applying is also how creators join the platform for now.`,
+    indexable: true,
+    priority: "0.9",
+    changefreq: "weekly"
+  },
+  {
+    tab: "categories",
+    path: "/categories/",
+    title: `Creator Categories: Fashion, Beauty, Travel and More | ${SITE_NAME}`,
+    description:
+      `Browse reviewed Indian creator profiles by category and city, from fashion and beauty to travel, food, fitness and tech.`,
+    heading: "Browse by category",
+    intro: "Every category with published creator profiles, and the cities they are based in. Pick one to see the profiles.",
+    indexable: true,
+    priority: "0.7",
+    changefreq: "weekly"
+  },
+  {
+    tab: "forbrands",
+    path: "/for-brands/",
+    title: `For Brands: Find and Book Indian Creators | ${SITE_NAME}`,
+    description:
+      `How brands find creators on ${SITE_NAME}: search reviewed profiles, send a brief, and our team suggests creators who fit. No fee to send an enquiry.`,
+    heading: "Find the right creator for your brand",
+    intro: "Search reviewed profiles yourself, or send us a brief and our team suggests creators who fit. There is no fee to send an enquiry.",
+    indexable: true,
+    priority: "0.8",
+    changefreq: "monthly"
+  },
+  {
+    tab: "forcreators",
+    path: "/for-creators/",
+    title: `For Creators: Join by Applying for the ${AWARD_NAME} | ${SITE_NAME}`,
+    description:
+      `How creators join ${SITE_NAME}: apply for the ${AWARD_NAME}, our team reviews it and calls you, and approved creators get a public profile brands can find.`,
+    heading: "Join as a creator",
+    intro: `For now, creators join by applying for the ${AWARD_NAME}. Our team reviews every application, and approved creators get a public profile that brands can search.`,
+    indexable: true,
+    priority: "0.8",
+    changefreq: "monthly"
+  },
+  {
     tab: "admin",
     path: "/admin/",
     title: `Admin | ${SITE_NAME}`,
@@ -194,11 +369,11 @@ export const ROUTES: RouteMeta[] = [
   }
 ];
 
-export const routeForTab = (tab: TabId): RouteMeta => ROUTES.find((r) => r.tab === tab) || ROUTES[0];
+export const routeForTab = (tab: TabId): RouteMeta => withOverrides(ROUTES.find((r) => r.tab === tab) || ROUTES[0]);
 
 export function routeForPath(pathname: string): RouteMeta {
   const normalised = ("/" + pathname.replace(/^\/+|\/+$/g, "") + "/").replace(/^\/\/$/, "/");
-  return ROUTES.find((r) => r.path === normalised) || ROUTES[0];
+  return withOverrides(ROUTES.find((r) => r.path === normalised) || ROUTES[0]);
 }
 
 export const canonicalUrl = (route: RouteMeta) => SITE_URL + route.path;
@@ -208,7 +383,7 @@ export const escapeHtml = (value: string) =>
 
 // JSON-LD blocks: Organization + WebSite + WebPage everywhere, BreadcrumbList on section
 // pages, FAQPage on /faq/. Only facts the site itself shows; no ratings or invented details.
-// (Creator profiles open as overlays on /talent/, not as their own URLs, so ProfilePage /
+// (Creator profiles open as overlays on /creators/, not as their own URLs, so ProfilePage /
 // Person markup does not apply.)
 export function structuredData(route: RouteMeta): object[] {
   const organization = {
@@ -327,7 +502,29 @@ export function applyRouteMeta(route: RouteMeta) {
   set('meta[name="description"]', "content", route.description);
   set('meta[name="robots"]', "content", route.indexable ? "index, follow, max-image-preview:large" : "noindex, nofollow");
   set('link[rel="canonical"]', "href", url);
-  set('meta[property="og:title"], meta[name="twitter:title"]', "content", route.title);
-  set('meta[property="og:description"], meta[name="twitter:description"]', "content", route.description);
+  set('meta[property="og:title"], meta[name="twitter:title"]', "content", route.ogTitle || route.title);
+  set('meta[property="og:description"], meta[name="twitter:description"]', "content", route.ogDescription || route.description);
   set('meta[property="og:url"]', "content", url);
+  set('meta[property="og:image"], meta[name="twitter:image"]', "content", route.ogImage ? absoluteUrl(route.ogImage) : OG_IMAGE);
+
+  // Admin keywords and extra schema: added, changed or removed with the page
+  let kw = document.querySelector('meta[name="keywords"]');
+  if (route.keywords) {
+    if (!kw) {
+      kw = document.createElement("meta");
+      kw.setAttribute("name", "keywords");
+      document.head.appendChild(kw);
+    }
+    kw.setAttribute("content", route.keywords);
+  } else kw?.remove();
+  let ld = document.getElementById("page-schema");
+  if (route.schema) {
+    if (!ld) {
+      ld = document.createElement("script");
+      ld.id = "page-schema";
+      ld.setAttribute("type", "application/ld+json");
+      document.head.appendChild(ld);
+    }
+    if (ld.textContent !== route.schema) ld.textContent = route.schema;
+  } else ld?.remove();
 }

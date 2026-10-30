@@ -1,6 +1,7 @@
+import { safeSession } from "./lib/safeStorage";
 import React, { useState, useRef, useEffect, useMemo, lazy, Suspense, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Compass, ChevronLeft, ChevronRight, Menu, X } from "lucide-react";
+import { Compass, ChevronLeft, ChevronRight } from "lucide-react";
 import { gallerySections, Creator } from "./data";
 import CreatorDetailPanel from "./components/CreatorDetailPanel";
 import VipCollaborationForm from "./components/VipCollaborationForm";
@@ -10,69 +11,42 @@ import CampaignsTab from "./components/CampaignsTab";
 import MembershipTab from "./components/MembershipTab";
 import ModelRegistrationTab from "./components/ModelRegistrationTab";
 import FaqTab from "./components/FaqTab";
-import CursorParticleTrail from "./components/CursorParticleTrail";
 import SiteFooter from "./components/SiteFooter";
 import HomeTab from "./components/HomeTab";
+import SiteHeader, { NavTarget } from "./components/SiteHeader";
 import StarIndiaTab from "./components/StarIndiaTab";
 import GreenLightTab from "./components/GreenLightTab";
 import ContactTab from "./components/ContactTab";
 import PrivacyTab from "./components/PrivacyTab";
+import { AwardsTab, CategoriesTab, ForBrandsTab, ForCreatorsTab } from "./components/InfoPages";
 import type { RosterStatus } from "./components/RosterNotice";
 import { Toaster } from "react-hot-toast";
-import { TabId, routeForPath, routeForTab, applyRouteMeta } from "./seo";
+import { TabId, routeForPath, routeForTab, applyRouteMeta, setPageOverrides, isHiddenTab } from "./seo";
+import { watchHeadingOverrides } from "./lib/headingOverrides";
+import { setContentOverrides, hasContentOverrides, watchContent } from "./lib/contentOverrides";
+import { startContentEditing } from "./lib/contentEditMode";
+import { setHomeHero, setNavLabels, setBrandLogo } from "./lib/siteContent";
 import { BRAND_NAME } from "./content/brand";
-import { APPLY_LABEL } from "./content/awards";
+import { setSiteExtras, getSiteExtras } from "./lib/siteExtras";
+import SitePopup from "./components/SitePopup";
+import AdSlot from "./components/AdSlot";
 import { readableAccent } from "./lib/color";
 import { ProfileView, profilesFromSections } from "./lib/profile";
 import { PROFILE_PARAM, profileSlugFromLocation } from "./lib/profileLink";
-import { useDialog } from "./lib/dialog";
 
 // The 3D scene (Three.js) and the admin workspace are loaded on demand, so the
 // home page and content pages don't wait for code most visitors never run
 const ThreeGallery = lazy(() => import("./components/ThreeGallery"));
 const AdminTab = lazy(() => import("./components/AdminTab"));
 
-// Main navigation: what people come for, in plain words. The 3D gallery and contact
-// page are linked from the home page, the menu and the footer.
-const NAV: { id: TabId; label: string }[] = [
-  { id: "directory", label: "Profiles" },
-  { id: "starindia", label: "Star India" },
-  { id: "campaigns", label: "Campaigns" },
-  { id: "membership", label: "Membership" },
-  { id: "greenlight", label: "Magazine" },
-  { id: "faq", label: "FAQ" }
-];
-const MENU_EXTRA: { id: TabId; label: string }[] = [
-  { id: "home", label: "Home" },
-  { id: "catwalk", label: "3D gallery" },
-  { id: "contact", label: "Contact" }
-];
-
-function Wordmark({ onHome }: { onHome: () => void }) {
-  return (
-    <a
-      href="/"
-      onClick={(e) => {
-        if (e.metaKey || e.ctrlKey || e.shiftKey) return;
-        e.preventDefault();
-        onHome();
-      }}
-      aria-label={`${BRAND_NAME}, home`}
-      className="flex items-center gap-2.5 shrink-0"
-    >
-      <img src="/favicon.svg" alt="" width={28} height={28} className="w-7 h-7 rounded-[6px]" />
-      <span className="font-display text-[1.25rem] leading-none tracking-[-0.01em] text-ink whitespace-nowrap">{BRAND_NAME}</span>
-    </a>
-  );
-}
-
 export default function App() {
   const initialTab = routeForPath(window.location.pathname).tab;
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
   const [selectedSlug, setSelectedSlug] = useState<string>(() => profileSlugFromLocation());
   const [isCollaborationOpen, setIsCollaborationOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [contactTopic, setContactTopic] = useState("");
   // Three.js loads the first time someone opens the 3D gallery, not on every page
   const [galleryMounted, setGalleryMounted] = useState(initialTab === "catwalk");
@@ -88,12 +62,54 @@ export default function App() {
   const [sections, setSections] = useState<any[]>([]);
   const [rosterStatus, setRosterStatus] = useState<RosterStatus>("loading");
   const profiles = useMemo(() => profilesFromSections(sections), [sections]);
+  const categories = useMemo(() => {
+    const m = new Map<string, number>();
+    profiles.forEach((p) => p.category && m.set(p.category, (m.get(p.category) || 0) + 1));
+    return Array.from(m.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }, [profiles]);
   const selectedProfile = useMemo(() => profiles.find((p) => p.slug === selectedSlug) || null, [profiles, selectedSlug]);
 
   const [settings, setSettings] = useState<any>({
     footerText: `© ${new Date().getFullYear()} ${BRAND_NAME}. All rights reserved.`,
     primaryColor: "#E1C699"
   });
+
+  // Admin → Pages & SEO → Preview: the page opens in a frame and receives the unsaved
+  // changes from the admin panel. Nothing is saved; a reload shows the live site again.
+  const previewMode = useMemo(() => {
+    if (typeof window === "undefined" || window.parent === window) return false;
+    const q = new URLSearchParams(window.location.search);
+    return q.has("fsia-preview") || q.has("fsia-edit");
+  }, []);
+  const editMode = useMemo(() => previewMode && new URLSearchParams(window.location.search).has("fsia-edit"), [previewMode]);
+  const previewData = useRef<any>(null);
+  const applyPreview = useCallback((d: any) => {
+    // Only what the admin sent is replaced; everything else stays as saved
+    if (d.pages !== undefined) setPageOverrides(d.pages);
+    if (d.homeHero !== undefined) setHomeHero(d.homeHero);
+    if (d.navLabels !== undefined) setNavLabels(d.navLabels);
+    if (d.content !== undefined) setContentOverrides(d.content);
+    if (d.extras) setSiteExtras(d.extras);
+    setSettings((s: any) => ({
+      ...s,
+      ...(d.pages !== undefined ? { pages: d.pages } : {}),
+      ...(d.homeHero !== undefined ? { homeHero: d.homeHero } : {}),
+      ...(d.navLabels !== undefined ? { navLabels: d.navLabels } : {}),
+      previewAt: Date.now()
+    }));
+  }, []);
+  useEffect(() => {
+    if (!previewMode) return;
+    const onMessage = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin || e.source !== window.parent) return;
+      if (!e.data || e.data.type !== "fsia-preview") return;
+      previewData.current = e.data;
+      applyPreview(e.data);
+    };
+    window.addEventListener("message", onMessage);
+    window.parent.postMessage({ type: "fsia-preview-ready" }, window.location.origin);
+    return () => window.removeEventListener("message", onMessage);
+  }, [previewMode, applyPreview]);
 
   const refreshSections = useCallback(() => {
     // Never leave pages on "Loading profiles…": give up after 12 seconds and say so
@@ -121,21 +137,30 @@ export default function App() {
     fetch("/api/settings")
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then((data) => {
-        if (data && typeof data === "object") setSettings((s: any) => ({ ...s, ...data }));
+        if (data && typeof data === "object") {
+          // Page text, SEO and share-card overrides saved in Admin → Pages & SEO
+          setPageOverrides(data.pages);
+          setHomeHero(data.homeHero); setNavLabels(data.navLabels);
+          setContentOverrides(data.content);
+          setBrandLogo(data.logoUrl, data.logoHidesName);
+          setSiteExtras(data);
+          setSettings((s: any) => ({ ...s, ...data }));
+          if (previewData.current) applyPreview(previewData.current);
+        }
       })
       .catch(() => {});
-  }, [refreshSections]);
+  }, [refreshSections, applyPreview]);
 
   useEffect(() => {
     try {
-      const saved = sessionStorage.getItem("fsia_moodboard");
+      const saved = safeSession.getItem("fsia_moodboard");
       if (saved) setMoodboardItems(JSON.parse(saved));
     } catch {}
   }, []);
 
   useEffect(() => {
     try {
-      sessionStorage.setItem("fsia_moodboard", JSON.stringify(moodboardItems));
+      safeSession.setItem("fsia_moodboard", JSON.stringify(moodboardItems));
     } catch {}
   }, [moodboardItems]);
 
@@ -174,6 +199,29 @@ export default function App() {
     contentScrollRef.current?.scrollTo({ top: 0 });
   }, [activeTab]);
 
+  // Admin → Page content: replaced texts and images, kept in place while the page redraws
+  useEffect(() => {
+    if (activeTab === "admin" || (!previewMode && !hasContentOverrides())) return;
+    const path = routeForTab(activeTab).path;
+    return watchContent(() => document.body, path);
+  }, [activeTab, settings, previewMode]);
+
+  // Inside Admin → Page content: clicking a text or an image picks it for editing
+  useEffect(() => {
+    if (!editMode) return;
+    return startContentEditing(() => routeForTab(activeTabRef.current).path);
+  }, [editMode]);
+
+  // Admin heading replacements (Pages & SEO → H2 / H3) for the open page
+  useEffect(() => {
+    if (activeTab === "admin") return;
+    const route = routeForTab(activeTab);
+    const h2 = route.h2 || [];
+    const h3 = route.h3 || [];
+    if (![...h2, ...h3].some(Boolean)) return;
+    return watchHeadingOverrides(() => document.getElementById("main-content"), h2, h3);
+  }, [activeTab, settings]);
+
   useEffect(() => {
     const onPopState = () => {
       setActiveTab(routeForPath(window.location.pathname).tab);
@@ -182,6 +230,14 @@ export default function App() {
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
+
+  // Arriving on a link to a section (e.g. /#the-award): scroll to it once the page is drawn
+  const initialHash = useRef(typeof window !== "undefined" ? window.location.hash.slice(1) : "");
+  useEffect(() => {
+    if (rosterStatus === "loading" || !initialHash.current) return;
+    scrollToHash(initialHash.current, false);
+    initialHash.current = "";
+  }, [rosterStatus]);
 
   // A profile someone linked to that no longer exists: drop the parameter quietly
   useEffect(() => {
@@ -195,12 +251,35 @@ export default function App() {
       return;
     }
     document.title = `${selectedProfile.name}${selectedProfile.role ? `, ${selectedProfile.role}` : ""} | ${BRAND_NAME}`;
-  }, [selectedProfile, activeTab]);
+  }, [selectedProfile, activeTab, settings]);
 
   const navigateTo = (tab: TabId) => {
     setActiveTab(tab);
     setSelectedSlug("");
-    setMenuOpen(false);
+  };
+
+  // Go to a page, or to a section on a page (/#the-award). The section is scrolled into
+  // view once the page has rendered.
+  const scrollToHash = (hash: string, smooth = true) => {
+    let tries = 0;
+    const attempt = () => {
+      const el = document.getElementById(hash);
+      if (el) {
+        // A guide link opens that guide
+        if (el instanceof HTMLDetailsElement) el.open = true;
+        el.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" });
+      }
+      else if (tries++ < 20) window.setTimeout(attempt, 60);
+    };
+    window.setTimeout(attempt, 60);
+  };
+  const goTo = (t: NavTarget) => {
+    if (t.tab !== activeTab || selectedSlug) navigateTo(t.tab);
+    if (!t.hash) return;
+    window.setTimeout(() => {
+      window.history.replaceState(window.history.state, "", routeForTab(t.tab).path + "#" + t.hash);
+      scrollToHash(t.hash!, t.tab === activeTab);
+    }, t.tab === activeTab ? 0 : 260);
   };
 
   // Profiles open over the current page and get their own address (?profile=…), so the
@@ -228,7 +307,7 @@ export default function App() {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([k, v]) => v && params.set(k, v));
     const qs = params.toString();
-    window.history.pushState({ tab: "directory" }, "", "/talent/" + (qs ? `?${qs}` : ""));
+    window.history.pushState({ tab: "directory" }, "", "/creators/" + (qs ? `?${qs}` : ""));
     // Remount the directory so it reads the new filters from the address bar
     setDirectoryKey((k) => k + 1);
     navigateTo("directory");
@@ -246,7 +325,6 @@ export default function App() {
     navigateTo("contact");
   };
 
-  const menuRef = useDialog<HTMLDivElement>(menuOpen, () => setMenuOpen(false));
 
   // The gallery works with the raw creator records
   const galleryCreator: Creator | null = activeTab === "catwalk" ? selectedProfile?.creator ?? null : null;
@@ -269,12 +347,20 @@ export default function App() {
       activeTab === tab ? "text-ink font-semibold after:absolute after:inset-x-0 after:bottom-0 after:h-[2px] after:bg-bronze" : "text-ink-2 hover:text-ink"
     }`;
 
+  // Pages the admin hid show a short notice instead (recomputed when settings load)
+  const hiddenPage = activeTab !== "admin" && isHiddenTab(activeTab);
+
   return (
     <div
       className="relative w-screen h-[100dvh] overflow-hidden bg-paper font-sans text-ink"
       style={{ ["--color-champagne" as any]: readableAccent(settings.primaryColor) }}
     >
       <Toaster position="top-right" reverseOrder={false} toastOptions={{ duration: 4000 }} />
+      {previewMode && (
+        <div role="status" data-no-content-edit className="fixed bottom-3 left-1/2 -translate-x-1/2 z-[80] bg-ink text-paper text-[0.8125rem] font-semibold px-4 py-2 rounded-[4px] shadow-lg pointer-events-none">
+          {editMode ? "Click any text or image to change it" : "Preview: these changes are not saved yet"}
+        </div>
+      )}
 
       <a
         href="#main-content"
@@ -304,141 +390,26 @@ export default function App() {
             />
           </Suspense>
         )}
-        <CursorParticleTrail active={activeTab === "catwalk"} color={readableAccent(settings.primaryColor)} />
       </div>
 
-      {/* Header */}
-      <header className="absolute top-0 inset-x-0 z-30 h-16 bg-paper/95 backdrop-blur border-b border-line">
-        <div className="page h-full flex items-center justify-between gap-6">
-          <Wordmark onHome={() => navigateTo("home")} />
+      {activeTab !== "admin" && !editMode && (
+        <SitePopup popup={getSiteExtras().popup} path={routeForTab(activeTab).path} preview={previewMode} />
+      )}
 
-          <nav aria-label="Main" id="main-nav-tabs" className="hidden lg:flex items-center gap-6 h-full">
-            {NAV.map(({ id, label }) => (
-              <a
-                key={id}
-                href={routeForTab(id).path}
-                aria-current={activeTab === id ? "page" : undefined}
-                onClick={(e) => {
-                  if (e.metaKey || e.ctrlKey || e.shiftKey) return;
-                  e.preventDefault();
-                  navigateTo(id);
-                }}
-                className={navLinkClass(id)}
-              >
-                {label}
-              </a>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setIsCollaborationOpen(true)} className="hidden md:inline-flex btn btn-sm btn-secondary" id="open-collaboration-form-btn">
-              Brand enquiry
-            </button>
-            <a
-              href={routeForTab("apply").path}
-              onClick={(e) => {
-                if (e.metaKey || e.ctrlKey || e.shiftKey) return;
-                e.preventDefault();
-                navigateTo("apply");
-              }}
-              aria-current={activeTab === "apply" ? "page" : undefined}
-              className="hidden sm:inline-flex btn btn-sm btn-primary"
-            >
-              {APPLY_LABEL}
-            </a>
-            <button
-              type="button"
-              onClick={() => setMenuOpen(true)}
-              aria-expanded={menuOpen}
-              aria-controls="site-menu"
-              className="lg:hidden inline-flex items-center gap-2 h-10 px-3 rounded-[4px] border border-field text-ink text-[0.9375rem] font-semibold cursor-pointer"
-            >
-              <Menu className="w-5 h-5" aria-hidden="true" /> Menu
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Menu for phones and tablets */}
-      <AnimatePresence>
-        {menuOpen && (
-          <div className="fixed inset-0 z-[60] lg:hidden" onClick={() => setMenuOpen(false)}>
-            <div className="absolute inset-0 bg-ink/30" aria-hidden="true" />
-            <motion.div
-              ref={menuRef}
-              id="site-menu"
-              role="dialog"
-              aria-modal="true"
-              aria-label="Menu"
-              tabIndex={-1}
-              onClick={(e) => e.stopPropagation()}
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.15 }}
-              className="absolute inset-x-0 top-0 bg-paper border-b border-line shadow-[0_12px_30px_-12px_rgba(27,26,23,0.3)] outline-none max-h-[100dvh] overflow-y-auto"
-            >
-              <div className="page h-16 flex items-center justify-between">
-                <Wordmark onHome={() => navigateTo("home")} />
-                <button type="button" onClick={() => setMenuOpen(false)} aria-label="Close menu" className="w-10 h-10 inline-flex items-center justify-center rounded-[4px] text-ink hover:bg-sunken cursor-pointer">
-                  <X className="w-5 h-5" aria-hidden="true" />
-                </button>
-              </div>
-              <nav aria-label="Menu" className="page pb-6">
-                <ul className="divide-y divide-line border-y border-line">
-                  {[...MENU_EXTRA.slice(0, 1), ...NAV, ...MENU_EXTRA.slice(1)].map(({ id, label }) => (
-                    <li key={id}>
-                      <a
-                        href={routeForTab(id).path}
-                        aria-current={activeTab === id ? "page" : undefined}
-                        onClick={(e) => {
-                          if (e.metaKey || e.ctrlKey || e.shiftKey) return;
-                          e.preventDefault();
-                          navigateTo(id);
-                        }}
-                        className={`flex items-center justify-between py-3.5 text-[1.0625rem] ${activeTab === id ? "font-semibold text-ink" : "text-ink-2"}`}
-                      >
-                        {label}
-                        {activeTab === id && <span className="text-[0.8125rem] text-ink-3 font-normal">Current page</span>}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-                <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                  <a
-                    href={routeForTab("apply").path}
-                    onClick={(e) => {
-                      if (e.metaKey || e.ctrlKey || e.shiftKey) return;
-                      e.preventDefault();
-                      navigateTo("apply");
-                    }}
-                    className="btn btn-primary"
-                  >
-                    {APPLY_LABEL}
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setIsCollaborationOpen(true);
-                    }}
-                    className="btn btn-secondary"
-                  >
-                    Brand enquiry
-                  </button>
-                </div>
-              </nav>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <SiteHeader
+        activeTab={activeTab}
+        categories={categories}
+        onGo={goTo}
+        onBrowse={browse}
+        onBrandEnquiry={() => setIsCollaborationOpen(true)}
+      />
 
       {/* 3D gallery controls */}
-      {activeTab === "catwalk" && sections.length > 0 && (
+      {activeTab === "catwalk" && !hiddenPage && sections.length > 0 && (
         <>
           <nav aria-label="Gallery sections" className="absolute left-6 top-1/2 -translate-y-1/2 hidden lg:block z-10 max-h-[70vh] overflow-y-auto scrollbar-none">
-            <div className="bg-paper/95 border border-line p-5 w-56 space-y-1">
-              <p className="text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-ink-3 pb-2 mb-1 border-b border-line">Sections</p>
+            <div className="bg-white/95 border border-line shadow-sm p-5 w-56 space-y-1">
+              <p className="text-[0.875rem] font-semibold text-bronze pb-2 mb-1 border-b border-line">Sections</p>
               {sections.map((sec, idx) => (
                 <button
                   key={`${sec.id}-${idx}`}
@@ -457,14 +428,14 @@ export default function App() {
           </nav>
 
           <div className="absolute bottom-0 inset-x-0 p-4 md:p-6 flex justify-center z-10 pointer-events-none">
-            <div className="pointer-events-auto w-full max-w-xl bg-paper/95 border border-line px-4 py-3 flex items-center justify-between gap-3">
+            <div className="pointer-events-auto w-full max-w-xl bg-white/95 border border-line shadow-sm px-4 py-3 flex items-center justify-between gap-3">
               <button
                 type="button"
                 onClick={() => setActiveSectionIndex(Math.max(0, activeSectionIndex - 1))}
                 disabled={activeSectionIndex === 0}
                 aria-label="Previous section"
                 id="prev-section-btn"
-                className="w-10 h-10 inline-flex items-center justify-center border border-field rounded-[4px] text-ink disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                className="w-11 h-11 inline-flex items-center justify-center border border-field rounded-[4px] text-ink hover:border-ink disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
               >
                 <ChevronLeft className="w-5 h-5" aria-hidden="true" />
               </button>
@@ -478,7 +449,7 @@ export default function App() {
                 disabled={activeSectionIndex === sections.length - 1}
                 aria-label="Next section"
                 id="next-section-btn"
-                className="w-10 h-10 inline-flex items-center justify-center border border-field rounded-[4px] text-ink disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                className="w-11 h-11 inline-flex items-center justify-center border border-field rounded-[4px] text-ink hover:border-ink disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
               >
                 <ChevronRight className="w-5 h-5" aria-hidden="true" />
               </button>
@@ -486,7 +457,7 @@ export default function App() {
           </div>
 
           {!selectedProfile && (
-            <p className="absolute top-20 inset-x-0 mx-auto w-fit z-10 bg-paper/95 border border-line px-3 py-1.5 text-[0.8125rem] text-ink-2 flex items-center gap-2 pointer-events-none">
+            <p className="absolute top-20 inset-x-0 mx-auto w-fit max-w-[calc(100%-2rem)] z-10 bg-white/95 border border-line shadow-sm px-3 py-1.5 text-[0.8125rem] text-ink-2 flex items-center gap-2 pointer-events-none">
               <Compass className="w-4 h-4" aria-hidden="true" /> Scroll or drag to move; select a portrait to open the profile
             </p>
           )}
@@ -495,7 +466,7 @@ export default function App() {
 
       {/* Content pages */}
       <AnimatePresence mode="wait" initial={false}>
-        {activeTab !== "catwalk" && (
+        {(activeTab !== "catwalk" || hiddenPage) && (
           <motion.main
             key={activeTab}
             id="main-content"
@@ -507,19 +478,22 @@ export default function App() {
             transition={{ duration: 0.12 }}
             className="absolute inset-0 top-16 overflow-y-auto z-[15] bg-paper outline-none"
           >
-            {activeTab === "home" && (
+            {activeTab !== "admin" && !hiddenPage && <AdSlot ads={getSiteExtras().ads} path={routeForTab(activeTab).path} position="top" />}
+            {!hiddenPage && activeTab === "home" && (
               <HomeTab
                 profiles={profiles}
                 status={rosterStatus}
                 onNavigate={navigateTo}
+                onGo={goTo}
                 onSelectProfile={openProfile}
                 onBrandEnquiry={() => setIsCollaborationOpen(true)}
                 onAwardEnquiry={askAboutAward}
                 onBrowse={browse}
                 onRetry={refreshSections}
+                moodboardItems={moodboardItems}
               />
             )}
-            {activeTab === "directory" && (
+            {!hiddenPage && activeTab === "directory" && (
               <DirectoryTab
                 key={directoryKey}
                 profiles={profiles}
@@ -529,21 +503,33 @@ export default function App() {
                 onRetry={refreshSections}
               />
             )}
-            {activeTab === "starindia" && (
+            {!hiddenPage && activeTab === "starindia" && (
               <StarIndiaTab profiles={profiles} status={rosterStatus} onNavigate={navigateTo} onSelectProfile={openProfile} onRetry={refreshSections} />
             )}
-            {activeTab === "greenlight" && <GreenLightTab coverCreator={profiles.find((p) => p.image)?.creator} />}
-            {activeTab === "contact" && <ContactTab key={contactTopic} onNavigate={navigateTo} initialTopic={contactTopic} />}
-            {activeTab === "campaigns" && <CampaignsTab />}
-            {activeTab === "membership" && <MembershipTab />}
-            {activeTab === "apply" && <ModelRegistrationTab />}
-            {activeTab === "faq" && <FaqTab onNavigate={navigateTo} />}
-            {activeTab === "privacy" && <PrivacyTab onNavigate={navigateTo} />}
+            {!hiddenPage && activeTab === "greenlight" && <GreenLightTab coverCreator={profiles.find((p) => p.image)?.creator} />}
+            {!hiddenPage && activeTab === "contact" && <ContactTab key={contactTopic} onNavigate={navigateTo} initialTopic={contactTopic} />}
+            {!hiddenPage && activeTab === "campaigns" && <CampaignsTab />}
+            {!hiddenPage && activeTab === "membership" && <MembershipTab />}
+            {!hiddenPage && activeTab === "apply" && <ModelRegistrationTab />}
+            {!hiddenPage && activeTab === "faq" && <FaqTab onNavigate={navigateTo} />}
+            {!hiddenPage && activeTab === "privacy" && <PrivacyTab onNavigate={navigateTo} />}
+            {!hiddenPage && activeTab === "awards" && <AwardsTab onNavigate={navigateTo} onAwardEnquiry={askAboutAward} />}
+            {!hiddenPage && activeTab === "categories" && <CategoriesTab profiles={profiles} status={rosterStatus} onBrowse={browse} onNavigate={navigateTo} />}
+            {!hiddenPage && activeTab === "forbrands" && <ForBrandsTab onNavigate={navigateTo} onBrandEnquiry={() => setIsCollaborationOpen(true)} onBrowse={browse} />}
+            {!hiddenPage && activeTab === "forcreators" && <ForCreatorsTab onNavigate={navigateTo} />}
+            {hiddenPage && (
+              <div className="page pt-16 md:pt-24 pb-24 max-w-2xl space-y-4">
+                <h1 className="h-page">This page is not available right now</h1>
+                <p className="lede">It may come back soon. Everything else on the site is open.</p>
+                <a href="/" onClick={(e) => { e.preventDefault(); navigateTo("home"); }} className="btn btn-primary">Go to the home page</a>
+              </div>
+            )}
             {activeTab === "admin" && (
               <Suspense fallback={<p className="py-24 text-center text-sm text-ink-2" role="status">Loading the admin workspace…</p>}>
                 <AdminTab />
               </Suspense>
             )}
+            {activeTab !== "admin" && !hiddenPage && <AdSlot ads={getSiteExtras().ads} path={routeForTab(activeTab).path} position="bottom" />}
             {activeTab !== "admin" && (
               <SiteFooter footerText={settings.footerText} onNavigate={navigateTo} onBrandEnquiry={() => setIsCollaborationOpen(true)} />
             )}

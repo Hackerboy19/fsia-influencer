@@ -16,6 +16,7 @@ export interface Creator {
   };
   quote: string;
   portfolio: string[];
+  social?: Record<string, string>;
 }
 
 export interface GallerySection {
@@ -63,6 +64,17 @@ export interface AdminUser {
   passwordHash: string;
   createdAt?: string;
   lastLogin?: string;
+  /** owner | editor | inbox (missing = owner) */
+  role?: string;
+}
+
+/** One saved version of the site settings, taken before each change */
+export interface SettingsVersion {
+  id: string;
+  at: string;
+  by: string;
+  keys: string[];
+  settings: Record<string, unknown>;
 }
 
 export interface AdminLog {
@@ -86,6 +98,7 @@ export interface SystemSettings {
   modelSelection: string;
   temperature: number;
   topK: number;
+  [key: string]: unknown;
 }
 
 export interface PromptLog {
@@ -109,6 +122,7 @@ export interface InfluencerApplication {
   engagement: string; // engagement rate (e.g. "4.5%")
   portfolio: string[]; // list of photo URLs
   quote: string;
+  social?: Record<string, string>;
   email: string;
   phone: string;
   status: "pending" | "approved" | "declined";
@@ -155,6 +169,7 @@ export interface DatabaseSchema {
   membership_plans?: MembershipPlan[];
   enquiries?: Enquiry[];
   migrations?: Record<string, string>;
+  settings_history?: SettingsVersion[];
 }
 
 export const DB_PATH = path.join(process.cwd(), "server", "db.json");
