@@ -287,6 +287,9 @@ function Hero({
 
 /* --------------------------------------------------------- feature strip */
 
+// Real images (not drawn icons), so Admin → Page content can replace each cover with a photo
+const CoverImg = ({ src }: { src: string }) => <img src={src} alt="" width={176} height={128} loading="lazy" className="w-full h-full object-cover" />;
+
 function FeatureStrip({ profiles, onGo }: { profiles: ProfileView[]; onGo: HomeTabProps["onGo"] }) {
   const photos = profiles.filter((p) => p.image).map((p) => p.image);
   const items: { title: string; text: string; target: NavTarget; href: string; thumb: React.ReactNode }[] = [
@@ -315,34 +318,21 @@ function FeatureStrip({ profiles, onGo }: { profiles: ProfileView[]; onGo: HomeT
       text: "Guides and features",
       target: { tab: "greenlight" },
       href: "/magazine/",
-      thumb: (
-        <span className="w-full h-full bg-[#2A251E] text-[#E1C699] flex flex-col items-center justify-center font-display leading-none" aria-hidden="true">
-          <span className="text-[0.625rem] tracking-[0.2em] uppercase text-[#CFCAC0]">Green</span>
-          <span className="text-[1.25rem] italic">Light</span>
-        </span>
-      )
+      thumb: <CoverImg src="/covers/magazine.svg" />
     },
     {
       title: "Awards",
       text: APPLICATIONS_OPEN ? "Registration open" : AWARD_NAME,
       target: { tab: "awards" },
       href: "/awards/",
-      thumb: (
-        <span className="w-full h-full bg-[#2A251E] text-[#E1C699] flex items-center justify-center" aria-hidden="true">
-          <Trophy className="w-7 h-7" />
-        </span>
-      )
+      thumb: <CoverImg src="/covers/awards.svg" />
     },
     {
       title: "Campaigns",
       text: "Open brand briefs",
       target: { tab: "campaigns" },
       href: "/campaigns/",
-      thumb: (
-        <span className="w-full h-full bg-bronze-soft text-bronze flex items-center justify-center" aria-hidden="true">
-          <Megaphone className="w-7 h-7" />
-        </span>
-      )
+      thumb: <CoverImg src="/covers/campaigns.svg" />
     }
   ];
   return (
