@@ -7,6 +7,7 @@ import { isValidEmail, isValidPhone } from "../server/validation";
 import { csvCell } from "../src/lib/adminSession";
 import { readableAccent } from "../src/lib/color";
 import { roleCan, routeArea } from "../src/lib/adminRoles";
+import { adsFor, cleanAds, cleanBrandSocial, cleanPopup, okLink, popupDue } from "../src/lib/siteExtras";
 import { whatsappNumber } from "../src/components/ContactButtons";
 
 let failures = 0;
@@ -120,6 +121,30 @@ check("Owner can do everything", roleCan("owner", "team") && roleCan("owner", "w
 for (const [input, expected] of [["98765 43210", "919876543210"], ["+91 98765-43210", "919876543210"], ["09876543210", "919876543210"], ["0044 20 7946 0958", "442079460958"], ["12345", ""]] as const) {
   check(`whatsappNumber(${JSON.stringify(input)}) is ${JSON.stringify(expected)}`, whatsappNumber(input) === expected);
 }
+
+// Popup, ads and brand social links from Admin → Popup & ads / Site settings
+for (const [input, ok] of [["/apply/", true], ["https://brand.com/x", true], ["javascript:alert(1)", false], ["//evil.com", false], ["data:text/html,x", false], ["brand.com", false]] as const) {
+  check(`okLink(${JSON.stringify(input)}) is ${ok}`, !!okLink(input) === ok);
+}
+check("popup with no title, text or image stays off", cleanPopup({ enabled: true }).enabled === false);
+check("popup delay is kept between 0 and 60 seconds", cleanPopup({ enabled: true, title: "x", delaySeconds: 999 }).delaySeconds === 60);
+check("popup page list falls back to every page", cleanPopup({ pages: [] }).pages[0] === "*");
+const mem = (v: string | null) => ({ getItem: () => v });
+const pop = cleanPopup({ enabled: true, title: "Hi", pages: ["/"], frequency: "once", version: "v2" });
+check("popup shows to a new visitor on its page", popupDue(pop, "/", mem(null)));
+check("popup not shown on other pages", !popupDue(pop, "/faq/", mem(null)));
+check("popup shown once only", !popupDue(pop, "/", mem("v2|" + Date.now())));
+check("an edited popup shows again", popupDue(pop, "/", mem("v1|" + Date.now())));
+check("a daily popup shows again after a day", popupDue({ ...pop, frequency: "daily" }, "/", mem("v2|" + (Date.now() - 25 * 3600e3))));
+check("popup never shows in the admin", !popupDue({ ...pop, pages: ["*"] }, "/admin/", mem(null)));
+const ads = cleanAds([{ image: "/uploads/a.jpg", pages: ["/"], position: "top" }, { image: "javascript:x" }, { image: "/uploads/b.jpg", pages: ["*"], position: "bottom", link: "javascript:alert(1)" }, { image: "/uploads/c.jpg", enabled: false }]);
+check("ads without a valid image are dropped", ads.length === 3);
+check("unsafe ad links are removed", ads[1].link === "");
+check("ads appear only on their pages and place", adsFor(ads, "/", "top").length === 1 && adsFor(ads, "/faq/", "top").length === 0 && adsFor(ads, "/faq/", "bottom").length === 1);
+check("switched-off ads are hidden", adsFor(ads, "/", "top").every((a) => a.enabled));
+const bs = cleanBrandSocial({ links: { instagram: "@fsiainfluencer", youtube: "not a link!", x: "https://evil.com/x" } });
+check("brand social links are saved as full https links", bs.links.instagram === "https://www.instagram.com/fsiainfluencer" && !bs.links.youtube && !bs.links.x);
+check("brand social icons show in the footer by default, header only when chosen", bs.footer && !bs.header);
 
 PHONE_CASES.forEach(([input, expected]) => check(`isValidPhone(${JSON.stringify(input)}) is ${expected}`, isValidPhone(input) === expected));
 for (const [input, expected] of [["creator@example.com", true], [" brand@example.in ", true], ["no-at-sign.com", false], ["a@b", false]] as const) {

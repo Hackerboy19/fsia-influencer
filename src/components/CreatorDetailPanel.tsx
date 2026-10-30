@@ -3,7 +3,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { X, Link2, Check, ChevronLeft, ChevronRight, Heart, Info, CalendarCheck, MapPin, Images, Instagram, Youtube, Facebook, Twitter, Linkedin, Globe } from "lucide-react";
 import type { SocialId } from "../lib/social";
 
-const SOCIAL_ICONS: Record<SocialId, typeof Globe> = { instagram: Instagram, youtube: Youtube, facebook: Facebook, x: Twitter, linkedin: Linkedin, website: Globe };
+import { SOCIAL_ICONS } from "./BrandSocialLinks";
 import toast from "react-hot-toast";
 import type { ProfileView } from "../lib/profile";
 import { profileHref } from "../lib/profileLink";

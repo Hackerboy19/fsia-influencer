@@ -32,6 +32,9 @@ const KEY_NAMES: Record<string, string> = {
   primaryColor: "Brand colour",
   footerText: "Footer line",
   notifyEmail: "Email alerts",
+  brandSocial: "Your social media",
+  popup: "Popup",
+  ads: "Ads",
   restore: "Went back to an earlier version"
 };
 

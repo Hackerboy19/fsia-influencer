@@ -27,6 +27,9 @@ import { setContentOverrides, hasContentOverrides, watchContent } from "./lib/co
 import { startContentEditing } from "./lib/contentEditMode";
 import { setHomeHero, setNavLabels, setBrandLogo } from "./lib/siteContent";
 import { BRAND_NAME } from "./content/brand";
+import { setSiteExtras, getSiteExtras } from "./lib/siteExtras";
+import SitePopup from "./components/SitePopup";
+import AdSlot from "./components/AdSlot";
 import { readableAccent } from "./lib/color";
 import { ProfileView, profilesFromSections } from "./lib/profile";
 import { PROFILE_PARAM, profileSlugFromLocation } from "./lib/profileLink";
@@ -85,6 +88,7 @@ export default function App() {
     setHomeHero(d.homeHero);
     setNavLabels(d.navLabels);
     if (d.content !== undefined) setContentOverrides(d.content);
+    if (d.extras) setSiteExtras(d.extras);
     setSettings((s: any) => ({ ...s, pages: d.pages, homeHero: d.homeHero, navLabels: d.navLabels, previewAt: Date.now() }));
   }, []);
   useEffect(() => {
@@ -132,6 +136,7 @@ export default function App() {
           setHomeHero(data.homeHero); setNavLabels(data.navLabels);
           setContentOverrides(data.content);
           setBrandLogo(data.logoUrl, data.logoHidesName);
+          setSiteExtras(data);
           setSettings((s: any) => ({ ...s, ...data }));
           if (previewData.current) applyPreview(previewData.current);
         }
@@ -380,6 +385,10 @@ export default function App() {
         )}
       </div>
 
+      {activeTab !== "admin" && !editMode && (
+        <SitePopup popup={getSiteExtras().popup} path={routeForTab(activeTab).path} preview={previewMode} />
+      )}
+
       <SiteHeader
         activeTab={activeTab}
         categories={categories}
@@ -462,6 +471,7 @@ export default function App() {
             transition={{ duration: 0.12 }}
             className="absolute inset-0 top-16 overflow-y-auto z-[15] bg-paper outline-none"
           >
+            {activeTab !== "admin" && !hiddenPage && <AdSlot ads={getSiteExtras().ads} path={routeForTab(activeTab).path} position="top" />}
             {!hiddenPage && activeTab === "home" && (
               <HomeTab
                 profiles={profiles}
@@ -512,6 +522,7 @@ export default function App() {
                 <AdminTab />
               </Suspense>
             )}
+            {activeTab !== "admin" && !hiddenPage && <AdSlot ads={getSiteExtras().ads} path={routeForTab(activeTab).path} position="bottom" />}
             {activeTab !== "admin" && (
               <SiteFooter footerText={settings.footerText} onNavigate={navigateTo} onBrandEnquiry={() => setIsCollaborationOpen(true)} />
             )}

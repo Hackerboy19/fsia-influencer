@@ -1,4 +1,5 @@
 import { getBrandLogo } from "../lib/siteContent";
+import BrandSocialLinks from "./BrandSocialLinks";
 import React from "react";
 import { routeForTab, TabId, isHiddenTab } from "../seo";
 import { BRAND_NAME } from "../content/brand";
@@ -92,6 +93,7 @@ export default function SiteFooter({ footerText, onNavigate, onBrandEnquiry }: S
             <a href={ORGANISER.phoneHref} className="block text-white underline-offset-4 hover:underline">{ORGANISER.phoneDisplay}</a>
             <a href={ORGANISER.whatsappHref} target="_blank" rel="noopener noreferrer" className="block text-[#E7E3DA] underline-offset-4 hover:underline">WhatsApp us</a>
           </address>
+          <BrandSocialLinks place="footer" className="pt-2 -ml-2" />
         </div>
         {GROUPS.map((group) => (
           <nav key={group.title} aria-label={group.title}>

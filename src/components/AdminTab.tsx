@@ -5,7 +5,7 @@ import {
   Lock, User, LogIn, LayoutDashboard, Sparkles, Users, Briefcase, FileText, 
   Trash2, Plus, Edit2, Check, RefreshCw, X, AlertTriangle, Shield, CheckCircle2,
   TrendingUp, Phone, Mail, MapPin, Eye, FileSpreadsheet, Activity, UserPlus, Layout,
-  KeyRound, Search, Download, Inbox, Globe, PenLine, Settings, History
+  KeyRound, Search, Download, Inbox, Globe, PenLine, Settings, History, Megaphone
 } from "lucide-react";
 import AdminContentManager from "./AdminContentManager";
 import AdminSecurityPanel from "./AdminSecurityPanel";
@@ -14,6 +14,7 @@ import AdminPagesSeo from "./AdminPagesSeo";
 import AdminContentEditor from "./AdminContentEditor";
 import AdminBrandSettings from "./AdminBrandSettings";
 import AdminHistoryPanel from "./AdminHistoryPanel";
+import AdminPromoPanel from "./AdminPromoPanel";
 import AdminDashboard from "./AdminDashboard";
 import ContactButtons from "./ContactButtons";
 import { ADMIN_ROLES, normaliseRole, type AdminRole } from "../lib/adminRoles";
@@ -127,6 +128,7 @@ const ADMIN_MENU: { label: string; tabs: { id: string; label: string; icon: type
       { id: "pages_seo", label: "Pages & SEO", icon: Globe },
       { id: "creators", label: "Creators", icon: Users },
       { id: "content_manager", label: "Categories, campaigns & plans", icon: Layout },
+      { id: "promo", label: "Popup & ads", icon: Megaphone },
       { id: "content", label: "Site settings", icon: Settings }
     ]
   },
@@ -147,7 +149,7 @@ const ADMIN_MENU: { label: string; tabs: { id: string; label: string; icon: type
   }
 ];
 
-const WEBSITE_TABS = ["page_content", "pages_seo", "creators", "content_manager", "content", "history"];
+const WEBSITE_TABS = ["promo", "page_content", "pages_seo", "creators", "content_manager", "content", "history"];
 const INBOX_TABS = ["influencer_applications", "registrations", "enquiries"];
 const tabAllowed = (id: string, role: AdminRole) =>
   role === "owner" || (WEBSITE_TABS.includes(id) ? role === "editor" : INBOX_TABS.includes(id) ? role === "inbox" : true);
@@ -1038,6 +1040,8 @@ export default function AdminTab() {
                 openTab={setAdminActiveSubTab}
               />
             )}
+
+            {adminActiveSubTab === "promo" && <AdminPromoPanel token={token} />}
 
             {adminActiveSubTab === "history" && (
               <AdminHistoryPanel token={token} role={currentRole} onRestored={() => fetchAdminData(token)} />

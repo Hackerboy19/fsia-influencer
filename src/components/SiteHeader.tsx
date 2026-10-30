@@ -6,6 +6,7 @@ import { routeForTab, TabId, isHiddenTab } from "../seo";
 import { BRAND_NAME } from "../content/brand";
 import { APPLY_LABEL } from "../content/awards";
 import { useDialog, Portal } from "../lib/dialog";
+import BrandSocialLinks from "./BrandSocialLinks";
 
 /** A place on the site: a page, optionally a section on it (#id) */
 export type NavTarget = { tab: TabId; hash?: string };
@@ -235,6 +236,8 @@ export default function SiteHeader({ activeTab, categories, onGo, onBrowse, onBr
           </nav>
 
           <div className="flex items-center gap-2">
+            {/* Only on wide screens: below that the icons are in the menu panel */}
+            <BrandSocialLinks place="header" className="hidden 2xl:flex pr-1 mr-1 border-r border-line" />
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
@@ -366,6 +369,7 @@ export default function SiteHeader({ activeTab, categories, onGo, onBrowse, onBr
                   <a {...linkProps({ tab: "apply" })} className="btn btn-primary">{APPLY_LABEL}</a>
                   <button type="button" onClick={() => runAction("enquiry")} className="btn btn-secondary">Brand enquiry</button>
                 </div>
+                <BrandSocialLinks place="header" className="mt-5 -ml-2" />
               </nav>
             </motion.div>
           </div>
