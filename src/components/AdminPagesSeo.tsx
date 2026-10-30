@@ -528,7 +528,7 @@ export default function AdminPagesSeo({ token }: { token: string }) {
 }
 
 /** The real page in a frame, showing the unsaved changes. */
-function PreviewModal({ path, payload, dirty, onClose }: { path: string; payload: object; dirty: boolean; onClose: () => void }) {
+export function PreviewModal({ path, payload, dirty, onClose }: { path: string; payload: object; dirty: boolean; onClose: () => void }) {
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [ready, setReady] = useState(false);

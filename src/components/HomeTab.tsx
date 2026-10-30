@@ -620,6 +620,9 @@ function GalleryPreview({ profiles, sample, onGo, onSelectProfile }: { profiles:
           if (Math.abs(dx) > 40) move(dx < 0 ? 1 : -1);
         }}
       >
+        {/* A real image, so Admin → Page content can replace the background with a photo */}
+        <img src="/covers/gallery-bg.svg" alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover select-none" draggable={false} />
+        <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
         <div className="coverflow" role="group" aria-label="Gallery preview">
           {items.map((p, i) => {
             const off = i - index;

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
-import { Loader2, Save, Upload, Plus, Trash2, ArrowUp, ArrowDown, X } from "lucide-react";
+import { Loader2, Save, Upload, Plus, Trash2, ArrowUp, ArrowDown, X, Eye } from "lucide-react";
+import { PreviewModal } from "./AdminPagesSeo";
 import { uploadImage } from "../lib/adminUpload";
 import { ALL, cleanAds, cleanPopup, okLink, getSiteExtras, setSiteExtras, type SiteAd, type SitePopup } from "../lib/siteExtras";
 
@@ -23,6 +24,11 @@ const PAGE_NAMES: [string, string][] = [
   ["/privacy/", "Privacy"],
   ["/gallery/", "3D gallery"]
 ];
+
+const pagesText = (pages: string[], exclude: string[] = []) =>
+  pages.includes(ALL)
+    ? "Every page" + (exclude.length ? " (not the 3D gallery)" : "")
+    : pages.map((p) => PAGE_NAMES.find(([path]) => path === p)?.[1] || p).join(", ");
 
 const card = "bg-white border border-line rounded-[4px] p-5 space-y-4";
 
@@ -115,6 +121,8 @@ export default function AdminPromoPanel({ token }: { token: string }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [previewPath, setPreviewPath] = useState("/");
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/settings", { headers: { Authorization: `Bearer ${token}` } })
@@ -189,6 +197,19 @@ export default function AdminPromoPanel({ token }: { token: string }) {
     }
   };
 
+  // Shows the unsaved popup and ads on the real page (nothing is saved)
+  const previewPayload = () => {
+    const x = getSiteExtras();
+    return {
+      extras: {
+        brandSocial: x.social,
+        popup: { ...cleanPopup({ ...popup, delaySeconds: 0 }), enabled: popup.enabled && (!!popup.title.trim() || !!popup.text.trim() || !!popup.image), version: "preview" },
+        ads: cleanAds(ads)
+      }
+    };
+  };
+  const popupOnPreviewPage = popup.pages.includes(ALL) || popup.pages.includes(previewPath);
+
   if (loading) {
     return (
       <p className="py-16 text-center text-ink-2 flex items-center justify-center gap-2">
@@ -202,13 +223,34 @@ export default function AdminPromoPanel({ token }: { token: string }) {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="font-display text-[1.75rem] leading-tight">Popup &amp; ads</h2>
-          <p className="text-[0.875rem] text-ink-3">An announcement popup and ad banners, on the pages you choose.</p>
+          <p className="text-[0.875rem] text-ink-3">An announcement popup and ad banners, on the pages you choose. Pick a page and press Preview to see it before saving.</p>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <label htmlFor="promo-preview-page" className="sr-only">Page to preview</label>
+          <select id="promo-preview-page" value={previewPath} onChange={(e) => setPreviewPath(e.target.value)} className="field !h-9 !py-0 w-auto">
+            {PAGE_NAMES.map(([path, name]) => <option key={path} value={path}>{name}</option>)}
+          </select>
+          {popup.enabled && !popupOnPreviewPage && (
+            <span className="text-[0.8125rem] text-ink-3">The popup is not set for this page</span>
+          )}
+          <button type="button" onClick={() => setPreviewOpen(true)} className="btn btn-secondary btn-sm" id="preview-promo-btn">
+            <Eye className="w-4 h-4" aria-hidden="true" /> Preview
+          </button>
         <button type="button" onClick={save} disabled={saving || !dirty} className="btn btn-primary btn-sm disabled:opacity-50" id="save-promo-btn">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Save className="w-4 h-4" aria-hidden="true" />}
           {dirty ? "Save changes" : "Saved"}
         </button>
+        </div>
       </div>
+
+      {previewOpen && (
+        <PreviewModal
+          path={previewPath}
+          payload={previewPayload()}
+          dirty={dirty}
+          onClose={() => setPreviewOpen(false)}
+        />
+      )}
 
       {/* Popup */}
       <section className={card} id="popup-settings">
@@ -241,6 +283,7 @@ export default function AdminPromoPanel({ token }: { token: string }) {
               </div>
             </div>
             <PagePicker id="popup-pages" value={popup.pages} onChange={(pages) => editPopup({ pages })} />
+            <p className="text-[0.875rem]" data-popup-where><strong>Shows on:</strong> {pagesText(popup.pages)}{popup.enabled ? "" : " (switched off)"}</p>
             <div className="grid sm:grid-cols-2 gap-3">
               <div>
                 <label htmlFor="popup-delay" className="field-label">Open after (seconds)</label>
@@ -313,7 +356,10 @@ export default function AdminPromoPanel({ token }: { token: string }) {
                 <input id={`ad-alt-${i}`} className="field" maxLength={160} value={ad.alt} onChange={(e) => editAd(i, { alt: e.target.value })} />
               </div>
               <div className="grid sm:grid-cols-[minmax(0,1fr)_12rem] gap-4">
-                <PagePicker id={`ad-pages-${i}`} value={ad.pages} onChange={(pages) => editAd(i, { pages })} exclude={["/gallery/"]} />
+                <div className="space-y-2">
+                  <PagePicker id={`ad-pages-${i}`} value={ad.pages} onChange={(pages) => editAd(i, { pages })} exclude={["/gallery/"]} />
+                  <p className="text-[0.875rem]"><strong>Shows on:</strong> {pagesText(ad.pages, ["/gallery/"])}, {ad.position === "top" ? "top of the page" : "bottom, above the footer"}{ad.enabled ? "" : " (switched off)"}</p>
+                </div>
                 <div>
                   <label htmlFor={`ad-position-${i}`} className="field-label">Place</label>
                   <select id={`ad-position-${i}`} className="field" value={ad.position} onChange={(e) => editAd(i, { position: e.target.value as SiteAd["position"] })}>

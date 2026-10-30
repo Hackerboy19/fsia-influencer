@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { useDialog, Portal } from "../lib/dialog";
-import { popupDue, type SitePopup as Popup } from "../lib/siteExtras";
+import { popupDue, showsOn, type SitePopup as Popup } from "../lib/siteExtras";
 import { safeLocal } from "../lib/safeStorage";
 
 // The popup set in Admin → Site settings → Popup. Shown after a short delay on the chosen pages,
@@ -13,7 +13,7 @@ export default function SitePopup({ popup, path, preview = false }: { popup: Pop
     setOpen(false);
     if (preview) {
       // Inside an admin preview frame: only the popup being edited opens
-      if (popup.enabled && popup.version === "preview") setOpen(true);
+      if (popup.enabled && popup.version === "preview" && showsOn(popup.pages, path)) setOpen(true);
       return;
     }
     if (!popupDue(popup, path, safeLocal)) return;

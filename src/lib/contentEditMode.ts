@@ -24,9 +24,21 @@ function textNodeAt(x: number, y: number, target: Element): Text | null {
   let node: Node | null = null;
   if (doc.caretPositionFromPoint) node = doc.caretPositionFromPoint(x, y)?.offsetNode ?? null;
   else if (doc.caretRangeFromPoint) node = doc.caretRangeFromPoint(x, y)?.startContainer ?? null;
-  if (node && node.nodeType === Node.TEXT_NODE && normaliseText(node.nodeValue || "") && target.contains(node)) return node as Text;
+  if (node && node.nodeType === Node.TEXT_NODE && normaliseText(node.nodeValue || "") && target.contains(node)) {
+    const r = document.createRange();
+    r.selectNodeContents(node);
+    if (Array.from(r.getClientRects()).some((b) => x >= b.left - 2 && x <= b.right + 2 && y >= b.top - 2 && y <= b.bottom + 2)) return node as Text;
+  }
+  // Only text that is really under the pointer: a click on empty space (e.g. a background image) is not a text pick
   const walk = document.createTreeWalker(target, NodeFilter.SHOW_TEXT);
-  for (let n = walk.nextNode(); n; n = walk.nextNode()) if (normaliseText(n.nodeValue || "")) return n as Text;
+  const range = document.createRange();
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+    if (!normaliseText(n.nodeValue || "")) continue;
+    range.selectNodeContents(n);
+    for (const r of Array.from(range.getClientRects())) {
+      if (x >= r.left - 2 && x <= r.right + 2 && y >= r.top - 2 && y <= r.bottom + 2) return n as Text;
+    }
+  }
   return null;
 }
 

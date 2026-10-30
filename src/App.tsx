@@ -84,12 +84,19 @@ export default function App() {
   const editMode = useMemo(() => previewMode && new URLSearchParams(window.location.search).has("fsia-edit"), [previewMode]);
   const previewData = useRef<any>(null);
   const applyPreview = useCallback((d: any) => {
-    setPageOverrides(d.pages);
-    setHomeHero(d.homeHero);
-    setNavLabels(d.navLabels);
+    // Only what the admin sent is replaced; everything else stays as saved
+    if (d.pages !== undefined) setPageOverrides(d.pages);
+    if (d.homeHero !== undefined) setHomeHero(d.homeHero);
+    if (d.navLabels !== undefined) setNavLabels(d.navLabels);
     if (d.content !== undefined) setContentOverrides(d.content);
     if (d.extras) setSiteExtras(d.extras);
-    setSettings((s: any) => ({ ...s, pages: d.pages, homeHero: d.homeHero, navLabels: d.navLabels, previewAt: Date.now() }));
+    setSettings((s: any) => ({
+      ...s,
+      ...(d.pages !== undefined ? { pages: d.pages } : {}),
+      ...(d.homeHero !== undefined ? { homeHero: d.homeHero } : {}),
+      ...(d.navLabels !== undefined ? { navLabels: d.navLabels } : {}),
+      previewAt: Date.now()
+    }));
   }, []);
   useEffect(() => {
     if (!previewMode) return;
